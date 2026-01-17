@@ -1,0 +1,30 @@
+---
+description: "Supabase Edge Functions development patterns and Deno runtime practices"
+alwaysApply: false
+globs:
+  - "**/*supabase*.ts"
+  - "**/*supabase*.tsx"
+  - "**/supabase/**"
+  - "**/migrations/**"
+  - "**/api/**"
+  - "**/lib/**/*.ts"
+---
+
+## Supabase Edge Functions best practices
+
+- **Deno Runtime**: Edge Functions run on Deno runtime - use TypeScript/JavaScript with Deno-compatible APIs and npm packages via `npm:` imports
+- **Function Structure**: Export a default async function that takes a `Request` and returns a `Response` - use the standard HTTP handler pattern
+- **Project Organization**: Organize functions in `supabase/functions/function-name/` directory - each function is a separate directory
+- **TypeScript Support**: Use TypeScript for Edge Functions - leverage Deno's built-in TypeScript support and type definitions
+- **Environment Variables**: Store secrets in Supabase project secrets and access via `Deno.env.get()` - never hardcode sensitive values
+- **Error Handling**: Always handle errors gracefully - return appropriate HTTP status codes and error messages in responses
+- **CORS Configuration**: Configure CORS headers when invoking functions from browser clients - use `CorsHeaders` helper or set headers manually
+- **Database Connections**: Use connection pooling or serverless-friendly database drivers (e.g., `@supabase/supabase-js`) instead of direct Postgres connections
+- **Function Invocation**: Call Edge Functions from client using `supabase.functions.invoke('function-name', { body: {...} })` or via HTTP fetch
+- **Request Validation**: Validate and sanitize all function inputs - use Zod or similar for schema validation
+- **Logging**: Use `console.log()` for logging - logs appear in Supabase Dashboard under Edge Functions logs
+- **Deployment**: Deploy functions using `supabase functions deploy function-name` - test locally first with `supabase functions serve`
+- **Cold Starts**: Design functions for short-lived, idempotent operations - cold starts are possible but typically fast
+- **Supabase Client**: Create Supabase admin client in Edge Functions using service role key for privileged operations
+- **Response Format**: Return consistent response formats (JSON for most cases) - use appropriate Content-Type headers
+- **Timeouts**: Be aware of function execution timeouts - move long-running operations to background workers if needed

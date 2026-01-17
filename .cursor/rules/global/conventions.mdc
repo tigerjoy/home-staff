@@ -1,0 +1,24 @@
+---
+description: "Project structure and general development conventions"
+alwaysApply: true
+---
+
+## General development conventions
+
+- **Vite + React Project Structure**: Organize files in `src/` directory - use `src/components/`, `src/lib/`, `src/hooks/`, `src/types/`, `src/utils/` for organization
+- **ShadCN Components Location**: Place all ShadCN components in `src/components/ui/` - these are part of your codebase, not node_modules
+- **Supabase Client Setup**: Create Supabase client in `src/lib/supabase.ts` or `src/lib/supabase/client.ts` - export a single client instance
+- **Environment Variables**: Use `VITE_` prefix for environment variables exposed to client code (e.g., `VITE_SUPABASE_URL`) - store in `.env` files, never commit `.env` to version control
+- **Import Path Aliases**: Configure path aliases in `vite.config.ts` and `tsconfig.json` (e.g., `@` for `src/`) - use aliases for cleaner imports
+- **Component File Structure**: Use one component per file - name files matching component name (e.g., `Button.tsx` exports `Button`)
+- **Type Definitions**: Place shared TypeScript types in `src/types/` directory - use `.ts` files for types, keep types close to usage when component-specific
+- **Custom Hooks**: Place custom React hooks in `src/hooks/` directory - name hooks with `use` prefix (e.g., `useAuth.ts`)
+- **Utility Functions**: Place utility functions in `src/utils/` directory - keep utilities pure and testable
+- **Consistent Project Structure**: Organize files and directories in a predictable, logical structure that team members can navigate easily
+- **Clear Documentation**: Maintain up-to-date README files with setup instructions, architecture overview, and contribution guidelines
+- **Version Control Best Practices**: Use clear commit messages, feature branches, and meaningful pull/merge requests with descriptions
+- **Dependency Management**: Keep dependencies up-to-date and minimal - document why major dependencies are used (React, Vite, ShadCN, Supabase)
+- **Code Review Process**: Establish a consistent code review process with clear expectations for reviewers and authors
+- **Testing Requirements**: Define what level of testing is required before merging - use Vitest for unit tests, React Testing Library for component tests
+- **Feature Flags**: Use feature flags for incomplete features rather than long-lived feature branches
+- **Changelog Maintenance**: Keep a changelog or release notes to track significant changes and improvements

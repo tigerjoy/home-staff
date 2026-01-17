@@ -1,0 +1,28 @@
+---
+description: "API and Supabase client patterns for backend code"
+alwaysApply: false
+globs:
+  - "**/*supabase*.ts"
+  - "**/*supabase*.tsx"
+  - "**/supabase/**"
+  - "**/migrations/**"
+  - "**/api/**"
+  - "**/lib/**/*.ts"
+---
+
+## API endpoint standards and conventions
+
+- **Supabase Client-Side API**: Use the Supabase JavaScript client (`@supabase/supabase-js`) for all API operations from the frontend
+- **Client Initialization**: Create a single Supabase client instance and export it from `lib/supabase.ts` or `lib/supabase/client.ts`
+- **REST API via PostgREST**: Supabase automatically generates REST APIs from your PostgreSQL schema via PostgREST - no manual endpoint creation needed
+- **Query Builder Pattern**: Use Supabase's query builder methods (`.from()`, `.select()`, `.insert()`, `.update()`, `.delete()`) instead of raw SQL
+- **Error Handling**: Always handle Supabase API errors - check the `error` property in responses and handle gracefully
+- **Type Safety**: Use generated TypeScript types from Supabase CLI (`supabase gen types typescript`) for type-safe database queries
+- **Edge Functions Endpoints**: Create custom API endpoints using Supabase Edge Functions when you need server-side logic or third-party integrations
+- **Edge Function Patterns**: Structure Edge Functions with clear request/response handling, error handling, and CORS configuration
+- **Authentication Headers**: Supabase client automatically includes auth headers - use `supabase.auth.getSession()` or `supabase.auth.getUser()` to check auth state
+- **RLS Integration**: Row Level Security policies are enforced automatically - design queries assuming RLS is active
+- **Real-time Subscriptions**: Use Supabase Realtime for real-time data updates - subscribe to database changes, broadcasts, or presence
+- **Request/Response Patterns**: Follow Supabase's standard response pattern: `{ data, error, status, statusText }`
+- **Consistent Error Handling**: Implement consistent error handling patterns across all Supabase API calls
+- **Rate Limiting Awareness**: Be aware of Supabase rate limits and implement appropriate retry logic or user feedback
