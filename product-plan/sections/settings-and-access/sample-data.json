@@ -1,0 +1,96 @@
+{
+  "_meta": {
+    "models": {
+      "userProfile": "Personal information and settings for the currently logged-in user.",
+      "households": "The different home or organizational units the user can manage or access.",
+      "members": "Individuals who have been granted access to the currently selected household.",
+      "invitations": "Pending access requests sent to email addresses that haven't been accepted yet.",
+      "permissions": "A mapping of roles to specific capabilities within the application."
+    },
+    "relationships": [
+      "The User can belong to multiple Households",
+      "Each Household has a list of Members and pending Invitations",
+      "Members are assigned a Role (Admin or Member) which maps to specific Permissions"
+    ]
+  },
+  "userProfile": {
+    "id": "user-001",
+    "name": "Alex Morgan",
+    "email": "alex.morgan@example.com",
+    "avatarUrl": "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&q=80&w=200&h=200",
+    "timezone": "UTC+5:30"
+  },
+  "households": [
+    {
+      "id": "hh-001",
+      "name": "Morgan Residence",
+      "role": "Admin",
+      "status": "active",
+      "isPrimary": true
+    },
+    {
+      "id": "hh-002",
+      "name": "Springfield Vacation Home",
+      "role": "Member",
+      "status": "active",
+      "isPrimary": false
+    },
+    {
+      "id": "hh-003",
+      "name": "Old Apartment",
+      "role": "Admin",
+      "status": "archived",
+      "isPrimary": false
+    }
+  ],
+  "members": [
+    {
+      "id": "mem-1",
+      "name": "Alex Morgan",
+      "email": "alex.morgan@example.com",
+      "role": "Admin",
+      "joinedDate": "2023-01-01",
+      "avatarUrl": "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&q=80&w=200&h=200"
+    },
+    {
+      "id": "mem-2",
+      "name": "Jordan Morgan",
+      "email": "jordan.m@example.com",
+      "role": "Admin",
+      "joinedDate": "2023-01-15",
+      "avatarUrl": "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?auto=format&fit=crop&q=80&w=200&h=200"
+    },
+    {
+      "id": "mem-3",
+      "name": "Taylor Chen",
+      "email": "t.chen@propertymanagement.com",
+      "role": "Member",
+      "joinedDate": "2023-06-10",
+      "avatarUrl": null
+    }
+  ],
+  "invitations": [
+    {
+      "id": "inv-1",
+      "email": "accountant@finance.com",
+      "role": "Member",
+      "sentDate": "2024-01-15",
+      "status": "pending"
+    }
+  ],
+  "permissions": {
+    "Admin": [
+      "Manage Staff Directory",
+      "Track Attendance",
+      "Manage Payroll & Finance",
+      "Invite & Remove Members",
+      "Edit Household Settings",
+      "Archive Household"
+    ],
+    "Member": [
+      "View Staff Directory",
+      "Track Attendance",
+      "View Reports"
+    ]
+  }
+}

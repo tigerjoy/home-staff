@@ -1,0 +1,18 @@
+## Database migration best practices
+
+- **Supabase CLI Migrations**: Use Supabase CLI for migrations (`supabase migration new [name]`) to version control schema changes
+- **Migration File Naming**: Use descriptive migration names following the pattern: `[timestamp]_[descriptive_name].sql` (CLI generates timestamps automatically)
+- **Sequential Migrations**: Create migrations sequentially - each migration should be independent and reversible when possible
+- **Migration Structure**: Keep migrations focused on a single schema change or related changes - avoid massive migrations
+- **RLS Policy Migrations**: Include RLS policy creation and updates in migrations using `CREATE POLICY` and `ALTER POLICY` statements
+- **Schema Versioning**: Track schema changes through migrations - use Supabase's migration tracking system
+- **Local Development**: Test migrations locally using `supabase start` and `supabase db reset` before pushing to production
+- **Migration Rollback**: Design migrations to be reversible where possible - use `DROP` statements or create rollback migrations if needed
+- **Type Generation After Migrations**: Regenerate TypeScript types after migrations using `supabase gen types typescript` to keep types in sync
+- **Database Functions**: Include PostgreSQL function creation/updates in migrations for reusable database logic
+- **Triggers**: Create database triggers in migrations for automatic actions (e.g., updating `updated_at` timestamps)
+- **Index Creation**: Include index creation in migrations for performance optimization - use `CREATE INDEX CONCURRENTLY` in production when possible
+- **Foreign Key Constraints**: Define foreign key constraints in migrations to maintain referential integrity
+- **Data Migrations**: Use migrations for data transformations when needed - be careful with data migrations and test thoroughly
+- **Migration Testing**: Test migrations on a copy of production data before applying to production
+- **Migration Deployment**: Use Supabase Dashboard or CLI to apply migrations to production - review migrations before applying

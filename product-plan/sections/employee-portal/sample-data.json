@@ -1,0 +1,72 @@
+{
+  "_meta": {
+    "models": {
+      "staffProfile": "A read-only view of the employee's personal and employment details.",
+      "entitlements": "Current holiday balance and attendance summary for the staff member.",
+      "financials": "Summary of recent payments and any outstanding advances.",
+      "activityFeed": "A combined timeline of attendance events and financial transactions for transparency."
+    },
+    "relationships": [
+      "The Portal displays data for a single authenticated Employee",
+      "Activity Feed items are sourced from both Attendance and Payroll records",
+      "Holiday Balance is synced with the main Staff Directory record"
+    ]
+  },
+  "staff": {
+    "id": "emp-001",
+    "name": "Lakshmi Devi",
+    "role": "Housekeeper",
+    "phoneNumber": "+91 98765 43210",
+    "joinDate": "2019-03-15",
+    "householdName": "Morgan Residence"
+  },
+  "summary": {
+    "holidayBalance": 6,
+    "totalAbsencesYear": 2,
+    "lastPaymentAmount": 18500,
+    "lastPaymentDate": "2023-12-31",
+    "outstandingAdvance": 0
+  },
+  "activity": [
+    {
+      "id": "act-1",
+      "type": "absence",
+      "date": "2024-01-11",
+      "title": "Absence Recorded",
+      "description": "Family Emergency",
+      "impact": "-1 day from balance"
+    },
+    {
+      "id": "act-2",
+      "type": "absence",
+      "date": "2024-01-10",
+      "title": "Absence Recorded",
+      "description": "Family Emergency",
+      "impact": "-1 day from balance"
+    },
+    {
+      "id": "act-3",
+      "type": "payment",
+      "date": "2023-12-31",
+      "title": "Salary Paid",
+      "description": "December 2023 Payroll",
+      "amount": 18500
+    },
+    {
+      "id": "act-4",
+      "type": "entitlement",
+      "date": "2024-01-01",
+      "title": "Monthly Entitlement Added",
+      "description": "Monthly holiday credit",
+      "impact": "+4 days to balance"
+    },
+    {
+      "id": "act-5",
+      "type": "payment",
+      "date": "2023-11-30",
+      "title": "Salary Paid",
+      "description": "November 2023 Payroll",
+      "amount": 18000
+    }
+  ]
+}

@@ -1,0 +1,85 @@
+{
+  "users": [
+    {
+      "id": "user-001",
+      "name": "Alex Morgan",
+      "email": "alex.morgan@example.com",
+      "avatarUrl": "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&q=80&w=200&h=200",
+      "timezone": "UTC+5:30"
+    }
+  ],
+  "households": [
+    {
+      "id": "hh-001",
+      "name": "Morgan Residence",
+      "status": "active",
+      "isPrimary": true
+    }
+  ],
+  "employees": [
+    {
+      "id": "emp-001",
+      "householdId": "hh-001",
+      "name": "Lakshmi Devi",
+      "photo": null,
+      "status": "active",
+      "holidayBalance": 8,
+      "phoneNumbers": [
+        { "number": "+91 98765 43210", "label": "Mobile" }
+      ],
+      "addresses": [
+        { "address": "42 Nehru Nagar, Sector 5, New Delhi 110001", "label": "Current" }
+      ],
+      "employmentHistory": [
+        {
+          "role": "Housekeeper",
+          "department": "Household",
+          "startDate": "2019-03-15",
+          "endDate": null
+        }
+      ],
+      "salaryHistory": [
+        {
+          "amount": 18000,
+          "paymentMethod": "Bank Transfer",
+          "effectiveDate": "2024-01-01"
+        }
+      ],
+      "documents": [],
+      "customProperties": [],
+      "notes": []
+    },
+    {
+      "id": "emp-002",
+      "householdId": "hh-001",
+      "name": "Raju Sharma",
+      "photo": null,
+      "status": "active",
+      "holidayBalance": 12,
+      "phoneNumbers": [
+        { "number": "+91 87654 32109", "label": "Mobile" }
+      ],
+      "addresses": [
+        { "address": "15 Lajpat Nagar, New Delhi 110024", "label": "Current" }
+      ],
+      "employmentHistory": [
+        {
+          "role": "Driver",
+          "department": "Transport",
+          "startDate": "2020-06-01",
+          "endDate": null
+        }
+      ],
+      "salaryHistory": [
+        {
+          "amount": 22000,
+          "paymentMethod": "Bank Transfer",
+          "effectiveDate": "2023-07-01"
+        }
+      ],
+      "documents": [],
+      "customProperties": [],
+      "notes": []
+    }
+  ]
+}
