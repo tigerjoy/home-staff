@@ -2,9 +2,9 @@
 
 ## Define Section Variables
 
-- **SECTION_NAME** = [Human-readable name, e.g., "Staff Directory" or "Attendance & Holidays"]
-- **SECTION_ID** = [Folder name in sections/, e.g., "staff-directory" or "attendance-and-holidays"]
-- **NN** = [Milestone number, e.g., "02" or "03" — sections start at 02 since 01 is Foundation]
+- **SECTION_NAME** = Staff Directory
+- **SECTION_ID** = staff-directory
+- **NN** = 02
 
 ---
 
