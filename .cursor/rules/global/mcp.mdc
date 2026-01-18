@@ -1,0 +1,17 @@
+---
+description: MCP Servers at your disposal
+alwaysApply: true
+---
+
+Use during planning:
+If you need to look up documentation, please use the Context7 MCP.
+
+If you need to implement UI components, use the ShadCN MCP. Apply 
+components whereever applicable.
+
+Use whole blocks where possible (eg. Login Page etc)
+
+When implementing first check how to use the compoenent
+Then implement it so that it is implemented properly
+
+When you need to do backend storage etc please make use of the Supabase MCP.
