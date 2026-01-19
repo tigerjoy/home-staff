@@ -1,5 +1,8 @@
-import { createBrowserRouter, Navigate } from 'react-router-dom'
+import { createBrowserRouter } from 'react-router-dom'
 import { AppLayout } from './components/AppLayout'
+import { LandingPage } from './pages/LandingPage'
+import { Login } from './pages/Login'
+import { Register } from './pages/Register'
 import { StaffDirectory } from './pages/StaffDirectory'
 import { EmployeeDetail } from './pages/EmployeeDetail'
 import { AddEmployee } from './pages/AddEmployee'
@@ -13,7 +16,15 @@ import { EmployeePortal } from './pages/EmployeePortal'
 export const router = createBrowserRouter([
   {
     path: '/',
-    element: <Navigate to="/staff" replace />,
+    element: <LandingPage />,
+  },
+  {
+    path: '/login',
+    element: <Login />,
+  },
+  {
+    path: '/register',
+    element: <Register />,
   },
   {
     path: '/portal',

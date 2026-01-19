@@ -9,7 +9,7 @@ import {
   PalmtreeIcon,
 } from 'lucide-react'
 
-import type { Employee, HolidayRule } from '../types'
+import type { Employee, HolidayRule } from '@/../product/sections/attendance-and-holidays/types'
 
 // =============================================================================
 // Types

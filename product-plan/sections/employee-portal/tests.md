@@ -1,174 +1,203 @@
 # Test Instructions: Employee Portal
 
-These test-writing instructions are **framework-agnostic**. Adapt to your testing setup.
+These test-writing instructions are **framework-agnostic**. Adapt them to your testing setup.
 
 ## Overview
 
-Test the public-facing employee portal with phone login, read-only dashboard, and activity feed.
+Test the public-facing employee portal including phone number login and read-only dashboard.
 
 ---
 
 ## User Flow Tests
 
-### Flow 1: Employee Logs In
+### Flow 1: Login with Valid Phone Number
 
-**Scenario:** Employee accesses their records with phone number
+**Scenario:** Employee enters registered phone number
 
 **Setup:**
-- Employee exists with phone "+91 98765 43210"
+- Mock `onLogin` callback to succeed
+- Provide staff profile and summary data
 
 **Steps:**
-1. Employee navigates to `/portal`
-2. Employee sees login screen with phone input
-3. Employee enters "+91 98765 43210"
-4. Employee clicks "View My Records"
+1. Navigate to `/portal`
+2. Enter phone number "+91 98765 43210"
+3. Click "View My Records"
 
 **Expected Results:**
-- [ ] Login screen shows phone input field
-- [ ] Input accepts formatted phone numbers
 - [ ] `onLogin` called with phone number
-- [ ] Dashboard displays with employee data
-- [ ] Shows employee name and household
+- [ ] Loading state shows during authentication
+- [ ] Dashboard appears with staff profile
+- [ ] Summary cards show: Holiday Balance, Last Payment, Outstanding Advance
 
-### Flow 2: View Dashboard
+---
 
-**Scenario:** Employee views their summary metrics
-
-**Setup:**
-- Logged in employee with summary data
-
-**Expected Results:**
-- [ ] Holiday Balance card shows "X days"
-- [ ] Last Payment card shows amount and date
-- [ ] Outstanding Advance shown if any
-- [ ] Activity feed shows recent events
-
-### Flow 3: Failed Login
+### Flow 2: Login with Invalid Phone Number
 
 **Scenario:** Employee enters unregistered phone number
 
-**Steps:**
-1. Employee enters phone not in system
-2. Employee clicks "View My Records"
-
-**Expected Results:**
-- [ ] Error message appears: "We couldn't find an employee with this phone number"
-- [ ] Login form remains visible
-- [ ] Employee can try again
-- [ ] No sensitive info leaked
-
-### Flow 4: Logout
-
-**Scenario:** Employee logs out
+**Setup:**
+- Set `loginError` prop to "No employee found with this phone number"
 
 **Steps:**
-1. Employee is logged in
-2. Employee clicks "Log Out"
+1. Enter unregistered phone number
+2. Click "View My Records"
 
 **Expected Results:**
-- [ ] Session cleared
-- [ ] `onLogout` called
-- [ ] Returned to login screen
+- [ ] Error message displays: "No employee found with this phone number"
+- [ ] User remains on login screen
+- [ ] Can try again with different number
+
+---
+
+### Flow 3: View Dashboard
+
+**Scenario:** Logged-in employee views their dashboard
+
+**Setup:**
+- Provide complete staff profile, summary, and activity
+
+**Steps:**
+1. After successful login, view dashboard
+
+**Expected Results:**
+- [ ] Profile shows: Name, Role, Join Date, Household Name
+- [ ] Summary cards display:
+  - Holiday Balance (e.g., "6 days remaining")
+  - Last Payment (e.g., "₹18,500 on Dec 31")
+  - Outstanding Advance (e.g., "₹0")
+- [ ] Activity feed shows recent events
+- [ ] No edit buttons or forms visible
+
+---
+
+### Flow 4: View Activity Feed
+
+**Scenario:** Employee views their activity history
+
+**Expected Results:**
+- [ ] Activity items show in chronological order (newest first)
+- [ ] Each item shows: Date, Title, Description
+- [ ] Absence items show impact (e.g., "-1 day from balance")
+- [ ] Payment items show amount
+- [ ] Icons/colors differentiate activity types
+
+---
+
+### Flow 5: Logout
+
+**Scenario:** Employee logs out of portal
+
+**Setup:**
+- Mock `onLogout` callback
+
+**Steps:**
+1. Click "Logout" or "Exit" button
+
+**Expected Results:**
+- [ ] `onLogout` is called
+- [ ] Returns to phone number login screen
+- [ ] Previous session data is cleared
 
 ---
 
 ## Empty State Tests
 
+### Phone Not Found
+
+**Scenario:** Phone number lookup fails
+
+**Expected Results:**
+- [ ] Error message: "No employee found with this phone number"
+- [ ] Phone input remains editable
+- [ ] User can retry
+
 ### No Activity
 
-**Setup:**
-- `activity = []`
-
-**Expected Results:**
-- [ ] Shows "No recent activity to show"
-- [ ] Summary cards still display
-
-### No Payments Yet
+**Scenario:** Employee has no recent activity
 
 **Setup:**
-- `summary.lastPaymentAmount = 0`
+- Provide empty activity array `[]`
 
 **Expected Results:**
-- [ ] Payment section shows appropriate message
-- [ ] No broken UI elements
+- [ ] Message: "No recent activity to display"
+- [ ] Summary cards still show balances
 
 ---
 
-## Read-Only Tests
+## Component Tests
+
+### Login Screen
+
+**Renders correctly:**
+- [ ] HomeStaff logo/branding visible
+- [ ] "Employee Portal" heading
+- [ ] Phone number input field
+- [ ] "View My Records" button
+
+**Validation:**
+- [ ] Phone number format is validated
+- [ ] Cannot submit empty phone number
+
+---
+
+### Summary Cards
+
+**Expected Results:**
+- [ ] Holiday Balance card shows days remaining
+- [ ] Last Payment card shows amount and date
+- [ ] If outstanding advance exists, shows amount
+
+---
+
+### Activity Item Types
+
+| Type | Visual |
+|------|--------|
+| `absence` | Red indicator, shows impact |
+| `payment` | Green indicator, shows amount |
+| `entitlement` | Blue indicator, shows credit |
+| `advance` | Orange indicator, shows amount |
+
+---
+
+## Read-Only Verification
 
 **Expected Results:**
 - [ ] No "Edit" buttons anywhere
-- [ ] No form inputs except login
-- [ ] No delete actions
-- [ ] Data is display-only
+- [ ] No form inputs (except login)
+- [ ] No "Delete" or "Remove" actions
+- [ ] All data is display-only
 
 ---
 
 ## Mobile Responsiveness
 
 **Expected Results:**
-- [ ] Readable on small screens (320px width)
-- [ ] Large touch targets for buttons
-- [ ] Clear, high-contrast text
-- [ ] No horizontal scrolling
+- [ ] Login screen works on small phones
+- [ ] Dashboard is scrollable
+- [ ] Text is readable without zooming
+- [ ] Touch targets are large enough
+- [ ] Summary cards stack vertically on mobile
 
 ---
 
 ## Security Tests
 
-### Phone Number Validation
+### Rate Limiting (Implementation Note)
 
-**Expected Results:**
-- [ ] Invalid phone formats rejected
-- [ ] Rate limiting on login attempts (backend)
-- [ ] No employee enumeration (same error for invalid vs not found)
+- [ ] Backend should rate-limit phone number lookups
+- [ ] Prevent brute-force phone number guessing
+
+### Data Scoping
+
+- [ ] Only shows data for the authenticated employee
+- [ ] Cannot access other employees' data
 
 ---
 
-## Sample Test Data
+## Accessibility Checks
 
-```typescript
-const mockStaffProfile = {
-  id: "emp-001",
-  name: "Lakshmi Devi",
-  role: "Housekeeper",
-  phoneNumber: "+91 98765 43210",
-  joinDate: "2019-03-15",
-  householdName: "Morgan Residence"
-};
-
-const mockSummary = {
-  holidayBalance: 6,
-  totalAbsencesYear: 2,
-  lastPaymentAmount: 18500,
-  lastPaymentDate: "2023-12-31",
-  outstandingAdvance: 0
-};
-
-const mockActivity = [
-  {
-    id: "act-1",
-    type: "absence",
-    date: "2024-01-11",
-    title: "Absence Recorded",
-    description: "Family Emergency",
-    impact: "-1 day from balance"
-  },
-  {
-    id: "act-2",
-    type: "payment",
-    date: "2023-12-31",
-    title: "Salary Paid",
-    description: "December 2023 Payroll",
-    amount: 18500
-  },
-  {
-    id: "act-3",
-    type: "entitlement",
-    date: "2024-01-01",
-    title: "Monthly Entitlement Added",
-    description: "Monthly holiday credit",
-    impact: "+4 days to balance"
-  }
-];
-```
+- [ ] Phone input has proper label
+- [ ] Error messages are announced
+- [ ] Activity items are readable by screen readers
+- [ ] Color is not the only indicator (use icons too)

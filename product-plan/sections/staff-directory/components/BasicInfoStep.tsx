@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Camera, Plus, Trash2, Phone, MapPin } from 'lucide-react'
-import type { Employee, PhoneNumber, Address } from '../types'
+import type { Employee, PhoneNumber, Address } from '@/../product/sections/staff-directory/types'
 
 interface BasicInfoStepProps {
   data: Omit<Employee, 'id'>

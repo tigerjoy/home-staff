@@ -4,11 +4,11 @@
 
 HomeStaff uses a sidebar navigation pattern optimized for household workforce management. The persistent left sidebar provides quick access to all main sections, while the user menu at the bottom keeps account actions easily accessible.
 
-## Components
+## Components Provided
 
-- `AppShell.tsx` — Main layout wrapper with responsive behavior
-- `MainNav.tsx` — Navigation list with icons and active states
-- `UserMenu.tsx` — User avatar, name, household, and dropdown menu
+- `AppShell.tsx` — Main layout wrapper with mobile and desktop sidebar
+- `MainNav.tsx` — Navigation component with active state styling
+- `UserMenu.tsx` — User menu with avatar, household name, and dropdown
 
 ## Navigation Structure
 
@@ -19,14 +19,16 @@ HomeStaff uses a sidebar navigation pattern optimized for household workforce ma
 | Payroll & Finance | `/payroll` | Wallet |
 | Settings & Access | `/settings` | Settings |
 
-### Not in Main Nav
+## Separate Flows (Not in Main Nav)
 
-- **Onboarding & Setup** — Full-screen wizard for new users
-- **Employee Portal** — Public page at `/portal`
+- **Landing Page** — Public marketing page at `/`
+- **User Authentication** — Login/register flows at `/login` and `/register`
+- **Onboarding & Setup** — Displayed for new users after first login
+- **Employee Portal** — Public-facing page at `/portal`
 
 ## User Menu
 
-Located at the bottom of the sidebar:
+Located at the bottom of the sidebar, displays:
 - User avatar (with initials fallback)
 - User name
 - Current household name
@@ -36,24 +38,22 @@ Located at the bottom of the sidebar:
 
 - **Sidebar Width:** 240px (desktop), full overlay (mobile)
 - **Content Area:** Flexible, fills remaining space
-- **Header:** Only visible on mobile with hamburger menu
+- **Header:** Minimal — only visible on mobile with hamburger menu and logo
 
 ## Responsive Behavior
 
-- **Desktop (≥1024px):** Full sidebar always visible
-- **Tablet (768px–1023px):** Sidebar collapses to icons
-- **Mobile (<768px):** Hamburger menu, slide-out overlay
+- **Desktop (≥1024px):** Full sidebar always visible, no header
+- **Tablet (768px–1023px):** Sidebar collapses to icons only, expands on hover
+- **Mobile (<768px):** Sidebar hidden, hamburger menu in sticky header, sidebar slides in as overlay
 
 ## Design Tokens Applied
 
-- **Primary (amber):** Active nav items, buttons
-- **Secondary (orange):** Hover states, accents
+- **Primary (amber):** Active nav items, primary buttons
+- **Secondary (orange):** Hover states, accent highlights
 - **Neutral (stone):** Sidebar background, borders, text
-- **Typography:** Nunito Sans for all nav labels
+- **Typography:** Nunito Sans for nav labels and UI text
 
-## Props
-
-### AppShellProps
+## Props Interface
 
 ```typescript
 interface AppShellProps {
@@ -66,11 +66,7 @@ interface AppShellProps {
   onSwitchHousehold?: () => void
   onAccountSettings?: () => void
 }
-```
 
-### NavigationItem
-
-```typescript
 interface NavigationItem {
   label: string
   href: string
@@ -82,7 +78,7 @@ interface NavigationItem {
 ## Usage Example
 
 ```tsx
-import { AppShell } from './components/AppShell'
+import { AppShell } from './components'
 import { Users, Calendar, Wallet, Settings } from 'lucide-react'
 
 const navigationItems = [

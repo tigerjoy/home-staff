@@ -1,163 +1,172 @@
 # Test Instructions: Onboarding & Setup
 
-These test-writing instructions are **framework-agnostic**. Adapt to your testing setup.
+These test-writing instructions are **framework-agnostic**. Adapt them to your testing setup.
 
 ## Overview
 
-Test the full-screen onboarding wizard, step navigation, progress saving, and completion flow.
+Test the multi-step onboarding wizard including required/optional steps, progress saving, and completion.
 
 ---
 
 ## User Flow Tests
 
-### Flow 1: Complete Onboarding
+### Flow 1: Complete Full Onboarding
 
-**Scenario:** New user completes the full onboarding wizard
-
-**Steps:**
-1. New user is redirected to `/onboarding`
-2. User sees Step 1: "Name Your Household"
-3. User enters household name "Morgan Residence"
-4. User clicks "Next"
-5. User sees Step 2: "Set Global Defaults"
-6. User selects "Every Sunday Off" preset
-7. User clicks "Next"
-8. User sees Step 3: "Add Your First Employee"
-9. User clicks "Skip" (optional step)
-10. User sees Step 4: "You're All Set!"
-11. User clicks "Go to Dashboard"
-
-**Expected Results:**
-- [ ] Progress indicator shows "Step X of 4"
-- [ ] "Next" button disabled until required field filled
-- [ ] "Skip" button visible on optional steps
-- [ ] `onNextStep` called with step data
-- [ ] `onComplete` called on finish
-- [ ] User redirected to `/staff`
-
-### Flow 2: Resume Interrupted Onboarding
-
-**Scenario:** User resumes after closing browser
+**Scenario:** New user completes all steps
 
 **Setup:**
-- User previously completed Step 1
-- `config.currentStepIndex = 1`
+- Mock all onboarding callbacks
+- Start with fresh onboarding state
 
 **Steps:**
-1. User returns to `/onboarding`
-2. Wizard loads with Step 2 active
+1. Navigate to `/onboarding`
+2. Enter household name "Morgan Residence"
+3. Click "Next"
+4. Select holiday preset "4 Days per Month"
+5. Select attendance preset "Present by Default"
+6. Click "Next"
+7. Enter first employee name "Lakshmi Devi"
+8. Enter role "Housekeeper"
+9. Click "Next"
+10. Click "Go to Dashboard"
 
 **Expected Results:**
-- [ ] Progress shows Step 2 active
-- [ ] Step 1 shows as completed
-- [ ] User can continue from where they left off
+- [ ] Step 1: `onNextStep` called with household name
+- [ ] Step 2: `onNextStep` called with preset selections
+- [ ] Step 3: `onNextStep` called with employee data
+- [ ] Step 4: `onComplete` called
+- [ ] (In real app) Redirected to Staff Directory
 
-### Flow 3: Skip All Optional Steps
+---
 
-**Scenario:** User only completes required steps
+### Flow 2: Skip Optional Steps
+
+**Scenario:** User skips optional steps
 
 **Steps:**
-1. User completes Step 1 (required)
-2. User clicks "Skip" on Step 2 (optional)
-3. User clicks "Skip" on Step 3 (optional)
-4. User completes Step 4 (required confirmation)
+1. Enter household name
+2. Click "Next"
+3. Click "Skip" on defaults step
+4. Click "Skip" on employee step
+5. Click "Go to Dashboard"
 
 **Expected Results:**
 - [ ] `onSkipStep` called for each skipped step
-- [ ] Wizard completes successfully
-- [ ] Household created with minimal data
+- [ ] Wizard advances correctly
+- [ ] `onComplete` called at end
+- [ ] Household created without defaults or employees
 
 ---
 
-## Empty State Tests
+### Flow 3: Go Back in Wizard
 
-### Already Completed Onboarding
+**Scenario:** User goes back to previous step
 
-**Setup:**
-- `config.isCompleted = true`
+**Steps:**
+1. Complete step 1
+2. Click "Next"
+3. On step 2, click "Back"
 
 **Expected Results:**
-- [ ] User redirected to main app
-- [ ] Wizard does not display
+- [ ] `onPreviousStep` called
+- [ ] Returns to step 1
+- [ ] Previously entered data is preserved
 
 ---
 
-## UI Tests
+### Flow 4: Progress Auto-Save
 
-### Full-Screen Layout
+**Scenario:** Progress is saved automatically
+
+**Setup:**
+- Mock `onSaveProgress` callback
+
+**Steps:**
+1. Enter household name
+2. Wait for auto-save (or click Next)
+
+**Expected Results:**
+- [ ] `onSaveProgress` called with step ID and data
+- [ ] Progress is persisted
+
+---
+
+### Flow 5: Resume Interrupted Onboarding
+
+**Scenario:** User returns after leaving mid-way
+
+**Setup:**
+- Provide config with currentStepIndex: 1 (step 2)
+- Provide completed step 1 data
+
+**Steps:**
+1. Navigate to `/onboarding`
+
+**Expected Results:**
+- [ ] Wizard opens at step 2 (not step 1)
+- [ ] Step 1 shows as completed in stepper
+- [ ] Previously entered data is available
+
+---
+
+## Component Tests
+
+### Progress Stepper
+
+**Expected Results:**
+- [ ] Shows current step number ("Step 2 of 4")
+- [ ] Completed steps have checkmark
+- [ ] Current step is highlighted
+- [ ] Future steps are dimmed
+
+---
+
+### Required vs Optional Steps
+
+**Step 1 (Required):**
+- [ ] Cannot skip, only "Next" button
+
+**Step 2 (Optional):**
+- [ ] Shows both "Skip" and "Next" buttons
+- [ ] Can proceed without filling
+
+**Step 4 (Required):**
+- [ ] Only "Go to Dashboard" button (no skip)
+
+---
+
+### Form Validation
+
+**Household Name:**
+- [ ] Cannot proceed with empty name
+- [ ] Error message appears
+
+---
+
+## Layout Tests
+
+### Full Screen
 
 **Expected Results:**
 - [ ] No sidebar navigation visible
-- [ ] No header (except mobile logo)
-- [ ] Content centered in viewport
-- [ ] Progress stepper visible
-
-### Step Navigation Buttons
-
-**Step 1 (First Step):**
-- [ ] "Cancel" button visible (no Back)
-- [ ] "Next" button visible
-
-**Step 2-3 (Middle Steps):**
-- [ ] "Back" button visible
-- [ ] "Next" or "Skip" buttons visible
-
-**Step 4 (Final Step):**
-- [ ] "Back" button visible
-- [ ] "Go to Dashboard" button visible
+- [ ] No app shell chrome
+- [ ] Centered content area
+- [ ] Clean, focused design
 
 ---
 
-## Sample Test Data
+## Mobile Responsiveness
 
-```typescript
-const mockConfig = {
-  currentStepIndex: 0,
-  totalSteps: 4,
-  isCompleted: false,
-  lastSavedAt: "2024-01-17T12:00:00Z"
-};
+**Expected Results:**
+- [ ] Forms are usable on mobile
+- [ ] Stepper adapts to small screens
+- [ ] Navigation buttons are touch-friendly
 
-const mockSteps = [
-  {
-    id: "step-household",
-    title: "Name Your Household",
-    description: "Establish the primary container for your staff.",
-    isRequired: true,
-    status: "in_progress"
-  },
-  {
-    id: "step-defaults",
-    title: "Set Global Defaults",
-    description: "Configure common holiday and attendance rules.",
-    isRequired: false,
-    status: "pending"
-  },
-  {
-    id: "step-employee",
-    title: "Add Your First Employee",
-    description: "Start building your staff directory.",
-    isRequired: false,
-    status: "pending"
-  },
-  {
-    id: "step-welcome",
-    title: "You're All Set!",
-    description: "Your household is ready.",
-    isRequired: true,
-    status: "pending"
-  }
-];
+---
 
-const mockPresets = {
-  holidayRules: [
-    { id: "p1", label: "4 Days per Month", description: "Standard flexible entitlement." },
-    { id: "p2", label: "Every Sunday Off", description: "Weekly recurring holiday." },
-    { id: "p3", label: "Custom", description: "Set your own rules later." }
-  ],
-  attendance: [
-    { id: "a1", label: "Present by Default", description: "Only mark absences (Recommended)." },
-    { id: "a2", label: "Manual Entry", description: "Mark attendance for every person daily." }
-  ]
-};
-```
+## Accessibility Checks
+
+- [ ] Progress stepper announces current step
+- [ ] Form fields have labels
+- [ ] Required fields are indicated
+- [ ] Keyboard navigation works

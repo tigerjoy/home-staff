@@ -11,7 +11,7 @@ import {
   ChevronDown,
   Sparkles
 } from 'lucide-react'
-import type { SettlementItem } from '../types'
+import type { SettlementItem } from '@/../product/sections/payroll-and-finance/types'
 
 // =============================================================================
 // Types

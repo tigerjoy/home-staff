@@ -1,10 +1,16 @@
 # Section Implementation Prompt
 
+Use this template when implementing sections one at a time. Fill in the variables at the top before using.
+
+---
+
 ## Define Section Variables
 
-- **SECTION_NAME** = Staff Directory
-- **SECTION_ID** = staff-directory
-- **NN** = 02
+Replace these before copying the prompt:
+
+- **SECTION_NAME** = `[Human-readable name, e.g., "Staff Directory" or "Payroll & Finance"]`
+- **SECTION_ID** = `[Folder name, e.g., "staff-directory" or "payroll-and-finance"]`
+- **NN** = `[Milestone number, e.g., "04" for Staff Directory — sections start at 02]`
 
 ---
 
@@ -58,3 +64,19 @@ Use test-driven development:
 Lastly, be sure to ask me if I have any other notes to add for this implementation.
 
 Once I answer your questions, proceed with implementation.
+
+---
+
+## Quick Reference: Section Milestones
+
+| Milestone | Section ID | Section Name |
+|-----------|------------|--------------|
+| 01 | (foundation) | Foundation |
+| 02 | landing-page | Landing Page |
+| 03 | user-authentication | User Authentication |
+| 04 | staff-directory | Staff Directory |
+| 05 | attendance-and-holidays | Attendance & Holidays |
+| 06 | payroll-and-finance | Payroll & Finance |
+| 07 | settings-and-access | Settings & Access |
+| 08 | onboarding-and-setup | Onboarding & Setup |
+| 09 | employee-portal | Employee Portal |

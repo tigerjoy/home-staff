@@ -20,7 +20,7 @@ import type {
   PayrollAndFinanceProps,
   PayrollRecord,
   Advance
-} from '../types'
+} from '@/../product/sections/payroll-and-finance/types'
 
 // =============================================================================
 // Helper Components

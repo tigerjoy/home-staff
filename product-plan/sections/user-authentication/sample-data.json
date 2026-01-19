@@ -1,0 +1,177 @@
+{
+  "_meta": {
+    "models": {
+      "authConfig": "Configuration for the authentication page including branding, tab labels, and form settings.",
+      "socialProviders": "Available social login options (Google, Facebook) with their display labels and icons.",
+      "loginForm": "The login form fields with their labels, placeholders, and validation messages.",
+      "registerForm": "The registration form fields including name, email, password with strength requirements.",
+      "verificationForm": "The code verification form used for email verification and password reset.",
+      "forgotPasswordForm": "The forgot password flow including email entry and new password setting.",
+      "errorMessages": "Common validation and authentication error messages for UI feedback.",
+      "sampleUser": "A sample user for previewing authenticated states in the design."
+    },
+    "relationships": [
+      "AuthConfig defines the overall page structure and branding",
+      "SocialProviders are displayed on both Login and Register forms",
+      "LoginForm and RegisterForm are shown in tabs on the same page",
+      "VerificationForm is shown after registration or during password reset",
+      "ForgotPasswordForm is triggered from the Login form's 'Forgot Password' link"
+    ]
+  },
+  "authConfig": {
+    "logo": "HomeStaff",
+    "tagline": "Manage your household staff with ease",
+    "tabs": {
+      "login": "Login",
+      "register": "Register"
+    },
+    "dividerText": "or continue with",
+    "termsText": "By continuing, you agree to our",
+    "termsLink": { "label": "Terms of Service", "href": "/terms" },
+    "privacyLink": { "label": "Privacy Policy", "href": "/privacy" }
+  },
+  "socialProviders": [
+    {
+      "id": "google",
+      "name": "Google",
+      "icon": "Google",
+      "buttonText": "Continue with Google"
+    },
+    {
+      "id": "facebook",
+      "name": "Facebook",
+      "icon": "Facebook",
+      "buttonText": "Continue with Facebook"
+    }
+  ],
+  "loginForm": {
+    "title": "Welcome back",
+    "subtitle": "Sign in to your HomeStaff account",
+    "fields": {
+      "email": {
+        "label": "Email address",
+        "placeholder": "you@example.com",
+        "type": "email"
+      },
+      "password": {
+        "label": "Password",
+        "placeholder": "Enter your password",
+        "type": "password"
+      }
+    },
+    "forgotPasswordText": "Forgot password?",
+    "submitText": "Sign in",
+    "loadingText": "Signing in..."
+  },
+  "registerForm": {
+    "title": "Create your account",
+    "subtitle": "Start managing your household staff today",
+    "fields": {
+      "name": {
+        "label": "Full name",
+        "placeholder": "Your full name",
+        "type": "text"
+      },
+      "email": {
+        "label": "Email address",
+        "placeholder": "you@example.com",
+        "type": "email"
+      },
+      "password": {
+        "label": "Password",
+        "placeholder": "Create a password",
+        "type": "password",
+        "hint": "Must be at least 8 characters"
+      },
+      "confirmPassword": {
+        "label": "Confirm password",
+        "placeholder": "Confirm your password",
+        "type": "password"
+      }
+    },
+    "passwordRequirements": [
+      "At least 8 characters",
+      "One uppercase letter",
+      "One number or symbol"
+    ],
+    "submitText": "Create account",
+    "loadingText": "Creating account..."
+  },
+  "verificationForm": {
+    "title": "Check your email",
+    "subtitle": "We sent a verification code to",
+    "codeLength": 6,
+    "codePlaceholder": "000000",
+    "resendText": "Didn't receive the code?",
+    "resendButtonText": "Resend code",
+    "resendCooldown": 60,
+    "submitText": "Verify",
+    "loadingText": "Verifying...",
+    "changeEmailText": "Use a different email"
+  },
+  "forgotPasswordForm": {
+    "requestStep": {
+      "title": "Reset your password",
+      "subtitle": "Enter your email and we'll send you a reset code",
+      "emailPlaceholder": "you@example.com",
+      "submitText": "Send reset code",
+      "loadingText": "Sending...",
+      "backText": "Back to login"
+    },
+    "codeStep": {
+      "title": "Enter reset code",
+      "subtitle": "We sent a code to",
+      "codeLength": 6,
+      "submitText": "Verify code",
+      "loadingText": "Verifying..."
+    },
+    "newPasswordStep": {
+      "title": "Set new password",
+      "subtitle": "Create a strong password for your account",
+      "passwordPlaceholder": "New password",
+      "confirmPlaceholder": "Confirm new password",
+      "submitText": "Reset password",
+      "loadingText": "Resetting..."
+    }
+  },
+  "errorMessages": {
+    "invalidEmail": "Please enter a valid email address",
+    "invalidPassword": "Password must be at least 8 characters",
+    "passwordMismatch": "Passwords don't match",
+    "emailInUse": "An account with this email already exists",
+    "invalidCredentials": "Invalid email or password",
+    "userNotFound": "No account found with this email",
+    "invalidCode": "Invalid verification code",
+    "codeExpired": "This code has expired. Please request a new one",
+    "networkError": "Something went wrong. Please try again",
+    "socialAuthFailed": "Unable to connect to {provider}. Please try again",
+    "tooManyAttempts": "Too many attempts. Please try again in a few minutes"
+  },
+  "sampleUser": {
+    "id": "user-001",
+    "name": "Priya Sharma",
+    "email": "priya.sharma@example.com",
+    "avatarUrl": null,
+    "isEmailVerified": true,
+    "authProvider": "email"
+  },
+  "sampleInputs": {
+    "login": {
+      "email": "priya.sharma@example.com",
+      "password": ""
+    },
+    "register": {
+      "name": "Ananya Gupta",
+      "email": "ananya.gupta@example.com",
+      "password": "",
+      "confirmPassword": ""
+    },
+    "verification": {
+      "email": "ananya.gupta@example.com",
+      "code": ""
+    },
+    "forgotPassword": {
+      "email": "priya.sharma@example.com"
+    }
+  }
+}

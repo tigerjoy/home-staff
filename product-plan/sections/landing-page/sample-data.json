@@ -1,0 +1,158 @@
+{
+  "_meta": {
+    "models": {
+      "hero": "The main headline section at the top of the landing page with primary messaging and call-to-action.",
+      "problems": "Pain points that household employers face when managing domestic staff without a proper system.",
+      "features": "Key product capabilities that HomeStaff offers to solve employer challenges.",
+      "testimonials": "Quotes from satisfied users sharing their experience with HomeStaff.",
+      "pricing": "Current promotional offer information displayed on the landing page.",
+      "navigation": "Links and buttons used in the navbar and throughout the page.",
+      "footer": "Company information, social links, and legal pages shown at the bottom."
+    },
+    "relationships": [
+      "Problems and Features are paired — each feature addresses one or more problems",
+      "Navigation links anchor to page sections (Features, Testimonials, Pricing)",
+      "Footer contains grouped links for social media and legal pages"
+    ]
+  },
+  "hero": {
+    "headline": "Manage Your Household Staff with Ease",
+    "subtext": "Track attendance, automate payroll, and keep transparent records for your domestic employees — all in one simple platform.",
+    "ctaText": "Get Started Free",
+    "ctaLink": "/register"
+  },
+  "problems": [
+    {
+      "id": "prob-1",
+      "title": "Scattered Employee Records",
+      "description": "Contact details, documents, and notes scattered across notebooks, phones, and memory.",
+      "solution": "Centralized digital profiles with photos, contact info, roles, and documents in one place."
+    },
+    {
+      "id": "prob-2",
+      "title": "Tedious Attendance Tracking",
+      "description": "Manually tracking who showed up each day is time-consuming and error-prone.",
+      "solution": "Present-by-default automation — only mark absences. Set recurring holidays like calendar events."
+    },
+    {
+      "id": "prob-3",
+      "title": "Confusing Payroll & Advances",
+      "description": "Keeping track of salaries, advances, bonuses, and deductions becomes a spreadsheet nightmare.",
+      "solution": "Lightweight payroll system that tracks everything and maintains a transparent financial history."
+    },
+    {
+      "id": "prob-4",
+      "title": "Staff Have No Visibility",
+      "description": "Employees often ask about their payment history or remaining holidays with no easy way to check.",
+      "solution": "Public employee portal where staff can view their own records using just their phone number."
+    }
+  ],
+  "features": [
+    {
+      "id": "feat-1",
+      "icon": "Users",
+      "title": "Employee Profiles",
+      "description": "Store photos, contact details, roles, and important documents for each staff member."
+    },
+    {
+      "id": "feat-2",
+      "icon": "Calendar",
+      "title": "Automated Attendance",
+      "description": "Present-by-default tracking means you only record absences. View everything in a calendar."
+    },
+    {
+      "id": "feat-3",
+      "icon": "CalendarDays",
+      "title": "Flexible Holiday Rules",
+      "description": "Set fixed days per month or recurring patterns like 'Every Sunday' for each employee."
+    },
+    {
+      "id": "feat-4",
+      "icon": "Wallet",
+      "title": "Payroll Management",
+      "description": "Track salaries, advances, bonuses, and penalties with a complete financial history."
+    },
+    {
+      "id": "feat-5",
+      "icon": "Settings",
+      "title": "Configurable Settings",
+      "description": "Customize defaults for your household — currency, date formats, and notification preferences."
+    },
+    {
+      "id": "feat-6",
+      "icon": "UserPlus",
+      "title": "Multi-User Access",
+      "description": "Invite family members to collaborate on managing household staff with role-based permissions."
+    }
+  ],
+  "testimonials": [
+    {
+      "id": "test-1",
+      "quote": "Before HomeStaff, I was using a notebook to track our maid's attendance and advances. Now everything is organized and I can check it from my phone anytime.",
+      "authorName": "Priya Sharma",
+      "authorRole": "Homeowner, Mumbai",
+      "avatarUrl": null
+    },
+    {
+      "id": "test-2",
+      "quote": "The best part is my cook can check her own payment history on the portal. No more awkward conversations about 'how much advance did I take last month?'",
+      "authorName": "Rajesh Gupta",
+      "authorRole": "Apartment Owner, Delhi",
+      "avatarUrl": null
+    },
+    {
+      "id": "test-3",
+      "quote": "We have three staff members and my wife and I both manage them. HomeStaff lets us both stay updated without double-counting or confusion.",
+      "authorName": "Ananya & Vikram Reddy",
+      "authorRole": "Joint Family, Bangalore",
+      "avatarUrl": null
+    },
+    {
+      "id": "test-4",
+      "quote": "Setting up recurring Sundays off was so simple. The app automatically knows when to expect absences vs when someone didn't show up.",
+      "authorName": "Meera Krishnan",
+      "authorRole": "Working Professional, Chennai",
+      "avatarUrl": null
+    }
+  ],
+  "pricing": {
+    "badge": "Limited Time Offer",
+    "headline": "Free for Everyone",
+    "subtext": "We're launching HomeStaff and want your feedback. Use all features completely free while we're in early access.",
+    "ctaText": "Start Free Now",
+    "ctaLink": "/register",
+    "note": "No credit card required. No hidden fees."
+  },
+  "navigation": {
+    "logo": "HomeStaff",
+    "links": [
+      { "label": "Features", "href": "#features" },
+      { "label": "Testimonials", "href": "#testimonials" },
+      { "label": "Pricing", "href": "#pricing" }
+    ],
+    "loginText": "Login",
+    "loginLink": "/login",
+    "signupText": "Sign Up",
+    "signupLink": "/register"
+  },
+  "stickyCta": {
+    "text": "Ready to simplify your household management?",
+    "buttonText": "Get Started Free",
+    "buttonLink": "/register"
+  },
+  "footer": {
+    "companyName": "HomeStaff",
+    "tagline": "Simple household staff management for modern families.",
+    "copyright": "2024 HomeStaff. All rights reserved.",
+    "socialLinks": [
+      { "platform": "Twitter", "url": "https://twitter.com/homestaff", "icon": "Twitter" },
+      { "platform": "Facebook", "url": "https://facebook.com/homestaff", "icon": "Facebook" },
+      { "platform": "LinkedIn", "url": "https://linkedin.com/company/homestaff", "icon": "Linkedin" }
+    ],
+    "legalLinks": [
+      { "label": "Terms of Service", "href": "/terms" },
+      { "label": "Privacy Policy", "href": "/privacy" },
+      { "label": "Contact Us", "href": "/contact" }
+    ]
+  }
+}

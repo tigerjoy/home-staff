@@ -1,6 +1,6 @@
 import { Eye, Pencil, Archive, MoreHorizontal, Palmtree } from 'lucide-react'
 import { useState } from 'react'
-import type { Employee } from '../types'
+import type { Employee } from '@/../product/sections/staff-directory/types'
 
 interface EmployeeTableProps {
   employees: Employee[]

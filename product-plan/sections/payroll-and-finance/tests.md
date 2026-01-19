@@ -1,96 +1,164 @@
 # Test Instructions: Payroll & Finance
 
-These test-writing instructions are **framework-agnostic**. Adapt to your testing setup.
+These test-writing instructions are **framework-agnostic**. Adapt them to your testing setup.
 
 ## Overview
 
-Test payroll calculations, settlement decisions, advance tracking, and payment finalization.
+Test payroll calculations, settlement decisions, advances, and payment tracking.
 
 ---
 
 ## User Flow Tests
 
-### Flow 1: Review Monthly Payroll
+### Flow 1: View Payroll Dashboard
 
-**Scenario:** User views current month's payroll status
-
-**Steps:**
-1. User navigates to `/payroll`
-2. User sees dashboard with summary cards
-3. User sees list of employees with calculated amounts
-
-**Expected Results:**
-- [ ] Summary shows "Total Payroll: ₹X"
-- [ ] Summary shows "Outstanding Advances: ₹X"
-- [ ] Summary shows "Pending Settlements: X"
-- [ ] Each employee row shows net payable amount
-
-### Flow 2: Settle Excess Absences
-
-**Scenario:** Employee took more days off than entitled
+**Scenario:** User views current month payroll
 
 **Setup:**
-- Settlement item with type "excess_absence", days: 2
+- Provide summary and payroll records
 
 **Steps:**
-1. User clicks on settlement item
-2. User sees options: "Apply Penalty" or "Carry Forward"
-3. User selects "Apply Penalty"
-4. User confirms
+1. Navigate to `/payroll`
 
 **Expected Results:**
-- [ ] Shows penalty calculation: "2 days × ₹600/day = ₹1,200"
-- [ ] `onSettleAbsence` called with 'penalize'
-- [ ] Payroll record updated with penalty amount
+- [ ] Summary cards display: Total Payroll, Outstanding Advances, Pending Settlements
+- [ ] Payroll list shows each employee with: Name, Base Salary, Net Payable, Status
+- [ ] Employees with pending settlements are highlighted
 
-### Flow 3: Settle Unused Leave
+---
 
-**Scenario:** Employee has unused holiday balance
+### Flow 2: View Calculation Breakdown
+
+**Scenario:** User views detailed salary calculation
 
 **Setup:**
-- Settlement item with type "unused_leave", days: 5
+- Mock `onViewCalculation` callback
 
 **Steps:**
-1. User clicks on settlement item
-2. User sees options: "Encash", "Carry Forward", "Lapse"
-3. User selects "Encash"
-4. User confirms
+1. Click "View Calculation" on an employee
 
 **Expected Results:**
-- [ ] Shows encashment calculation: "5 days × ₹833/day = ₹4,165"
-- [ ] `onSettleUnusedLeave` called with 'encash'
-- [ ] Encashment added to payroll record
+- [ ] Modal opens with breakdown:
+  - Base Salary
+  - + Bonuses
+  - + Encashments
+  - - Penalties
+  - - Advance Repayment
+  - = Net Payable
+- [ ] Each line item is explained
 
-### Flow 4: Finalize Payment
+---
 
-**Scenario:** User marks payroll as paid
+### Flow 3: Settle Excess Absence (Penalize)
+
+**Scenario:** Employee exceeded holiday entitlement
+
+**Setup:**
+- Provide settlement item with type "excess_absence"
+- Mock `onSettleAbsence` callback
 
 **Steps:**
-1. User clicks "Mark as Paid" for employee
-2. Optional: User uploads receipt
-3. User confirms
+1. Find employee in settlement workspace
+2. Click "Apply Penalty" option
 
 **Expected Results:**
-- [ ] Status changes to "Paid"
-- [ ] Ledger entry created
-- [ ] Receipt attached if uploaded
-- [ ] `onFinalizePayment` called
+- [ ] `onSettleAbsence` is called with:
+  - employeeId
+  - decision: "penalize"
+- [ ] Penalty amount is calculated (dailyRate × excessDays)
+- [ ] Employee payroll updates to reflect penalty
 
-### Flow 5: Record Advance
+---
+
+### Flow 4: Settle Excess Absence (Carry Forward)
+
+**Scenario:** User chooses to carry forward excess instead of penalizing
+
+**Steps:**
+1. Click "Carry Forward" option
+
+**Expected Results:**
+- [ ] `onSettleAbsence` is called with decision: "carry_forward"
+- [ ] No penalty applied
+- [ ] Balance will show negative next month
+
+---
+
+### Flow 5: Settle Unused Leave (Encash)
+
+**Scenario:** Employee has unused leave to encash
+
+**Setup:**
+- Provide settlement item with type "unused_leave"
+- Mock `onSettleUnusedLeave` callback
+
+**Steps:**
+1. Click "Encash" option
+
+**Expected Results:**
+- [ ] `onSettleUnusedLeave` is called with decision: "encash"
+- [ ] Encashment amount added to salary (dailyRate × unusedDays)
+- [ ] Holiday balance resets
+
+---
+
+### Flow 6: Record Advance
 
 **Scenario:** User records a salary advance
 
+**Setup:**
+- Mock `onRecordAdvance` callback
+
 **Steps:**
-1. User clicks "Record Advance"
-2. User selects employee
-3. User enters amount "5000"
-4. User adds notes "Emergency home repair"
-5. User confirms
+1. Click "Record Advance" button
+2. Select employee
+3. Enter amount "5000"
+4. Add notes "Emergency"
+5. Click "Save"
 
 **Expected Results:**
-- [ ] Advance created with status "active"
-- [ ] Shows in outstanding advances
-- [ ] `onRecordAdvance` called with data
+- [ ] `onRecordAdvance` is called with employeeId, amount: 5000, notes
+- [ ] Advance appears in advances list
+- [ ] Outstanding Advances total updates
+
+---
+
+### Flow 7: Finalize Payment with Receipt
+
+**Scenario:** User marks payment as complete
+
+**Setup:**
+- Mock `onFinalizePayment` and `onUploadReceipt` callbacks
+
+**Steps:**
+1. Click "Mark as Paid" on payroll record
+2. Click "Upload Receipt"
+3. Select image file
+4. Click "Confirm Payment"
+
+**Expected Results:**
+- [ ] `onUploadReceipt` is called with ledgerEntryId and file
+- [ ] `onFinalizePayment` is called with payroll ID
+- [ ] Status changes to "Paid"
+- [ ] Receipt thumbnail appears on transaction
+
+---
+
+### Flow 8: View Receipt Gallery
+
+**Scenario:** User views all receipts for a transaction
+
+**Setup:**
+- Provide ledger entry with multiple receipts
+
+**Steps:**
+1. Click receipt thumbnail or "View Receipts"
+
+**Expected Results:**
+- [ ] Gallery modal opens
+- [ ] All receipts are displayed (images and PDF icons)
+- [ ] Can navigate between receipts
+- [ ] Can delete individual receipts
 
 ---
 
@@ -98,80 +166,51 @@ Test payroll calculations, settlement decisions, advance tracking, and payment f
 
 ### No Payroll Records
 
-**Setup:**
-- `currentPayroll = []`
+**Scenario:** No payroll data for current month
 
 **Expected Results:**
-- [ ] Shows "No payroll records for this month"
-- [ ] Dashboard still shows summary (with zeros)
+- [ ] Message: "No payroll data for this month"
+- [ ] Instructions on when payroll generates
 
-### No Settlements Needed
+### No Advances
 
-**Setup:**
-- `settlementItems = []`
+**Scenario:** No outstanding advances
 
 **Expected Results:**
-- [ ] Settlement section shows "All settlements are complete"
-- [ ] No pending action indicators
+- [ ] Advances section shows "No outstanding advances"
 
 ### No Receipts
 
-**Setup:**
-- Ledger entry with `receipts = []`
+**Scenario:** Transaction has no receipts
 
 **Expected Results:**
-- [ ] "No receipts attached" shown
-- [ ] Upload button visible
+- [ ] "No receipts attached" message
+- [ ] Upload button is visible
 
 ---
 
-## Calculation Tests
+## Payment Ledger Tests
 
-### Net Payable Calculation
+### Search Ledger
 
-**Given:**
-- Base Salary: ₹18,000
-- Bonuses: ₹500
-- Encashments: ₹1,000
-- Penalties: ₹600
-- Advance Repayment: ₹2,000
+**Steps:**
+1. Type employee name in search
 
-**Expected:**
-- [ ] Net Payable = 18000 + 500 + 1000 - 600 - 2000 = ₹16,900
+**Expected Results:**
+- [ ] `onSearchLedger` is called with query
+- [ ] Ledger filters to matching transactions
 
-### Daily Rate Calculation
+### Ledger Columns
 
-**Given:**
-- Base Salary: ₹18,000
-
-**Expected:**
-- [ ] Daily Rate = 18000 / 30 = ₹600
+**Expected Results:**
+- [ ] Table shows: Date, Employee, Type, Amount, Status, Reference
+- [ ] Receipt indicator if receipts attached
 
 ---
 
-## Sample Test Data
+## Accessibility Checks
 
-```typescript
-const mockPayrollRecord = {
-  id: "pay-2024-01-emp-001",
-  employeeId: "emp-001",
-  employeeName: "Lakshmi Devi",
-  baseSalary: 18000,
-  bonuses: 500,
-  penalties: 0,
-  encashments: 0,
-  advanceRepayment: 0,
-  netPayable: 18500,
-  status: "pending_settlement",
-  holidayImbalance: -2
-};
-
-const mockSettlementItem = {
-  employeeId: "emp-001",
-  name: "Lakshmi Devi",
-  days: 2,
-  type: "excess_absence",
-  dailyRate: 600,
-  potentialPenalty: 1200
-};
-```
+- [ ] Modal dialogs are keyboard accessible
+- [ ] Receipt gallery has keyboard navigation
+- [ ] File upload has accessible label
+- [ ] Currency amounts are properly formatted

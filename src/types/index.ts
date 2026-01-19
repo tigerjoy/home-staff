@@ -7,25 +7,26 @@ export interface User {
   name: string
   email: string
   avatarUrl: string | null
-  timezone: string
+  authProvider: 'email' | 'google' | 'facebook'
+  isEmailVerified: boolean
+  createdAt: string
+  updatedAt: string
 }
 
 export interface Household {
   id: string
   name: string
   status: 'active' | 'archived'
-  isPrimary: boolean
+  createdAt: string
+  updatedAt: string
 }
 
 export interface Member {
   id: string
   userId: string
   householdId: string
-  name: string
-  email: string
   role: 'Admin' | 'Member'
-  joinedDate: string
-  avatarUrl: string | null
+  joinedAt: string
 }
 
 export interface Invitation {
@@ -33,13 +34,60 @@ export interface Invitation {
   householdId: string
   email: string
   role: 'Admin' | 'Member'
-  sentDate: string
-  status: 'pending' | 'expired' | 'accepted'
+  status: 'pending' | 'accepted' | 'expired'
+  sentAt: string
+  expiresAt: string
 }
 
 // =============================================================================
-// Employee & Staff Directory
+// Employee Management
 // =============================================================================
+
+/**
+ * Employee represents a domestic staff member's core identity.
+ * The profile information is shared across households.
+ */
+export interface Employee {
+  id: string
+  name: string
+  photo: string | null
+  phoneNumbers: PhoneNumber[]
+  addresses: Address[]
+  documents: Document[]
+  customProperties: CustomProperty[]
+  notes: Note[]
+  createdAt: string
+  updatedAt: string
+}
+
+export type EmploymentType = 'monthly' | 'adhoc'
+export type EmploymentStatus = 'active' | 'archived'
+
+/**
+ * Employment represents the working relationship between an Employee and a Household.
+ * Contains household-specific data like employment type, salary, and holiday balance.
+ *
+ * Employment Types:
+ * - 'monthly': Regular employees on a fixed salary with full attendance/holiday tracking
+ * - 'adhoc': Irregular workers with only payment records (no attendance/holiday tracking)
+ */
+export interface Employment {
+  id: string
+  employeeId: string
+  householdId: string
+  employmentType: EmploymentType
+  role: string
+  startDate: string
+  endDate?: string
+  status: EmploymentStatus
+  /** Running holiday balance (null for adhoc employees) */
+  holidayBalance: number | null
+  /** Current salary amount (null for adhoc employees) */
+  currentSalary: number | null
+  paymentMethod: 'Cash' | 'Bank Transfer' | 'UPI' | 'Cheque'
+  createdAt: string
+  updatedAt: string
+}
 
 export interface PhoneNumber {
   number: string
@@ -81,141 +129,79 @@ export interface Note {
   createdAt: string
 }
 
-export interface Employee {
-  id: string
-  householdId: string
-  name: string
-  photo: string | null
-  status: 'active' | 'archived'
-  phoneNumbers: PhoneNumber[]
-  addresses: Address[]
-  employmentHistory: EmploymentRecord[]
-  salaryHistory: SalaryRecord[]
-  documents: Document[]
-  customProperties: CustomProperty[]
-  notes: Note[]
-  holidayBalance: number
-}
-
-export interface RoleBreakdown {
-  [role: string]: number
-}
-
-export interface Summary {
-  totalStaff: number
-  activeStaff: number
-  archivedStaff: number
-  roleBreakdown: RoleBreakdown
-}
-
-// =============================================================================
-// Component Props
-// =============================================================================
-
-export interface StaffDirectoryProps {
-  /** Summary statistics for dashboard cards */
-  summary: Summary
-  /** The list of employees to display */
-  employees: Employee[]
-  /** Called when user wants to view an employee's full profile */
-  onView?: (id: string) => void
-  /** Called when user wants to edit an employee */
-  onEdit?: (id: string) => void
-  /** Called when user wants to archive an employee */
-  onArchive?: (id: string) => void
-  /** Called when user wants to restore an archived employee */
-  onRestore?: (id: string) => void
-  /** Called when user wants to create a new employee */
-  onCreate?: () => void
-  /** Called when user wants to export the staff list */
-  onExport?: (format: 'csv' | 'pdf') => void
-  /** Called when user searches or filters the list */
-  onSearch?: (query: string) => void
-  /** Called when user filters by status */
-  onFilterStatus?: (status: 'all' | 'active' | 'archived') => void
-  /** Called when user filters by role */
-  onFilterRole?: (role: string | null) => void
-}
-
-export interface EmployeeDetailProps {
-  /** The employee to display */
-  employee: Employee
-  /** Called when user wants to edit the employee */
-  onEdit?: () => void
-  /** Called when user wants to archive the employee */
-  onArchive?: () => void
-  /** Called when user wants to go back to the list */
-  onBack?: () => void
-  /** Called when user uploads a new document */
-  onUploadDocument?: (file: File, category: Document['category']) => void
-  /** Called when user deletes a document */
-  onDeleteDocument?: (documentName: string) => void
-  /** Called when user adds a custom property */
-  onAddCustomProperty?: (property: CustomProperty) => void
-  /** Called when user removes a custom property */
-  onRemoveCustomProperty?: (propertyName: string) => void
-  /** Called when user adds a note */
-  onAddNote?: (content: string) => void
-  /** Called when user deletes a note */
-  onDeleteNote?: (createdAt: string) => void
-}
-
-export interface EmployeeFormProps {
-  /** Existing employee data when editing, undefined when creating */
-  employee?: Employee
-  /** Current step in the wizard (0-4) */
-  currentStep: number
-  /** Called when user moves to a different step */
-  onStepChange?: (step: number) => void
-  /** Called when form is submitted */
-  onSubmit?: (employee: Omit<Employee, 'id'>) => void
-  /** Called when user cancels the form */
-  onCancel?: () => void
-}
-
 // =============================================================================
 // Attendance & Holidays
 // =============================================================================
 
-export type LeaveType = 'sick' | 'casual' | 'paid' | 'unpaid' | 'other'
-export type HolidayType = 'public' | 'festival' | 'other'
-
-export interface LeaveRecord {
+/**
+ * Attendance records are linked to Employment (not Employee) since attendance
+ * is tracked per-household. Only Monthly employments have attendance tracking.
+ */
+export interface AttendanceRecord {
   id: string
-  employeeId: string
+  employmentId: string
   date: string
-  type: LeaveType
-  notes?: string
-}
-
-export interface Holiday {
-  id: string
-  householdId: string
-  date: string
-  name: string
-  type: HolidayType
-}
-
-export interface HolidayRule {
-  id: string
-  employeeId: string
-  type: 'fixed' | 'recurring'
-  monthlyAllowance?: number
-  weeklyOffDays?: number[]
-  autoMarkAbsence: boolean
+  reason?: string
+  /** Whether this absence was also applied to other households */
+  appliedToOtherHouseholds: boolean
+  createdAt: string
 }
 
 export interface InactivityPeriod {
   id: string
-  employeeId: string
+  employmentId: string
   startDate: string
   endDate?: string
   reason?: string
+  /** Whether this inactivity was also applied to other households */
+  appliedToOtherHouseholds: boolean
+  createdAt: string
+}
+
+export type HolidayRuleType = 'fixed' | 'recurring'
+
+export interface HolidayRule {
+  id: string
+  employmentId: string
+  type: HolidayRuleType
+  /** For 'fixed' type: number of days credited per month */
+  monthlyAllowance: number | null
+  /** For 'recurring' type: days of week that are off (0=Sunday, 6=Saturday) */
+  weeklyOffDays: number[]
+  /** Automatically record absences on scheduled off-days when employee works */
+  autoMarkAbsence: boolean
+  createdAt: string
+}
+
+export interface PublicHoliday {
+  id: string
+  householdId: string
+  date: string
+  name: string
 }
 
 // =============================================================================
 // Payroll & Finance
 // =============================================================================
+
+/**
+ * Payroll items are linked to Employment (not Employee) since payroll
+ * is tracked per-household. Each household maintains independent salary
+ * and payment history.
+ */
+export type PayrollItemType = 'Salary' | 'Advance' | 'Bonus' | 'Penalty' | 'Encashment' | 'AdhocPayment'
+
+export interface PayrollItem {
+  id: string
+  employmentId: string
+  date: string
+  type: PayrollItemType
+  amount: number
+  status: 'Pending' | 'Paid' | 'Cancelled'
+  reference?: string
+  receipts?: PaymentReceipt[]
+  createdAt: string
+}
 
 export interface PaymentReceipt {
   id: string
@@ -225,38 +211,16 @@ export interface PaymentReceipt {
   uploadedAt: string
 }
 
-export interface PayrollRecord {
-  id: string
-  employeeId: string
-  month: string // YYYY-MM format
-  baseSalary: number
-  bonuses: number
-  penalties: number
-  encashments: number
-  advanceRepayment: number
-  netPayable: number
-  status: 'draft' | 'calculated' | 'pending_settlement' | 'paid'
-  holidayImbalance: number
-}
-
 export interface Advance {
   id: string
-  employeeId: string
+  employmentId: string
   amount: number
   date: string
   repaidAmount: number
+  monthlyDeduction: number
+  reason?: string
   status: 'active' | 'repaid' | 'cancelled'
-}
-
-export interface LedgerEntry {
-  id: string
-  employeeId: string
-  date: string
-  type: 'Salary' | 'Advance' | 'Bonus' | 'Penalty' | 'Encashment'
-  amount: number
-  status: 'Paid' | 'Disbursed' | 'Pending'
-  reference: string
-  receipts?: PaymentReceipt[]
+  createdAt: string
 }
 
 // =============================================================================

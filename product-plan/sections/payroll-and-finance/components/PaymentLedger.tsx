@@ -15,7 +15,7 @@ import {
   Eye,
   FileText
 } from 'lucide-react'
-import type { LedgerEntry } from '../types'
+import type { LedgerEntry } from '@/../product/sections/payroll-and-finance/types'
 
 // =============================================================================
 // Types

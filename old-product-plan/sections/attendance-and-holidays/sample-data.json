@@ -1,0 +1,112 @@
+{
+  "_meta": {
+    "models": {
+      "employees": "Minimal employee details needed for attendance display.",
+      "leaveRecords": "Records of days where an employee was NOT present (Absent, Sick, Casual, etc.). If no record exists for a working day, they are assumed Present.",
+      "holidays": "Specific calendar dates that are public holidays for everyone.",
+      "holidayRules": "Recurring weekly off-days for employees (e.g., Sundays)."
+    },
+    "relationships": [
+      "Employees have many LeaveRecords",
+      "Employees have specific HolidayRules (weekly offs)",
+      "Holidays apply to the entire household context"
+    ]
+  },
+  "employees": [
+    {
+      "id": "emp-001",
+      "name": "Rajesh Kumar",
+      "role": "Driver",
+      "avatar": "https://randomuser.me/api/portraits/men/32.jpg",
+      "status": "active",
+      "joiningDate": "2023-01-15",
+      "holidayBalance": 8
+    },
+    {
+      "id": "emp-002",
+      "name": "Sunita Devi",
+      "role": "Housekeeper",
+      "avatar": "https://randomuser.me/api/portraits/women/44.jpg",
+      "status": "active",
+      "joiningDate": "2023-03-01",
+      "holidayBalance": 5
+    },
+    {
+      "id": "emp-003",
+      "name": "Amit Singh",
+      "role": "Gardener",
+      "avatar": "https://randomuser.me/api/portraits/men/12.jpg",
+      "status": "active",
+      "joiningDate": "2023-06-10",
+      "holidayBalance": 10
+    }
+  ],
+  "leaveRecords": [
+    {
+      "id": "lv-101",
+      "employeeId": "emp-001",
+      "date": "2024-03-05",
+      "type": "sick",
+      "notes": "Fever"
+    },
+    {
+      "id": "lv-102",
+      "employeeId": "emp-001",
+      "date": "2024-03-06",
+      "type": "sick",
+      "notes": "Recovering"
+    },
+    {
+      "id": "lv-103",
+      "employeeId": "emp-002",
+      "date": "2024-03-10",
+      "type": "unpaid",
+      "notes": "Family emergency"
+    },
+    {
+      "id": "lv-104",
+      "employeeId": "emp-003",
+      "date": "2024-03-15",
+      "type": "casual",
+      "notes": "Personal work"
+    },
+    {
+      "id": "lv-105",
+      "employeeId": "emp-002",
+      "date": "2024-03-20",
+      "type": "paid",
+      "notes": "Approved annual leave"
+    }
+  ],
+  "holidays": [
+    {
+      "id": "hol-001",
+      "date": "2024-01-26",
+      "name": "Republic Day",
+      "type": "public"
+    },
+    {
+      "id": "hol-002",
+      "date": "2024-03-25",
+      "name": "Holi",
+      "type": "festival"
+    }
+  ],
+  "holidayRules": [
+    {
+      "employeeId": "emp-001",
+      "dayOfWeek": 0,
+      "type": "weekly_off"
+    },
+    {
+      "employeeId": "emp-002",
+      "dayOfWeek": 0,
+      "type": "weekly_off"
+    },
+    {
+      "employeeId": "emp-003",
+      "dayOfWeek": 0,
+      "type": "weekly_off"
+    }
+  ]
+}

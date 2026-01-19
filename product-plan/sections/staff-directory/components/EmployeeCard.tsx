@@ -1,6 +1,6 @@
 import { Phone, MapPin, Calendar, MoreVertical, Eye, Pencil, Archive, Palmtree } from 'lucide-react'
 import { useState } from 'react'
-import type { Employee } from '../types'
+import type { Employee } from '@/../product/sections/staff-directory/types'
 
 interface EmployeeCardProps {
   employee: Employee

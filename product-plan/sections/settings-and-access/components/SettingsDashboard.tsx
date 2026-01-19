@@ -5,7 +5,7 @@ import type {
   Household,
   Member,
   Invitation,
-} from '../types'
+} from '@/../product/sections/settings-and-access/types'
 import {
   Home,
   Users,

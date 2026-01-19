@@ -1,5 +1,5 @@
 import { Plus, Trash2, Wallet, Calendar, CreditCard, IndianRupee } from 'lucide-react'
-import type { Employee, SalaryRecord } from '../types'
+import type { Employee, SalaryRecord } from '@/../product/sections/staff-directory/types'
 
 interface SalaryStepProps {
   data: Omit<Employee, 'id'>

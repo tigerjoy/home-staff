@@ -4,7 +4,7 @@ import type {
   StaffProfile,
   StaffSummary,
   ActivityItem,
-} from '../types'
+} from '@/../product/sections/employee-portal/types'
 import {
   Phone,
   Home,

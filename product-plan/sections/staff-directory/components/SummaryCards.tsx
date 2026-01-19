@@ -1,5 +1,5 @@
 import { Users, UserCheck, UserX, Briefcase } from 'lucide-react'
-import type { Summary } from '../types'
+import type { Summary } from '@/../product/sections/staff-directory/types'
 
 interface SummaryCardsProps {
   summary: Summary

@@ -2,53 +2,42 @@
 
 ## Overview
 
-The control center for managing your HomeStaff account and collaborative environments. It allows users to manage multiple households, invite family members or stakeholders with specific roles, and configure administrative restrictions.
+The control center for managing your HomeStaff account and collaborative environments. Allows users to manage multiple households, invite family members with specific roles, and configure administrative restrictions.
 
 ## User Flows
 
-- View and manage multiple households
+- View and update personal profile
+- Create and manage multiple households
 - Switch between households
-- Create new households
-- Archive households (preserves data)
+- Archive households (Admins only)
 - Invite members via email
 - Assign roles (Admin or Member)
-- Change member roles
-- Remove members
-- Update personal profile
+- Manage member permissions
+- Remove members or cancel invitations
 
 ## Components Provided
 
-- `SettingsDashboard.tsx` — Main settings interface with tabs/sections
+| Component | Description |
+|-----------|-------------|
+| `SettingsDashboard` | Main settings page with all sections |
 
 ## Callback Props
 
 | Callback | Description |
 |----------|-------------|
-| `onUpdateProfile(updates)` | Update user name, email, avatar |
-| `onSwitchHousehold(id)` | Change current household context |
-| `onCreateHousehold(name)` | Create new household |
-| `onRenameHousehold(id, newName)` | Rename existing household |
-| `onArchiveHousehold(id)` | Archive household (Admin only) |
-| `onInviteMember(email, role)` | Send invitation |
-| `onChangeMemberRole(id, newRole)` | Change member's role |
-| `onRemoveMember(id)` | Remove member from household |
-| `onCancelInvitation(id)` | Cancel pending invitation |
+| `onUpdateProfile` | Update user name, email, timezone |
+| `onSwitchHousehold` | Change active household context |
+| `onCreateHousehold` | Create new household |
+| `onRenameHousehold` | Rename existing household |
+| `onArchiveHousehold` | Archive household (Admin only) |
+| `onInviteMember` | Send invitation email |
+| `onChangeMemberRole` | Promote/demote member |
+| `onRemoveMember` | Remove from household |
+| `onCancelInvitation` | Cancel pending invitation |
 
-## Role Permissions
+## Design Notes
 
-**Admin:**
-- Manage Staff Directory
-- Track Attendance
-- Manage Payroll & Finance
-- Invite & Remove Members
-- Edit Household Settings
-- Archive Household
-
-**Member:**
-- View Staff Directory
-- Track Attendance
-- View Reports
-
-## Visual Reference
-
-See screenshots in `product/sections/settings-and-access/` for the target UI design.
+- Sectioned layout: Profile, Households, Members
+- Role badges (Admin/Member) on household and member cards
+- Permissions overview shows what each role can do
+- Pending invitations displayed separately

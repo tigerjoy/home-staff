@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Plus, Trash2, Briefcase, Building2, Calendar } from 'lucide-react'
-import type { Employee, EmploymentRecord } from '../types'
+import type { Employee, EmploymentRecord } from '@/../product/sections/staff-directory/types'
 
 interface RoleStepProps {
   data: Omit<Employee, 'id'>

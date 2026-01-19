@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Check, ChevronLeft, ChevronRight, User, Briefcase, FileText, Wallet, Settings2 } from 'lucide-react'
-import type { Employee, EmployeeFormProps } from '../types'
+import type { Employee, EmployeeFormProps } from '@/../product/sections/staff-directory/types'
 import { BasicInfoStep } from './BasicInfoStep'
 import { RoleStep } from './RoleStep'
 import { DocumentsStep } from './DocumentsStep'

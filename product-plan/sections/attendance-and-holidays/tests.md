@@ -1,86 +1,159 @@
 # Test Instructions: Attendance & Holidays
 
-These test-writing instructions are **framework-agnostic**. Adapt to your testing setup.
+These test-writing instructions are **framework-agnostic**. Adapt them to your testing setup.
 
 ## Overview
 
-The Attendance system uses "present by default" logic. Test marking absences, holiday rules, inactivity periods, and balance tracking.
+Test the "present by default" attendance system including marking absences, holiday rules, and inactivity periods.
 
 ---
 
 ## User Flow Tests
 
-### Flow 1: Mark Employee Absent
+### Flow 1: View Daily Attendance
 
-**Scenario:** User marks an employee as absent for a specific date
+**Scenario:** User views today's attendance
 
 **Setup:**
-- Active employees list
-- Selected date (today)
-- No leave records for today
+- Provide list of employees with no absences for today
 
 **Steps:**
-1. User navigates to `/attendance`
-2. User sees list of employees (all showing as present)
-3. User clicks on employee row
-4. User selects leave type "Sick"
-5. User optionally adds notes "Fever"
-6. User confirms
+1. Navigate to `/attendance`
 
 **Expected Results:**
-- [ ] Employee row shows red absence indicator
+- [ ] All employees are displayed
+- [ ] All employees show as "Present" (default status)
+- [ ] Holiday balance is visible for each employee
+- [ ] Date selector shows current date
+
+---
+
+### Flow 2: Mark Employee Absent
+
+**Scenario:** User marks an employee as absent
+
+**Setup:**
+- Mock `onAddLeaveRecord` callback
+
+**Steps:**
+1. Click on an employee to mark absence
+2. Select leave type "Sick"
+3. Optionally add notes "Fever"
+4. Click "Save" or "Confirm"
+
+**Expected Results:**
+- [ ] `onAddLeaveRecord` is called with:
+  - employeeId
+  - date (today)
+  - type: "sick"
+  - notes: "Fever"
+- [ ] Employee now shows as "Absent" with red indicator
 - [ ] Holiday balance decrements by 1
-- [ ] Leave record created with type "sick" and notes
-- [ ] `onAddLeaveRecord` called with correct data
 
-### Flow 2: Configure Holiday Rules
+---
 
-**Scenario:** User sets up holiday entitlement for an employee
+### Flow 3: Remove Absence (Mark Present)
 
-**Steps:**
-1. User clicks "Holiday Rules" button for employee
-2. Modal opens with configuration options
-3. User selects "Fixed Days" and enters "4"
-4. User toggles "Auto-mark absence" on
-5. User clicks "Save"
+**Scenario:** User removes an incorrectly marked absence
 
-**Expected Results:**
-- [ ] Modal shows current configuration
-- [ ] "Fixed Days" and "Recurring" options available
-- [ ] Auto-mark toggle visible with explanation
-- [ ] `onSaveHolidayRules` called with config object
-- [ ] Modal closes on save
-
-### Flow 3: Mark Inactive Period
-
-**Scenario:** User marks employee as inactive for extended absence
+**Setup:**
+- Provide employee with existing absence
+- Mock `onRemoveLeaveRecord` callback
 
 **Steps:**
-1. User clicks "Mark Inactive" on employee
-2. Modal opens with date picker
-3. User enters start date and reason
-4. User confirms
+1. Click on absent employee
+2. Click "Mark Present" or "Remove Absence"
 
 **Expected Results:**
-- [ ] Date picker allows selecting past dates (back-dating)
-- [ ] Reason field is optional
-- [ ] Employee shows amber "Inactive" indicator
-- [ ] `onMarkInactive` called with employeeId, startDate, reason
+- [ ] `onRemoveLeaveRecord` is called with leave record ID
+- [ ] Employee returns to "Present" status
+- [ ] Holiday balance increments back
 
-### Flow 4: Navigate Attendance Calendar
+---
 
-**Scenario:** User views historical attendance
+### Flow 4: Configure Holiday Rules (Fixed Days)
+
+**Scenario:** User sets 4 days per month entitlement
+
+**Setup:**
+- Mock `onSaveHolidayRules` callback
 
 **Steps:**
-1. User clicks on calendar navigation
-2. User selects previous month
-3. User sees past attendance records
+1. Click "Holiday Rules" button for an employee
+2. Select "Fixed days per month"
+3. Enter "4" days
+4. Leave "Auto-mark absence" unchecked
+5. Click "Save"
 
 **Expected Results:**
-- [ ] Calendar updates to show selected month
-- [ ] Past absences marked on calendar
-- [ ] Holidays/off-days marked in gray
-- [ ] `onDateChange` called with new date
+- [ ] Modal displays with rule options
+- [ ] `onSaveHolidayRules` is called with:
+  - employeeId
+  - type: "fixed"
+  - monthlyAllowance: 4
+  - autoMarkAbsence: false
+
+---
+
+### Flow 5: Configure Holiday Rules (Recurring)
+
+**Scenario:** User sets Sundays as weekly off
+
+**Setup:**
+- Mock `onSaveHolidayRules` callback
+
+**Steps:**
+1. Click "Holiday Rules" for employee
+2. Select "Recurring weekly off"
+3. Check "Sunday"
+4. Enable "Auto-mark absence"
+5. Click "Save"
+
+**Expected Results:**
+- [ ] `onSaveHolidayRules` is called with:
+  - type: "recurring"
+  - weeklyOffDays: [0] (Sunday)
+  - autoMarkAbsence: true
+
+---
+
+### Flow 6: Mark Employee Inactive
+
+**Scenario:** Employee is going on extended leave
+
+**Setup:**
+- Mock `onMarkInactive` callback
+
+**Steps:**
+1. Click "Mark Inactive" for employee
+2. Select start date (can be past date)
+3. Enter reason "Gone home for 2 months"
+4. Click "Confirm"
+
+**Expected Results:**
+- [ ] `onMarkInactive` is called with employeeId, startDate, reason
+- [ ] Employee shows amber "Inactive" status
+- [ ] No attendance is tracked during inactivity
+
+---
+
+### Flow 7: Mark Employee Active
+
+**Scenario:** Employee returns from extended leave
+
+**Setup:**
+- Provide employee with active inactivity period
+- Mock `onMarkActive` callback
+
+**Steps:**
+1. Click "Mark Active" for inactive employee
+2. Select end date
+3. Click "Confirm"
+
+**Expected Results:**
+- [ ] `onMarkActive` is called with employeeId, endDate
+- [ ] Employee returns to active status
+- [ ] Attendance tracking resumes
 
 ---
 
@@ -88,78 +161,41 @@ The Attendance system uses "present by default" logic. Test marking absences, ho
 
 ### No Employees
 
-**Setup:**
-- `employees = []`
+**Scenario:** Household has no employees
 
 **Expected Results:**
-- [ ] Shows message "Add staff in the Staff Directory first"
-- [ ] No attendance sheet displayed
+- [ ] Message: "Add employees in Staff Directory first"
+- [ ] Link or button to go to Staff Directory
 
-### No Absences for Date
+### All Present
 
-**Setup:**
-- Employees exist
-- No leave records for selected date
+**Scenario:** All employees are present today
 
 **Expected Results:**
-- [ ] All employees shown as present (default state)
-- [ ] No red absence indicators
+- [ ] All employees show green "Present" status
+- [ ] No absences in the list
 
 ---
 
-## Business Logic Tests
+## Calendar View Tests
 
-### Present by Default
+### View Month Calendar
 
-**Scenario:** Verify employee is present when no leave record exists
-
-**Setup:**
-- Employee "emp-001"
-- Date "2024-01-15"
-- No LeaveRecord for emp-001 on 2024-01-15
+**Steps:**
+1. Switch to calendar view
+2. View current month
 
 **Expected Results:**
-- [ ] Employee displays as "Present"
-- [ ] No absence indicator shown
-
-### Holiday Balance Calculation
-
-**Scenario:** Balance decreases when absence recorded
-
-**Setup:**
-- Employee with holidayBalance: 5
-- Mark absence for one day
-
-**Expected Results:**
-- [ ] After absence, balance shows 4
-- [ ] Balance displayed on employee row
+- [ ] Calendar shows full month
+- [ ] Days with absences show red indicator
+- [ ] Days with holidays show gray indicator
+- [ ] Inactive periods show amber shading
 
 ---
 
-## Sample Test Data
+## Accessibility Checks
 
-```typescript
-const mockEmployee = {
-  id: "emp-001",
-  name: "Rajesh Kumar",
-  role: "Driver",
-  avatar: "https://example.com/avatar.jpg",
-  status: "active",
-  joiningDate: "2023-01-15",
-  holidayBalance: 8
-};
-
-const mockLeaveRecord = {
-  id: "lv-101",
-  employeeId: "emp-001",
-  date: "2024-03-05",
-  type: "sick",
-  notes: "Fever"
-};
-
-const mockHolidayRule = {
-  employeeId: "emp-001",
-  dayOfWeek: 0, // Sunday
-  type: "weekly_off"
-};
-```
+- [ ] Date picker is keyboard accessible
+- [ ] Status indicators have text labels (not just color)
+- [ ] Modal can be closed with Escape key
+- [ ] Form fields in modals have proper labels

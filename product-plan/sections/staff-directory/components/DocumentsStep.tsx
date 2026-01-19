@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Upload, FileText, Trash2, Eye, X, File, FileCheck, FileBadge } from 'lucide-react'
-import type { Employee, Document } from '../types'
+import type { Employee, Document } from '@/../product/sections/staff-directory/types'
 
 interface DocumentsStepProps {
   data: Omit<Employee, 'id'>

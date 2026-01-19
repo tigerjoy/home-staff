@@ -19,7 +19,7 @@ import type {
   LeaveRecord,
   Holiday,
   HolidayRule
-} from '../types'
+} from '@/../product/sections/attendance-and-holidays/types'
 
 export function AttendanceCalendar({
   employees,

@@ -1,164 +1,213 @@
 # Test Instructions: Settings & Access
 
-These test-writing instructions are **framework-agnostic**. Adapt to your testing setup.
+These test-writing instructions are **framework-agnostic**. Adapt them to your testing setup.
 
 ## Overview
 
-Test household management, member invitations, role assignments, and permission enforcement.
+Test account settings, household management, and member access control.
 
 ---
 
 ## User Flow Tests
 
-### Flow 1: Invite a Member
+### Flow 1: View Settings Dashboard
 
-**Scenario:** Admin invites a new member to the household
-
-**Steps:**
-1. User navigates to `/settings`
-2. User clicks "Invite Member"
-3. Modal opens with email and role fields
-4. User enters email "newmember@example.com"
-5. User selects role "Member"
-6. User clicks "Send Invitation"
-
-**Expected Results:**
-- [ ] Modal shows email input and role selector
-- [ ] Role options: "Admin" and "Member"
-- [ ] `onInviteMember` called with email and role
-- [ ] Modal closes on success
-- [ ] Invitation appears in pending list
-
-### Flow 2: Switch Household
-
-**Scenario:** User switches to a different household
+**Scenario:** User views settings page
 
 **Setup:**
-- User belongs to 2+ households
+- Provide user profile, households, members, invitations
 
 **Steps:**
-1. User opens household switcher
-2. User sees list of their households
-3. User clicks on different household
+1. Navigate to `/settings`
 
 **Expected Results:**
-- [ ] Current household highlighted
-- [ ] `onSwitchHousehold` called with household ID
-- [ ] App context switches to new household
+- [ ] Profile section shows: Name, Email, Timezone
+- [ ] Households list shows all user's households
+- [ ] Current household is highlighted
+- [ ] Members table shows household members
+- [ ] Pending invitations are listed
 
-### Flow 3: Change Member Role
+---
 
-**Scenario:** Admin changes a member's role
+### Flow 2: Update Profile
+
+**Scenario:** User updates their name
+
+**Setup:**
+- Mock `onUpdateProfile` callback
 
 **Steps:**
-1. User views members table
-2. User clicks role dropdown for member "Taylor Chen"
-3. User selects "Admin"
-4. Change is confirmed
+1. Click "Edit" on profile section
+2. Change name to "Alex Smith"
+3. Click "Save"
 
 **Expected Results:**
-- [ ] Dropdown shows current role
-- [ ] `onChangeMemberRole` called with memberId and newRole
-- [ ] Member's role updates in table
+- [ ] `onUpdateProfile` is called with { name: "Alex Smith" }
+- [ ] Profile displays updated name
+- [ ] Success message appears
 
-### Flow 4: Archive Household
+---
+
+### Flow 3: Create New Household
+
+**Scenario:** User creates a new household
+
+**Setup:**
+- Mock `onCreateHousehold` callback
+
+**Steps:**
+1. Click "Create Household" button
+2. Enter "Beach House"
+3. Click "Create"
+
+**Expected Results:**
+- [ ] `onCreateHousehold` is called with "Beach House"
+- [ ] New household appears in list
+- [ ] User is Admin of new household
+
+---
+
+### Flow 4: Switch Household
+
+**Scenario:** User switches to different household
+
+**Setup:**
+- Provide multiple households
+- Mock `onSwitchHousehold` callback
+
+**Steps:**
+1. Click on different household in list
+
+**Expected Results:**
+- [ ] `onSwitchHousehold` is called with household ID
+- [ ] (In real app) App context switches to selected household
+
+---
+
+### Flow 5: Invite Member
+
+**Scenario:** Admin invites new member
+
+**Setup:**
+- User has Admin role
+- Mock `onInviteMember` callback
+
+**Steps:**
+1. Click "Invite Member" button
+2. Enter email "newuser@example.com"
+3. Select role "Member"
+4. Click "Send Invitation"
+
+**Expected Results:**
+- [ ] `onInviteMember` is called with email and role
+- [ ] Invitation appears in pending list
+- [ ] Success message about email being sent
+
+---
+
+### Flow 6: Change Member Role
+
+**Scenario:** Admin promotes member to Admin
+
+**Setup:**
+- User has Admin role
+- Mock `onChangeMemberRole` callback
+
+**Steps:**
+1. Click "Change Role" on a Member
+2. Select "Admin"
+
+**Expected Results:**
+- [ ] `onChangeMemberRole` is called with memberId and "Admin"
+- [ ] Member's role badge updates to "Admin"
+
+---
+
+### Flow 7: Remove Member
+
+**Scenario:** Admin removes a member
+
+**Setup:**
+- Mock `onRemoveMember` callback
+
+**Steps:**
+1. Click "Remove" on a member
+2. Confirm in dialog
+
+**Expected Results:**
+- [ ] Confirmation dialog appears
+- [ ] `onRemoveMember` is called with member ID
+- [ ] Member removed from list
+
+---
+
+### Flow 8: Archive Household
 
 **Scenario:** Admin archives a household
 
+**Setup:**
+- User has Admin role on household
+- Mock `onArchiveHousehold` callback
+
 **Steps:**
-1. Admin clicks "Archive Household"
-2. Confirmation modal appears
-3. Admin confirms
+1. Click "Archive" on household
+2. Confirm in dialog
 
 **Expected Results:**
-- [ ] Confirmation shows warning about archiving
-- [ ] `onArchiveHousehold` called with household ID
-- [ ] Household status changes to "archived"
-- [ ] User redirected to another active household
+- [ ] Confirmation dialog warns about archiving
+- [ ] `onArchiveHousehold` is called with household ID
+- [ ] Household moves to archived status
 
 ---
 
 ## Empty State Tests
 
-### No Other Members
+### Single Household
 
-**Setup:**
-- `members = [currentUser]` (only user)
+**Scenario:** User only has one household
 
 **Expected Results:**
-- [ ] Shows "You're the only member"
-- [ ] Shows "Invite others to collaborate" suggestion
-- [ ] Invite button prominently displayed
+- [ ] "Switch Household" option may be hidden or disabled
+
+### No Other Members
+
+**Scenario:** User is only member
+
+**Expected Results:**
+- [ ] Message: "You're the only member"
+- [ ] "Invite Member" CTA is prominently shown
 
 ### No Pending Invitations
 
-**Setup:**
-- `invitations = []`
-
 **Expected Results:**
-- [ ] Pending invitations section shows "No pending invitations"
+- [ ] Invitations section is hidden or shows empty state
 
 ---
 
 ## Permission Tests
 
-### Member Cannot Access Admin Actions
+### Member Cannot Archive
 
 **Setup:**
-- Current user role is "Member" (not Admin)
+- User has Member role (not Admin)
 
 **Expected Results:**
-- [ ] "Archive Household" button not visible
-- [ ] Role change dropdown disabled for other members
-- [ ] "Remove Member" not visible
-- [ ] "Payroll & Finance" section restricted
+- [ ] "Archive Household" option is not visible or disabled
+- [ ] Attempting action shows error
 
-### Admin Has Full Access
+### Member Cannot Invite
 
 **Setup:**
-- Current user role is "Admin"
+- User has Member role
 
 **Expected Results:**
-- [ ] All management actions visible
-- [ ] Can change other members' roles
-- [ ] Can archive household
-- [ ] Can access all sections
+- [ ] "Invite Member" option is not visible or disabled
 
 ---
 
-## Sample Test Data
+## Accessibility Checks
 
-```typescript
-const mockUserProfile = {
-  id: "user-001",
-  name: "Alex Morgan",
-  email: "alex.morgan@example.com",
-  avatarUrl: "https://example.com/avatar.jpg",
-  timezone: "UTC+5:30"
-};
-
-const mockHousehold = {
-  id: "hh-001",
-  name: "Morgan Residence",
-  role: "Admin",
-  status: "active",
-  isPrimary: true
-};
-
-const mockMember = {
-  id: "mem-2",
-  name: "Jordan Morgan",
-  email: "jordan.m@example.com",
-  role: "Admin",
-  joinedDate: "2023-01-15",
-  avatarUrl: null
-};
-
-const mockInvitation = {
-  id: "inv-1",
-  email: "accountant@finance.com",
-  role: "Member",
-  sentDate: "2024-01-15",
-  status: "pending"
-};
-```
+- [ ] Profile form fields have labels
+- [ ] Modal dialogs are keyboard accessible
+- [ ] Confirmation dialogs have cancel option
+- [ ] Role selection is accessible

@@ -6,41 +6,47 @@ A centralized hub for managing household staff profiles. Users can add, edit, an
 
 ## User Flows
 
-- View all staff in a card grid or table view
+- View all staff in card grid or table view (toggle between views)
 - Search and filter staff by name, role, or status
-- Add a new staff member via a multi-step wizard
-- View a staff member's full profile
-- Edit staff details using the same wizard
-- Archive a staff member (soft delete)
-- Upload and manage documents
-- Add custom properties and notes
+- Add new staff via multi-step wizard (Basic Info → Role → Documents → Salary → Custom Fields)
+- View staff member's full profile with holiday balance
+- Edit staff details, upload documents, add notes
+- Archive staff member (soft delete)
 
 ## Components Provided
 
-- `StaffDirectory.tsx` — Main list view with search, filters, toggle
-- `SummaryCards.tsx` — Dashboard summary cards
-- `EmployeeCard.tsx` — Card view item
-- `EmployeeTable.tsx` — Table view
-- `EmployeeDetail.tsx` — Full profile page
-- `EmployeeForm.tsx` — Multi-step wizard
-- `BasicInfoStep.tsx` — Name, photo, contact info
-- `RoleStep.tsx` — Job title, department, dates
-- `DocumentsStep.tsx` — File uploads
-- `SalaryStep.tsx` — Compensation details
-- `CustomFieldsStep.tsx` — Custom properties and notes
+| Component | Description |
+|-----------|-------------|
+| `StaffDirectory` | Main directory page with list and filters |
+| `SummaryCards` | Dashboard statistics cards |
+| `EmployeeCard` | Card view for single employee |
+| `EmployeeTable` | Table view for employee list |
+| `EmployeeDetail` | Full profile detail page |
+| `EmployeeForm` | Multi-step wizard for add/edit |
+| `BasicInfoStep` | Step 1: Name, photo, contact |
+| `RoleStep` | Step 2: Role, department, start date |
+| `DocumentsStep` | Step 3: Document uploads |
+| `SalaryStep` | Step 4: Salary configuration |
+| `CustomFieldsStep` | Step 5: Custom properties |
 
 ## Callback Props
 
 | Callback | Description |
 |----------|-------------|
-| `onView(id)` | Navigate to employee detail page |
-| `onEdit(id)` | Navigate to edit form |
-| `onArchive(id)` | Archive employee |
-| `onRestore(id)` | Restore archived employee |
-| `onCreate()` | Navigate to new employee form |
-| `onExport(format)` | Export as CSV or PDF |
-| `onSearch(query)` | Filter employees |
+| `onView` | Navigate to employee detail page |
+| `onEdit` | Open employee form in edit mode |
+| `onArchive` | Soft-delete with confirmation |
+| `onRestore` | Restore archived employee |
+| `onCreate` | Open form for new employee |
+| `onExport` | Generate CSV or PDF export |
+| `onSearch` | Filter by search query |
+| `onFilterStatus` | Filter by active/archived |
+| `onFilterRole` | Filter by role |
 
-## Visual Reference
+## Design Notes
 
-See screenshots in `product/sections/staff-directory/` for the target UI design.
+- Summary cards show total, active, archived counts
+- Toggle between card grid and table views
+- Multi-step wizard with progress indicator
+- Document upload with preview thumbnails
+- Holiday balance displayed prominently

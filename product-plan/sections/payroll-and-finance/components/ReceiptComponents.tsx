@@ -12,7 +12,7 @@ import {
   ZoomOut,
   ExternalLink
 } from 'lucide-react'
-import type { PaymentReceipt } from '../types'
+import type { PaymentReceipt } from '@/../product/sections/payroll-and-finance/types'
 
 // =============================================================================
 // Receipt Upload Button

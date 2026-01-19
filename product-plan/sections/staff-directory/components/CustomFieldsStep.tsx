@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Plus, Trash2, Settings2, StickyNote, Clock } from 'lucide-react'
-import type { Employee, CustomProperty, Note } from '../types'
+import type { Employee, CustomProperty, Note } from '@/../product/sections/staff-directory/types'
 
 interface CustomFieldsStepProps {
   data: Omit<Employee, 'id'>

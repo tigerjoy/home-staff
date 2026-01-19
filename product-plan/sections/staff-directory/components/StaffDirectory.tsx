@@ -9,7 +9,7 @@ import {
   X,
   ChevronDown
 } from 'lucide-react'
-import type { StaffDirectoryProps } from '../types'
+import type { StaffDirectoryProps } from '@/../product/sections/staff-directory/types'
 import { SummaryCards } from './SummaryCards'
 import { EmployeeCard } from './EmployeeCard'
 import { EmployeeTable } from './EmployeeTable'

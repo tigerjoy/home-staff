@@ -2,39 +2,50 @@
 
 ## Overview
 
-A lightweight payroll system for calculating monthly salaries, managing advances, and settling holiday imbalances. It handles both excess absences (penalties) and unused leave (encashment/carry forward) for financial transparency.
+A lightweight payroll system for calculating monthly salaries, managing advances, and settling holiday imbalances. Handles both excess absences (penalties) and unused leave (encashment, carry forward, or lapse). Payment receipts can be attached to transactions.
 
 ## User Flows
 
-- View monthly payroll dashboard with totals
-- See detailed calculation breakdown per employee
+- View monthly payroll summary
+- Review calculated salary for each employee
 - Settle excess absences (penalize or carry forward)
 - Settle unused leave (encash, carry forward, or lapse)
-- Record and track salary advances
-- Add one-time bonuses
-- Finalize payments and mark as paid
+- Record salary advances
+- Add bonuses
+- View payment history ledger
 - Attach payment receipts
-- View searchable payment ledger
+- Mark payments as finalized
 
 ## Components Provided
 
-- `PayrollDashboard.tsx` — Main dashboard with summary
-- `CalculationBreakdown.tsx` — Detailed salary calculation
-- `SettlementWorkspace.tsx` — Interactive settlement decisions
-- `PaymentLedger.tsx` — Transaction history table
-- `ReceiptComponents.tsx` — Receipt upload and gallery
+| Component | Description |
+|-----------|-------------|
+| `PayrollDashboard` | Main view with summary and payroll list |
+| `CalculationBreakdown` | Detailed salary breakdown modal |
+| `SettlementWorkspace` | Interactive settlement decisions |
+| `PaymentLedger` | Transaction history table |
+| `ReceiptUploadButton` | Upload receipt button |
+| `ReceiptPreview` | Thumbnail preview of receipts |
+| `ReceiptGallery` | Gallery modal for all receipts |
 
 ## Callback Props
 
 | Callback | Description |
 |----------|-------------|
-| `onSettleAbsence(employeeId, decision)` | 'penalize' or 'carry_forward' |
-| `onSettleUnusedLeave(employeeId, decision)` | 'encash', 'carry_forward', or 'lapse' |
-| `onFinalizePayment(id)` | Mark payroll as paid |
-| `onRecordAdvance(employeeId, amount, notes)` | Create new advance |
-| `onAddBonus(employeeId, amount, reason)` | Add one-time bonus |
-| `onUploadReceipt(ledgerEntryId, file)` | Attach payment proof |
+| `onSettleAbsence` | Decide penalty or carry forward |
+| `onSettleUnusedLeave` | Decide encash, carry forward, or lapse |
+| `onFinalizePayment` | Mark payroll as paid |
+| `onRecordAdvance` | Create new advance |
+| `onAddBonus` | Add one-time bonus |
+| `onViewCalculation` | Show salary breakdown |
+| `onSearchLedger` | Search payment history |
+| `onUploadReceipt` | Attach receipt to transaction |
+| `onDeleteReceipt` | Remove receipt |
+| `onViewReceipts` | Open receipt gallery |
 
-## Visual Reference
+## Design Notes
 
-See screenshots in `product/sections/payroll-and-finance/` for the target UI design.
+- Summary cards show total payroll, outstanding advances, pending settlements
+- Color coding for payroll status (Draft, Calculated, Pending, Paid)
+- Settlement workspace shows both excess absences and unused leave
+- Receipt thumbnails with click-to-expand gallery

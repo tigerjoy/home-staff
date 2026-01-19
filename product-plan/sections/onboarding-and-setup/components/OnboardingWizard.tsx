@@ -3,7 +3,7 @@ import type {
   OnboardingAndSetupProps,
   OnboardingStep,
   PresetOption,
-} from '../types'
+} from '@/../product/sections/onboarding-and-setup/types'
 import {
   Home,
   Settings,

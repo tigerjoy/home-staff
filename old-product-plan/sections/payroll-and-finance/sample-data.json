@@ -1,0 +1,169 @@
+{
+  "_meta": {
+    "models": {
+      "payrollRecords": "Monthly salary calculations including bonuses, penalties, and encashments.",
+      "advances": "Records of salary advances given to employees and their repayment status.",
+      "ledgerEntries": "Historical log of all completed financial transactions for audit and tracking.",
+      "settlementItems": "Pending items for the current month that require a user decision on holiday imbalances."
+    },
+    "relationships": [
+      "Payroll records belong to an Employee (linked by id)",
+      "Settlement items are generated based on the holidayBalance in the Staff Directory and Absences in Attendance",
+      "Ledger entries are created when a Payroll Record is marked as 'Paid'"
+    ]
+  },
+  "summary": {
+    "totalPayroll": 105500,
+    "outstandingAdvances": 15000,
+    "pendingSettlements": 3
+  },
+  "currentPayroll": [
+    {
+      "id": "pay-2024-01-emp-001",
+      "employeeId": "emp-001",
+      "employeeName": "Lakshmi Devi",
+      "baseSalary": 18000,
+      "bonuses": 500,
+      "penalties": 0,
+      "encashments": 0,
+      "advanceRepayment": 0,
+      "netPayable": 18500,
+      "status": "pending_settlement",
+      "holidayImbalance": -2
+    },
+    {
+      "id": "pay-2024-01-emp-002",
+      "employeeId": "emp-002",
+      "employeeName": "Raju Sharma",
+      "baseSalary": 22000,
+      "bonuses": 0,
+      "penalties": 733,
+      "encashments": 0,
+      "advanceRepayment": 2000,
+      "netPayable": 19267,
+      "status": "calculated",
+      "holidayImbalance": -1
+    },
+    {
+      "id": "pay-2024-01-emp-005",
+      "employeeId": "emp-005",
+      "employeeName": "Priya Singh",
+      "baseSalary": 25000,
+      "bonuses": 0,
+      "penalties": 0,
+      "encashments": 0,
+      "advanceRepayment": 0,
+      "netPayable": 25000,
+      "status": "pending_settlement",
+      "holidayImbalance": 12
+    }
+  ],
+  "advances": [
+    {
+      "id": "adv-1",
+      "employeeId": "emp-002",
+      "amount": 10000,
+      "date": "2023-11-15",
+      "repaidAmount": 4000,
+      "status": "active"
+    },
+    {
+      "id": "adv-2",
+      "employeeId": "emp-004",
+      "amount": 5000,
+      "date": "2024-01-05",
+      "repaidAmount": 0,
+      "status": "active"
+    }
+  ],
+  "ledger": [
+    {
+      "id": "tr-101",
+      "employeeId": "emp-001",
+      "date": "2023-12-31",
+      "type": "Salary",
+      "amount": 18000,
+      "status": "Paid",
+      "reference": "Dec 2023 Payroll",
+      "receipts": [
+        {
+          "id": "rcpt-001",
+          "url": "https://receipts.example.com/tr-101/bank-transfer.png",
+          "fileName": "bank-transfer-dec2023.png",
+          "fileType": "image",
+          "uploadedAt": "2023-12-31T14:30:00Z"
+        }
+      ]
+    },
+    {
+      "id": "tr-102",
+      "employeeId": "emp-002",
+      "date": "2023-12-31",
+      "type": "Salary",
+      "amount": 22000,
+      "status": "Paid",
+      "reference": "Dec 2023 Payroll",
+      "receipts": [
+        {
+          "id": "rcpt-002",
+          "url": "https://receipts.example.com/tr-102/upi-screenshot.png",
+          "fileName": "upi-payment-dec2023.png",
+          "fileType": "image",
+          "uploadedAt": "2023-12-31T15:00:00Z"
+        },
+        {
+          "id": "rcpt-003",
+          "url": "https://receipts.example.com/tr-102/salary-slip.pdf",
+          "fileName": "salary-slip-dec2023.pdf",
+          "fileType": "pdf",
+          "uploadedAt": "2023-12-31T15:05:00Z"
+        }
+      ]
+    },
+    {
+      "id": "tr-103",
+      "employeeId": "emp-002",
+      "date": "2023-11-15",
+      "type": "Advance",
+      "amount": 10000,
+      "status": "Disbursed",
+      "reference": "Emergency Home Repair",
+      "receipts": [
+        {
+          "id": "rcpt-004",
+          "url": "https://receipts.example.com/tr-103/cash-acknowledgment.png",
+          "fileName": "advance-acknowledgment.png",
+          "fileType": "image",
+          "uploadedAt": "2023-11-15T10:30:00Z"
+        }
+      ]
+    },
+    {
+      "id": "tr-104",
+      "employeeId": "emp-003",
+      "date": "2023-12-31",
+      "type": "Salary",
+      "amount": 20000,
+      "status": "Paid",
+      "reference": "Dec 2023 Payroll"
+    }
+  ],
+  "settlementWorkspace": [
+    {
+      "employeeId": "emp-001",
+      "name": "Lakshmi Devi",
+      "days": 2,
+      "type": "excess_absence",
+      "dailyRate": 600,
+      "potentialPenalty": 1200
+    },
+    {
+      "employeeId": "emp-005",
+      "name": "Priya Singh",
+      "days": 12,
+      "type": "unused_leave",
+      "dailyRate": 833,
+      "potentialEncashment": 9996
+    }
+  ]
+}

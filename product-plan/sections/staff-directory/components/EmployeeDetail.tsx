@@ -19,7 +19,7 @@ import {
   Upload,
   Palmtree
 } from 'lucide-react'
-import type { EmployeeDetailProps, CustomProperty, Document as DocType } from '../types'
+import type { EmployeeDetailProps, CustomProperty, Document as DocType } from '@/../product/sections/staff-directory/types'
 
 export function EmployeeDetail({
   employee,

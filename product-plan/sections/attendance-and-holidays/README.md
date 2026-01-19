@@ -6,38 +6,39 @@ A "present by default" system for tracking household staff attendance and managi
 
 ## User Flows
 
-- View daily attendance sheet with all employees
-- Mark absences by clicking on employees (present by default)
-- Configure holiday rules per employee
-- Track running holiday balance
-- Mark employees as inactive for extended periods
-- View attendance calendar with history
+- View daily attendance with all staff defaulted to present
+- Mark absences for employees who didn't show up
+- Configure holiday entitlements (fixed days or recurring)
+- View running holiday balance for each employee
+- Mark employees inactive for extended periods
+- View attendance history in calendar format
 
 ## Components Provided
 
-- `AttendanceDashboard.tsx` — Main view with employee list and calendar
-- `AttendanceCalendar.tsx` — Monthly calendar view
-- `HolidayRuleModal.tsx` — Configure holiday entitlements
-- `InactivityModal.tsx` — Mark employee inactive/active
+| Component | Description |
+|-----------|-------------|
+| `AttendanceDashboard` | Main attendance view with employee list |
+| `AttendanceCalendar` | Calendar view of attendance history |
+| `HolidayRuleModal` | Configure holiday entitlements |
+| `InactivityModal` | Mark employee inactive/active |
 
 ## Callback Props
 
 | Callback | Description |
 |----------|-------------|
-| `onAddLeaveRecord(record)` | Mark employee as absent |
-| `onUpdateLeaveRecord(id, updates)` | Change leave type |
-| `onRemoveLeaveRecord(id)` | Remove absence (mark present) |
-| `onDateChange(date)` | Navigate to different date |
-| `onSaveHolidayRules(employeeId, config)` | Save holiday configuration |
-| `onMarkInactive(employeeId, startDate, reason)` | Start inactivity period |
-| `onMarkActive(employeeId, endDate)` | End inactivity period |
+| `onAddLeaveRecord` | Mark employee absent for a date |
+| `onUpdateLeaveRecord` | Change leave type or notes |
+| `onRemoveLeaveRecord` | Remove absence (mark as present) |
+| `onAddHoliday` | Add a public holiday |
+| `onRemoveHoliday` | Remove a public holiday |
+| `onDateChange` | Navigate to different date |
+| `onSaveHolidayRules` | Save holiday entitlement config |
+| `onMarkInactive` | Start inactivity period |
+| `onMarkActive` | End inactivity period |
 
-## Key Concepts
+## Design Notes
 
-- **Present by Default:** No record = present. Only absences are tracked.
-- **Holiday Balance:** Tracks remaining entitled days, carries forward monthly.
-- **Inactivity Period:** Extended absence where no attendance is tracked.
-
-## Visual Reference
-
-See screenshots in `product/sections/attendance-and-holidays/` for the target UI design.
+- Visual status indicators: Red (Absence), Gray (Off-day), Amber (Inactive)
+- Holiday balance displayed for each employee
+- Present by default — only exceptions are recorded
+- Calendar shows month view with color coding

@@ -17,7 +17,7 @@ import type {
   Employee,
   LeaveRecord,
   LeaveType,
-} from '../types'
+} from '@/../product/sections/attendance-and-holidays/types'
 
 // =============================================================================
 // Helper Components

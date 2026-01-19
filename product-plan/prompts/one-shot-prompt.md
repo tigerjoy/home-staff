@@ -1,5 +1,9 @@
 # One-Shot Implementation Prompt
 
+Copy and paste this prompt into your coding agent to implement the complete HomeStaff application.
+
+---
+
 I need you to implement a complete web application based on detailed design specifications and UI components I'm providing.
 
 ## Instructions
