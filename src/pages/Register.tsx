@@ -1,9 +1,18 @@
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { UserAuthentication } from '../../product-plan/sections/user-authentication/components/UserAuthentication'
 import type { UserAuthenticationProps } from '../../product-plan/sections/user-authentication/types'
+import { useSession } from '../context/SessionContext'
+import * as authApi from '../lib/api/auth'
+import { needsOnboarding } from '../lib/api/auth'
 
 export function Register() {
   const navigate = useNavigate()
+  const { session } = useSession()
+  const [currentView, setCurrentView] = useState<UserAuthenticationProps['currentView']>('register')
+  const [verificationEmail, setVerificationEmail] = useState<string | undefined>()
+  const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   const authConfig: UserAuthenticationProps['authConfig'] = {
     logo: 'HomeStaff',
@@ -141,40 +150,113 @@ export function Register() {
     tooManyAttempts: 'Too many attempts. Please try again in a few minutes',
   }
 
-  const handleLogin = (email: string, password: string) => {
-    console.log('Login:', { email, password })
+  // Redirect if already authenticated
+  useEffect(() => {
+    if (session) {
+      needsOnboarding().then((needs) => {
+        if (needs) {
+          navigate('/onboarding', { replace: true })
+        } else {
+          navigate('/staff', { replace: true })
+        }
+      })
+    }
+  }, [session, navigate])
+
+  const handleLogin = async (email: string, password: string) => {
     navigate('/login')
   }
 
-  const handleRegister = (name: string, email: string, password: string) => {
-    console.log('Register:', { name, email, password })
-    // TODO: Implement actual registration logic
+  const handleRegister = async (name: string, email: string, password: string) => {
+    setIsLoading(true)
+    setError(null)
+    try {
+      const { user, error: authError } = await authApi.signUp({ name, email, password })
+      if (authError) {
+        setError(authError.message)
+        setIsLoading(false)
+        return
+      }
+      if (user) {
+        setVerificationEmail(email)
+        setCurrentView('verification')
+        setIsLoading(false)
+        // Send verification OTP
+        await authApi.sendOTP({ email, purpose: 'email_verification' })
+      }
+    } catch (err: any) {
+      setError(err.message || 'Failed to sign up')
+      setIsLoading(false)
+    }
   }
 
-  const handleSocialAuth = (providerId: string) => {
-    console.log('Social auth:', providerId)
-    // TODO: Implement social auth logic
+  const handleSocialAuth = async (providerId: string) => {
+    setIsLoading(true)
+    setError(null)
+    try {
+      const { error: authError } = await authApi.signInWithOAuth(providerId as 'google' | 'facebook')
+      if (authError) {
+        setError(authError.message)
+        setIsLoading(false)
+      }
+      // OAuth redirects, so we don't handle navigation here
+    } catch (err: any) {
+      setError(err.message || 'Failed to sign in with OAuth')
+      setIsLoading(false)
+    }
   }
 
-  const handleVerifyCode = (code: string) => {
-    console.log('Verify code:', code)
-    // TODO: Implement verification logic
-    navigate('/onboarding')
+  const handleVerifyCode = async (code: string) => {
+    if (!verificationEmail) return
+    
+    setIsLoading(true)
+    setError(null)
+    try {
+      const { verified, error: authError } = await authApi.verifyOTP({
+        email: verificationEmail,
+        code,
+        purpose: 'email_verification',
+      })
+      if (authError) {
+        setError(authError.message)
+        setIsLoading(false)
+        return
+      }
+      if (verified) {
+        const needs = await needsOnboarding()
+        if (needs) {
+          navigate('/onboarding', { replace: true })
+        } else {
+          navigate('/staff', { replace: true })
+        }
+      } else {
+        setError('Verification failed')
+        setIsLoading(false)
+      }
+    } catch (err: any) {
+      setError(err.message || 'Failed to verify code')
+      setIsLoading(false)
+    }
   }
 
-  const handleResendCode = () => {
-    console.log('Resend code')
-    // TODO: Implement resend logic
+  const handleResendCode = async () => {
+    if (!verificationEmail) return
+    setIsLoading(true)
+    setError(null)
+    try {
+      await authApi.sendOTP({ email: verificationEmail, purpose: 'email_verification' })
+      setIsLoading(false)
+    } catch (err: any) {
+      setError(err.message || 'Failed to send code')
+      setIsLoading(false)
+    }
   }
 
-  const handleForgotPassword = (email: string) => {
-    console.log('Forgot password:', email)
-    // TODO: Implement forgot password logic
+  const handleForgotPassword = async (email: string) => {
+    navigate('/login')
   }
 
-  const handleResetPassword = (password: string) => {
-    console.log('Reset password')
-    // TODO: Implement reset password logic
+  const handleResetPassword = async (password: string) => {
     navigate('/login')
   }
 
@@ -197,7 +279,10 @@ export function Register() {
       verificationForm={verificationForm}
       forgotPasswordForm={forgotPasswordForm}
       errorMessages={errorMessages}
-      currentView="register"
+      currentView={currentView}
+      verificationEmail={verificationEmail}
+      isLoading={isLoading}
+      error={error || undefined}
       onLogin={handleLogin}
       onRegister={handleRegister}
       onSocialAuth={handleSocialAuth}
@@ -207,6 +292,12 @@ export function Register() {
       onResetPassword={handleResetPassword}
       onTabChange={handleTabChange}
       onNavigate={handleNavigate}
+      onBack={() => {
+        if (currentView === 'verification') {
+          setCurrentView('register')
+          setVerificationEmail(undefined)
+        }
+      }}
     />
   )
 }

@@ -1,10 +1,10 @@
 import { useState } from 'react'
 import { Plus, Trash2, Settings2, StickyNote, Clock } from 'lucide-react'
-import type { Employee, CustomProperty, Note } from '../../types'
+import type { UIEmployee, CustomProperty, Note } from '../../types'
 
 interface CustomFieldsStepProps {
-  data: Omit<Employee, 'id'>
-  onChange: (updates: Partial<Omit<Employee, 'id'>>) => void
+  data: Omit<UIEmployee, 'id' | 'householdId' | 'status' | 'holidayBalance'>
+  onChange: (updates: Partial<Omit<UIEmployee, 'id' | 'householdId' | 'status' | 'holidayBalance'>>) => void
 }
 
 const SUGGESTED_PROPERTIES = [

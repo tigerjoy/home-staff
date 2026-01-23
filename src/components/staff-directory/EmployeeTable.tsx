@@ -1,9 +1,9 @@
 import { Eye, Pencil, Archive, MoreHorizontal, Palmtree } from 'lucide-react'
 import { useState } from 'react'
-import type { Employee } from '../../types'
+import type { UIEmployee } from '../../types'
 
 interface EmployeeTableProps {
-  employees: Employee[]
+  employees: UIEmployee[]
   onView?: (id: string) => void
   onEdit?: (id: string) => void
   onArchive?: (id: string) => void

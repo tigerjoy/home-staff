@@ -5,10 +5,15 @@ import react from '@vitejs/plugin-react'
 
 // https://vite.dev/config/
 export default defineConfig({
+  appType: 'spa',
   plugins: [react(), tailwindcss()],
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
     },
+  },
+  preview: {
+    // Configure preview server to handle SPA routing
+    // This ensures all routes serve index.html for client-side routing
   },
 })

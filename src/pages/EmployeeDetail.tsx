@@ -3,28 +3,30 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { EmployeeDetail as EmployeeDetailComponent } from '../components/staff-directory/EmployeeDetail'
 import { fetchEmployee, updateEmployee, archiveEmployee, restoreEmployee } from '../lib/api/employees'
 import { uploadDocument as uploadDocumentFile, deleteDocument as deleteDocumentFile } from '../lib/storage/documents'
-import type { Employee, CustomProperty, Document } from '../types'
+import { useHousehold } from '../hooks/useHousehold'
+import type { UIEmployee, CustomProperty, Document } from '../types'
 
 export function EmployeeDetail() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
-  const [employee, setEmployee] = useState<Employee | null>(null)
+  const { activeHouseholdId, loading: householdLoading } = useHousehold()
+  const [employee, setEmployee] = useState<UIEmployee | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    if (id) {
+    if (id && activeHouseholdId) {
       loadEmployee()
     }
-  }, [id])
+  }, [id, activeHouseholdId])
 
   const loadEmployee = async () => {
-    if (!id) return
+    if (!id || !activeHouseholdId) return
 
     try {
       setLoading(true)
       setError(null)
-      const data = await fetchEmployee(id)
+      const data = await fetchEmployee(id, activeHouseholdId)
       setEmployee(data)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load employee')
@@ -41,13 +43,13 @@ export function EmployeeDetail() {
   }
 
   const handleArchive = async () => {
-    if (!id || !employee) return
+    if (!id || !employee || !activeHouseholdId) return
 
     try {
       if (employee.status === 'archived') {
-        await restoreEmployee(id)
+        await restoreEmployee(id, activeHouseholdId)
       } else {
-        await archiveEmployee(id)
+        await archiveEmployee(id, activeHouseholdId)
       }
       await loadEmployee()
     } catch (err) {
@@ -64,8 +66,7 @@ export function EmployeeDetail() {
     if (!id || !employee) return
 
     try {
-      const employeeId = Number(id)
-      const url = await uploadDocumentFile(file, employeeId, category)
+      const url = await uploadDocumentFile(id, file, category)
 
       // Update employee with new document
       const newDocument: Document = {
@@ -75,11 +76,11 @@ export function EmployeeDetail() {
         uploadedAt: new Date().toISOString(),
       }
 
-      const updatedEmployee = await updateEmployee(id, {
+      await updateEmployee(id, {
         documents: [...employee.documents, newDocument],
       })
 
-      setEmployee(updatedEmployee)
+      await loadEmployee()
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to upload document')
       console.error('Error uploading document:', err)
@@ -93,10 +94,10 @@ export function EmployeeDetail() {
       const document = employee.documents.find((d) => d.name === documentName)
       if (document) {
         await deleteDocumentFile(document.url)
-        const updatedEmployee = await updateEmployee(id, {
+        await updateEmployee(id, {
           documents: employee.documents.filter((d) => d.name !== documentName),
         })
-        setEmployee(updatedEmployee)
+        await loadEmployee()
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to delete document')
@@ -108,10 +109,10 @@ export function EmployeeDetail() {
     if (!id || !employee) return
 
     try {
-      const updatedEmployee = await updateEmployee(id, {
+      await updateEmployee(id, {
         customProperties: [...employee.customProperties, property],
       })
-      setEmployee(updatedEmployee)
+      await loadEmployee()
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to add custom property')
       console.error('Error adding custom property:', err)
@@ -122,10 +123,10 @@ export function EmployeeDetail() {
     if (!id || !employee) return
 
     try {
-      const updatedEmployee = await updateEmployee(id, {
+      await updateEmployee(id, {
         customProperties: employee.customProperties.filter((p) => p.name !== propertyName),
       })
-      setEmployee(updatedEmployee)
+      await loadEmployee()
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to remove custom property')
       console.error('Error removing custom property:', err)
@@ -140,10 +141,10 @@ export function EmployeeDetail() {
         content,
         createdAt: new Date().toISOString(),
       }
-      const updatedEmployee = await updateEmployee(id, {
+      await updateEmployee(id, {
         notes: [newNote, ...employee.notes],
       })
-      setEmployee(updatedEmployee)
+      await loadEmployee()
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to add note')
       console.error('Error adding note:', err)
@@ -154,17 +155,17 @@ export function EmployeeDetail() {
     if (!id || !employee) return
 
     try {
-      const updatedEmployee = await updateEmployee(id, {
+      await updateEmployee(id, {
         notes: employee.notes.filter((n) => n.createdAt !== createdAt),
       })
-      setEmployee(updatedEmployee)
+      await loadEmployee()
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to delete note')
       console.error('Error deleting note:', err)
     }
   }
 
-  if (loading) {
+  if (householdLoading || loading) {
     return (
       <div className="min-h-screen bg-stone-50 dark:bg-stone-950 flex items-center justify-center">
         <div className="text-center">

@@ -14,4 +14,4 @@ Use whole blocks where possible (eg. Login Page etc)
 When implementing first check how to use the compoenent
 Then implement it so that it is implemented properly
 
-When you need to do backend storage etc please make use of the Supabase MCP.
+When you need to do backend storage etc please make use of the Supabase MCP, Use it to apply migrations etc.

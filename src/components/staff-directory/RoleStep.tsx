@@ -1,10 +1,10 @@
 import { useState } from 'react'
 import { Plus, Trash2, Briefcase, Building2, Calendar } from 'lucide-react'
-import type { Employee, EmploymentRecord } from '../../types'
+import type { UIEmployee, EmploymentRecord } from '../../types'
 
 interface RoleStepProps {
-  data: Omit<Employee, 'id'>
-  onChange: (updates: Partial<Omit<Employee, 'id'>>) => void
+  data: Omit<UIEmployee, 'id' | 'householdId' | 'status' | 'holidayBalance'>
+  onChange: (updates: Partial<Omit<UIEmployee, 'id' | 'householdId' | 'status' | 'holidayBalance'>>) => void
 }
 
 const COMMON_ROLES = [

@@ -1,140 +1,160 @@
-import { supabase } from '../supabase/client'
-import type { Document } from '../../types'
+import { supabase } from '../../supabase'
 
 const BUCKET_NAME = 'employee-documents'
-
-// Signed URLs expire after 1 year (31536000 seconds)
-const SIGNED_URL_EXPIRY = 31536000
+const MAX_FILE_SIZE = 10 * 1024 * 1024 // 10MB
+const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp']
+const ALLOWED_DOCUMENT_TYPES = ['application/pdf', 'image/jpeg', 'image/png']
 
 /**
- * Upload a document file to Supabase Storage
- * @returns Signed URL of the uploaded file
+ * Generate a unique filename using UUID
  */
-export async function uploadDocument(
-  file: File,
-  employeeId: number,
-  category: Document['category']
-): Promise<string> {
-  // Create file path: employees/{employeeId}/documents/{category}/{filename}
-  const fileExt = file.name.split('.').pop()
-  const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`
-  const filePath = `employees/${employeeId}/documents/${category}/${fileName}`
-
-  // Upload file
-  const { data, error } = await supabase.storage
-    .from(BUCKET_NAME)
-    .upload(filePath, file, {
-      cacheControl: '3600',
-      upsert: false,
-    })
-
-  if (error) {
-    throw new Error(`Failed to upload document: ${error.message}`)
-  }
-
-  // Get signed URL
-  const { data: signedUrlData, error: urlError } = await supabase.storage
-    .from(BUCKET_NAME)
-    .createSignedUrl(filePath, SIGNED_URL_EXPIRY)
-
-  if (urlError || !signedUrlData) {
-    throw new Error(`Failed to create signed URL: ${urlError?.message}`)
-  }
-
-  return signedUrlData.signedUrl
+function generateFilename(originalFilename: string): string {
+  const uuid = crypto.randomUUID()
+  // Sanitize original filename
+  const sanitized = originalFilename
+    .replace(/[^a-zA-Z0-9.-]/g, '_')
+    .substring(0, 100) // Limit length
+  const extension = originalFilename.substring(originalFilename.lastIndexOf('.'))
+  return `${uuid}-${sanitized}${extension}`
 }
 
 /**
- * Upload an employee photo
- * @returns Signed URL of the uploaded photo
+ * Validate file before upload
  */
-export async function uploadPhoto(file: File, employeeId: number): Promise<string> {
-  // Create file path: employees/{employeeId}/photo.{ext}
-  const fileExt = file.name.split('.').pop() || 'jpg'
-  const filePath = `employees/${employeeId}/photo.${fileExt}`
+function validateFile(file: File, allowedTypes: string[]): void {
+  if (file.size > MAX_FILE_SIZE) {
+    throw new Error(`File size exceeds maximum of ${MAX_FILE_SIZE / 1024 / 1024}MB`)
+  }
 
-  // Upload file (overwrite existing photo)
-  const { error } = await supabase.storage.from(BUCKET_NAME).upload(filePath, file, {
+  if (!allowedTypes.includes(file.type)) {
+    throw new Error(`File type ${file.type} is not allowed. Allowed types: ${allowedTypes.join(', ')}`)
+  }
+}
+
+/**
+ * Ensure the storage bucket exists
+ */
+async function ensureBucketExists(): Promise<void> {
+  const { data: buckets, error: listError } = await supabase.storage.listBuckets()
+
+  if (listError) {
+    throw new Error(`Failed to list buckets: ${listError.message}`)
+  }
+
+  const bucketExists = buckets?.some((b) => b.name === BUCKET_NAME)
+
+  if (!bucketExists) {
+    // Note: Bucket creation typically requires admin privileges
+    // In production, create the bucket via Supabase dashboard or CLI
+    console.warn(`Bucket ${BUCKET_NAME} does not exist. Please create it via Supabase dashboard.`)
+  }
+}
+
+/**
+ * Upload employee photo
+ */
+export async function uploadPhoto(employeeId: string, file: File): Promise<string> {
+  validateFile(file, ALLOWED_IMAGE_TYPES)
+
+  await ensureBucketExists()
+
+  const filename = generateFilename(file.name)
+  const filePath = `${employeeId}/photos/${filename}`
+
+  const { data, error } = await supabase.storage.from(BUCKET_NAME).upload(filePath, file, {
     cacheControl: '3600',
-    upsert: true,
+    upsert: false,
   })
 
   if (error) {
     throw new Error(`Failed to upload photo: ${error.message}`)
   }
 
-  // Get signed URL
-  const { data: signedUrlData, error: urlError } = await supabase.storage
-    .from(BUCKET_NAME)
-    .createSignedUrl(filePath, SIGNED_URL_EXPIRY)
+  // Get public URL
+  const {
+    data: { publicUrl },
+  } = supabase.storage.from(BUCKET_NAME).getPublicUrl(filePath)
 
-  if (urlError || !signedUrlData) {
-    throw new Error(`Failed to create signed URL: ${urlError?.message}`)
-  }
-
-  return signedUrlData.signedUrl
+  return publicUrl
 }
 
 /**
- * Delete a document from Supabase Storage
- * @param url - Signed URL or file path
+ * Upload employee document
  */
-export async function deleteDocument(url: string): Promise<void> {
-  // Extract file path from URL
-  // Signed URL format: https://{project}.supabase.co/storage/v1/object/sign/{bucket}/{path}?token=...
-  // Try to extract path from signed URL or treat as direct path
-  let filePath: string
+export async function uploadDocument(
+  employeeId: string,
+  file: File,
+  category: 'ID' | 'Contract' | 'Certificate'
+): Promise<string> {
+  validateFile(file, ALLOWED_DOCUMENT_TYPES)
 
-  if (url.includes('/storage/v1/object/sign/')) {
-    // Extract from signed URL
-    const urlParts = url.split('/storage/v1/object/sign/')
-    if (urlParts.length !== 2) {
-      throw new Error('Invalid signed URL format')
-    }
-    const pathAndToken = urlParts[1].split('?')[0]
-    const pathParts = pathAndToken.split('/')
-    if (pathParts[0] !== BUCKET_NAME) {
-      throw new Error('Invalid bucket name in URL')
-    }
-    filePath = pathParts.slice(1).join('/')
-  } else if (url.includes('/storage/v1/object/public/')) {
-    // Legacy public URL format
-    const urlParts = url.split('/storage/v1/object/public/')
-    if (urlParts.length !== 2) {
-      throw new Error('Invalid document URL')
-    }
-    const pathParts = urlParts[1].split('/')
-    if (pathParts[0] !== BUCKET_NAME) {
-      throw new Error('Invalid bucket name')
-    }
-    filePath = pathParts.slice(1).join('/')
-  } else {
-    // Assume it's already a file path
-    filePath = url
-  }
+  await ensureBucketExists()
 
-  const { error } = await supabase.storage.from(BUCKET_NAME).remove([filePath])
+  const filename = generateFilename(file.name)
+  const filePath = `${employeeId}/documents/${category}/${filename}`
+
+  const { data, error } = await supabase.storage.from(BUCKET_NAME).upload(filePath, file, {
+    cacheControl: '3600',
+    upsert: false,
+  })
 
   if (error) {
-    throw new Error(`Failed to delete document: ${error.message}`)
+    throw new Error(`Failed to upload document: ${error.message}`)
+  }
+
+  // Get public URL
+  const {
+    data: { publicUrl },
+  } = supabase.storage.from(BUCKET_NAME).getPublicUrl(filePath)
+
+  return publicUrl
+}
+
+/**
+ * Delete a document from storage
+ */
+export async function deleteDocument(url: string): Promise<void> {
+  try {
+    // Extract file path from URL
+    // URL format: https://{project}.supabase.co/storage/v1/object/public/{bucket}/{path}
+    const urlObj = new URL(url)
+    const pathParts = urlObj.pathname.split('/')
+    const bucketIndex = pathParts.indexOf('public')
+    if (bucketIndex === -1 || bucketIndex === pathParts.length - 1) {
+      throw new Error('Invalid storage URL format')
+    }
+
+    const filePath = pathParts.slice(bucketIndex + 2).join('/') // Skip 'public' and bucket name
+
+    const { error } = await supabase.storage.from(BUCKET_NAME).remove([filePath])
+
+    if (error) {
+      throw new Error(`Failed to delete document: ${error.message}`)
+    }
+  } catch (err) {
+    if (err instanceof Error && err.message.includes('Invalid storage URL')) {
+      throw err
+    }
+    // If URL parsing fails, try to extract path differently
+    const match = url.match(/\/storage\/v1\/object\/public\/[^/]+\/(.+)$/)
+    if (match) {
+      const filePath = match[1]
+      const { error } = await supabase.storage.from(BUCKET_NAME).remove([filePath])
+      if (error) {
+        throw new Error(`Failed to delete document: ${error.message}`)
+      }
+    } else {
+      throw new Error('Invalid storage URL format')
+    }
   }
 }
 
 /**
- * Get a signed URL for an existing file path
- * Useful for regenerating expired signed URLs
- * @param filePath - Path to the file in storage
- * @param expiresIn - Expiration time in seconds (default: 1 year)
- * @returns Signed URL
+ * Get public URL for a document
  */
-export async function getSignedUrl(filePath: string, expiresIn: number = SIGNED_URL_EXPIRY): Promise<string> {
-  const { data: signedUrlData, error } = await supabase.storage
-    .from(BUCKET_NAME)
-    .createSignedUrl(filePath, expiresIn)
-
-  if (error || !signedUrlData) {
-    throw new Error(`Failed to create signed URL: ${error?.message}`)
-  }
-
-  return signedUrlData.signedUrl
+export function getDocumentUrl(filePath: string): string {
+  const {
+    data: { publicUrl },
+  } = supabase.storage.from(BUCKET_NAME).getPublicUrl(filePath)
+  return publicUrl
 }

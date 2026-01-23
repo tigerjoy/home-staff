@@ -1,9 +1,9 @@
 import { Phone, MapPin, Calendar, MoreVertical, Eye, Pencil, Archive, Palmtree } from 'lucide-react'
 import { useState } from 'react'
-import type { Employee } from '../../types'
+import type { UIEmployee } from '../../types'
 
 interface EmployeeCardProps {
-  employee: Employee
+  employee: UIEmployee
   onView?: () => void
   onEdit?: () => void
   onArchive?: () => void

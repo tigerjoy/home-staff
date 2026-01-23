@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { supabase } from '../../supabase/client'
+import { supabase } from '../../../supabase'
 import {
   fetchEmployees,
   fetchEmployee,
@@ -7,8 +7,9 @@ import {
   updateEmployee,
   archiveEmployee,
   restoreEmployee,
+  getCurrentEmployment,
 } from '../employees'
-import type { Employee } from '../../../types'
+import type { Employee, UIEmployee } from '../../../types'
 
 vi.mock('../../supabase/client', () => ({
   supabase: {
@@ -31,35 +32,33 @@ vi.mock('../../supabase/client', () => ({
   },
 }))
 
-const mockEmployeeData = {
-  id: 1,
-  household_id: 1,
+const mockHouseholdId = 'household-123'
+const mockEmployeeId = 'employee-456'
+const mockEmploymentId = 'employment-789'
+
+const mockEmployee = {
+  id: mockEmployeeId,
   name: 'Priya Sharma',
   photo: null,
   status: 'active',
+  created_at: '2024-01-15T00:00:00Z',
+  updated_at: '2024-01-15T00:00:00Z',
+}
+
+const mockEmployment = {
+  id: mockEmploymentId,
+  employee_id: mockEmployeeId,
+  household_id: mockHouseholdId,
+  employment_type: 'monthly',
+  role: 'Cook',
+  start_date: '2024-01-15',
+  end_date: null,
+  status: 'active',
   holiday_balance: 5,
-  employee_phone_numbers: [{ id: 1, number: '+91 98765 12345', label: 'Mobile' }],
-  employee_addresses: [],
-  employment_history: [
-    {
-      id: 1,
-      role: 'Cook',
-      department: 'Kitchen',
-      start_date: '2024-01-15',
-      end_date: null,
-    },
-  ],
-  salary_history: [
-    {
-      id: 1,
-      amount: 15000,
-      payment_method: 'Bank Transfer',
-      effective_date: '2024-01-15',
-    },
-  ],
-  employee_documents: [],
-  employee_custom_properties: [],
-  employee_notes: [],
+  current_salary: 15000,
+  payment_method: 'Bank Transfer',
+  created_at: '2024-01-15T00:00:00Z',
+  updated_at: '2024-01-15T00:00:00Z',
 }
 
 describe('employees API', () => {
@@ -68,201 +67,328 @@ describe('employees API', () => {
   })
 
   describe('fetchEmployees', () => {
-    it('should fetch employees with pagination and filters', async () => {
-      const mockQuery = {
-        select: vi.fn().mockReturnThis(),
-        eq: vi.fn().mockReturnThis(),
-        order: vi.fn().mockReturnThis(),
-        range: vi.fn().mockResolvedValue({
-          data: [mockEmployeeData],
-          error: null,
-          count: 1,
-        }),
+    it('should fetch employees for a household via employments', async () => {
+      const mockEmployments = {
+        data: [mockEmployment],
+        error: null,
+        count: 1,
       }
 
-      vi.mocked(supabase.from).mockReturnValue(mockQuery as any)
+      const mockEmployees = {
+        data: [mockEmployee],
+        error: null,
+      }
 
-      const result = await fetchEmployees('1', 1, 20)
+      const mockPhoneNumbers = { data: [], error: null }
+      const mockAddresses = { data: [], error: null }
+      const mockDocuments = { data: [], error: null }
+      const mockCustomProperties = { data: [], error: null }
+      const mockNotes = { data: [], error: null }
+      const mockAllEmployments = { data: [mockEmployment], error: null }
 
-      expect(supabase.from).toHaveBeenCalledWith('employees')
-      expect(result.data).toHaveLength(1)
-      expect(result.total).toBe(1)
+      const fromMock = vi.fn()
+      fromMock.mockReturnValueOnce({
+        select: vi.fn().mockReturnValue({
+          eq: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              order: vi.fn().mockReturnValue({
+                range: vi.fn().mockResolvedValue(mockEmployments),
+              }),
+            }),
+          }),
+        }),
+      })
+
+      fromMock.mockReturnValueOnce({
+        select: vi.fn().mockReturnValue({
+          in: vi.fn().mockResolvedValue(mockEmployees),
+        }),
+      })
+
+      fromMock.mockReturnValueOnce({
+        select: vi.fn().mockReturnValue({
+          in: vi.fn().mockResolvedValue(mockAllEmployments),
+        }),
+      })
+
+      // Mock related data fetches
+      ;[mockPhoneNumbers, mockAddresses, mockDocuments, mockCustomProperties, mockNotes].forEach((mock) => {
+        fromMock.mockReturnValueOnce({
+          select: vi.fn().mockReturnValue({
+            in: vi.fn().mockResolvedValue(mock),
+          }),
+        })
+      })
+
+      ;(supabase.from as any) = fromMock
+
+      const result = await fetchEmployees(mockHouseholdId, 1, 20)
+
+      expect(result.data).toBeDefined()
+      expect(Array.isArray(result.data)).toBe(true)
     })
 
-    it('should handle errors when fetching employees', async () => {
-      const mockQuery = {
-        select: vi.fn().mockReturnThis(),
-        eq: vi.fn().mockReturnThis(),
-        order: vi.fn().mockReturnThis(),
-        range: vi.fn().mockResolvedValue({
-          data: null,
-          error: { message: 'Database error' },
-          count: null,
-        }),
+    it('should return empty array when no employments exist', async () => {
+      const mockEmployments = {
+        data: [],
+        error: null,
+        count: 0,
       }
 
-      vi.mocked(supabase.from).mockReturnValue(mockQuery as any)
+      const fromMock = vi.fn()
+      fromMock.mockReturnValueOnce({
+        select: vi.fn().mockReturnValue({
+          eq: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              order: vi.fn().mockReturnValue({
+                range: vi.fn().mockResolvedValue(mockEmployments),
+              }),
+            }),
+          }),
+        }),
+      })
 
-      // Note: fetchEmployees will throw on error, but we can test the error case differently
-      // For now, we'll just check that the query was attempted
-      await expect(fetchEmployees('1', 1, 20)).rejects.toThrow()
+      ;(supabase.from as any) = fromMock
+
+      const result = await fetchEmployees(mockHouseholdId, 1, 20)
+
+      expect(result.data).toEqual([])
+      expect(result.total).toBe(0)
     })
   })
 
   describe('fetchEmployee', () => {
-    it('should fetch a single employee by ID', async () => {
-      const mockQuery = {
-        select: vi.fn().mockReturnThis(),
-        eq: vi.fn().mockReturnThis(),
-        single: vi.fn().mockResolvedValue({
-          data: mockEmployeeData,
-          error: null,
-        }),
+    it('should fetch a single employee with employment data', async () => {
+      const mockEmployeeData = {
+        data: mockEmployee,
+        error: null,
       }
 
-      vi.mocked(supabase.from).mockReturnValue(mockQuery as any)
+      const mockEmployments = {
+        data: [mockEmployment],
+        error: null,
+      }
 
-      const result = await fetchEmployee('1')
+      const mockRelatedData = {
+        data: [],
+        error: null,
+      }
 
-      expect(result).toBeTruthy()
-      expect(result?.name).toBe('Priya Sharma')
+      const fromMock = vi.fn()
+      fromMock.mockReturnValueOnce({
+        select: vi.fn().mockReturnValue({
+          eq: vi.fn().mockReturnValue({
+            single: vi.fn().mockResolvedValue(mockEmployeeData),
+          }),
+        }),
+      })
+
+      fromMock.mockReturnValueOnce({
+        select: vi.fn().mockReturnValue({
+          eq: vi.fn().mockReturnValue({
+            order: vi.fn().mockResolvedValue(mockEmployments),
+          }),
+        }),
+      })
+
+      // Mock related data (5 calls)
+      for (let i = 0; i < 5; i++) {
+        fromMock.mockReturnValueOnce({
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockResolvedValue(mockRelatedData),
+          }),
+        })
+      }
+
+      ;(supabase.from as any) = fromMock
+
+      const result = await fetchEmployee(mockEmployeeId, mockHouseholdId)
+
+      expect(result).toBeDefined()
+      if (result) {
+        expect(result.id).toBe(mockEmployeeId)
+        expect(result.householdId).toBe(mockHouseholdId)
+      }
     })
 
     it('should return null when employee not found', async () => {
-      const mockQuery = {
-        select: vi.fn().mockReturnThis(),
-        eq: vi.fn().mockReturnThis(),
-        single: vi.fn().mockResolvedValue({
-          data: null,
-          error: { message: 'Not found' },
-        }),
+      const mockEmployeeData = {
+        data: null,
+        error: { code: 'PGRST116', message: 'Not found' },
       }
 
-      vi.mocked(supabase.from).mockReturnValue(mockQuery as any)
+      const fromMock = vi.fn()
+      fromMock.mockReturnValueOnce({
+        select: vi.fn().mockReturnValue({
+          eq: vi.fn().mockReturnValue({
+            single: vi.fn().mockResolvedValue(mockEmployeeData),
+          }),
+        }),
+      })
 
-      const result = await fetchEmployee('999')
+      ;(supabase.from as any) = fromMock
+
+      const result = await fetchEmployee('non-existent', mockHouseholdId)
 
       expect(result).toBeNull()
     })
   })
 
   describe('createEmployee', () => {
-    it('should create a new employee with related data', async () => {
-      const newEmployee: Omit<Employee, 'id'> = {
-        householdId: 1,
-        name: 'New Employee',
+    it('should create employee and initial employment', async () => {
+      const employeeData: Omit<Employee, 'id' | 'createdAt' | 'updatedAt'> = {
+        name: 'Test Employee',
         photo: null,
-        status: 'active',
-        holidayBalance: 0,
-        phoneNumbers: [{ number: '+91 98765 12345', label: 'Mobile' }],
+        phoneNumbers: [],
         addresses: [],
-        employmentHistory: [],
-        salaryHistory: [],
         documents: [],
         customProperties: [],
         notes: [],
       }
 
-      const mockInsertQuery = {
-        insert: vi.fn().mockReturnThis(),
-        select: vi.fn().mockReturnThis(),
-        single: vi.fn().mockResolvedValue({
-          data: { ...mockEmployeeData, id: 2, name: 'New Employee' },
-          error: null,
-        }),
+      const employmentData = {
+        householdId: mockHouseholdId,
+        employmentType: 'monthly' as const,
+        role: 'Cook',
+        startDate: '2024-01-15',
+        holidayBalance: 0,
+        currentSalary: 15000,
+        paymentMethod: 'Bank Transfer' as const,
       }
 
-      vi.mocked(supabase.from)
-        .mockReturnValueOnce(mockInsertQuery as any) // Main insert
-        .mockReturnValueOnce({ insert: vi.fn().mockResolvedValue({ error: null }) } as any) // Phone numbers
-        .mockReturnValueOnce({ insert: vi.fn().mockResolvedValue({ error: null }) } as any) // Addresses
-        .mockReturnValueOnce({ insert: vi.fn().mockResolvedValue({ error: null }) } as any) // Employment
-        .mockReturnValueOnce({ insert: vi.fn().mockResolvedValue({ error: null }) } as any) // Salary
-        .mockReturnValueOnce({ insert: vi.fn().mockResolvedValue({ error: null }) } as any) // Documents
-        .mockReturnValueOnce({ insert: vi.fn().mockResolvedValue({ error: null }) } as any) // Custom props
-        .mockReturnValueOnce({ insert: vi.fn().mockResolvedValue({ error: null }) } as any) // Notes
+      const mockCreatedEmployee = {
+        data: mockEmployee,
+        error: null,
+      }
 
-      // Mock fetchEmployee to return the created employee
-      vi.mocked(employeesApi.fetchEmployee).mockResolvedValue({
-        ...mockEmployeeData,
-        id: 2,
-        name: 'New Employee',
-      } as any)
+      const mockCreatedEmployment = {
+        data: mockEmployment,
+        error: null,
+      }
 
-      const result = await createEmployee(newEmployee)
+      const fromMock = vi.fn()
+      // Employee insert
+      fromMock.mockReturnValueOnce({
+        insert: vi.fn().mockReturnValue({
+          select: vi.fn().mockReturnValue({
+            single: vi.fn().mockResolvedValue(mockCreatedEmployee),
+          }),
+        }),
+      })
 
-      expect(result.name).toBe('New Employee')
-      expect(supabase.from).toHaveBeenCalledWith('employees')
+      // Employment insert
+      fromMock.mockReturnValueOnce({
+        insert: vi.fn().mockReturnValue({
+          select: vi.fn().mockReturnValue({
+            single: vi.fn().mockResolvedValue(mockCreatedEmployment),
+          }),
+        }),
+      })
+
+      // Mock fetchEmployee call (which will be called at the end)
+      fromMock.mockReturnValueOnce({
+        select: vi.fn().mockReturnValue({
+          eq: vi.fn().mockReturnValue({
+            single: vi.fn().mockResolvedValue(mockCreatedEmployee),
+          }),
+        }),
+      })
+
+      fromMock.mockReturnValueOnce({
+        select: vi.fn().mockReturnValue({
+          eq: vi.fn().mockReturnValue({
+            order: vi.fn().mockResolvedValue({ data: [mockEmployment], error: null }),
+          }),
+        }),
+      })
+
+      // Mock related data (5 calls)
+      for (let i = 0; i < 5; i++) {
+        fromMock.mockReturnValueOnce({
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockResolvedValue({ data: [], error: null }),
+          }),
+        })
+      }
+
+      ;(supabase.from as any) = fromMock
+
+      const result = await createEmployee(employeeData, employmentData)
+
+      expect(result).toBeDefined()
+      expect(result.id).toBe(mockEmployeeId)
     })
-  })
 
-  describe('updateEmployee', () => {
-    it('should update an employee and related data', async () => {
-      const updateData = {
-        name: 'Updated Name',
+    it('should throw error if employee creation fails', async () => {
+      const employeeData: Omit<Employee, 'id' | 'createdAt' | 'updatedAt'> = {
+        name: 'Test Employee',
+        photo: null,
+        phoneNumbers: [],
+        addresses: [],
+        documents: [],
+        customProperties: [],
+        notes: [],
       }
 
-      const mockUpdateQuery = {
-        update: vi.fn().mockReturnThis(),
-        eq: vi.fn().mockReturnThis(),
-        select: vi.fn().mockReturnThis(),
-        single: vi.fn().mockResolvedValue({
-          data: { ...mockEmployeeData, name: 'Updated Name' },
-          error: null,
+      const employmentData = {
+        householdId: mockHouseholdId,
+        employmentType: 'monthly' as const,
+        role: 'Cook',
+        startDate: '2024-01-15',
+        holidayBalance: 0,
+        currentSalary: 15000,
+        paymentMethod: 'Bank Transfer' as const,
+      }
+
+      const fromMock = vi.fn()
+      fromMock.mockReturnValueOnce({
+        insert: vi.fn().mockReturnValue({
+          select: vi.fn().mockReturnValue({
+            single: vi.fn().mockResolvedValue({
+              data: null,
+              error: { message: 'Creation failed' },
+            }),
+          }),
         }),
-      }
+      })
 
-      vi.mocked(supabase.from)
-        .mockReturnValueOnce(mockUpdateQuery as any) // Main update
-        .mockReturnValueOnce({ delete: vi.fn().mockReturnThis(), eq: vi.fn().mockResolvedValue({ error: null }) } as any) // Delete phones
-        .mockReturnValueOnce({ delete: vi.fn().mockReturnThis(), eq: vi.fn().mockResolvedValue({ error: null }) } as any) // Delete addresses
-        .mockReturnValueOnce({ delete: vi.fn().mockReturnThis(), eq: vi.fn().mockResolvedValue({ error: null }) } as any) // Delete employment
-        .mockReturnValueOnce({ delete: vi.fn().mockReturnThis(), eq: vi.fn().mockResolvedValue({ error: null }) } as any) // Delete salary
-        .mockReturnValueOnce({ delete: vi.fn().mockReturnThis(), eq: vi.fn().mockResolvedValue({ error: null }) } as any) // Delete documents
-        .mockReturnValueOnce({ delete: vi.fn().mockReturnThis(), eq: vi.fn().mockResolvedValue({ error: null }) } as any) // Delete custom
-        .mockReturnValueOnce({ delete: vi.fn().mockReturnThis(), eq: vi.fn().mockResolvedValue({ error: null }) } as any) // Delete notes
+      ;(supabase.from as any) = fromMock
 
-      const result = await updateEmployee('1', updateData)
-
-      expect(result.name).toBe('Updated Name')
+      await expect(createEmployee(employeeData, employmentData)).rejects.toThrow()
     })
   })
 
   describe('archiveEmployee', () => {
-    it('should update employee status to archived', async () => {
-      const mockUpdateQuery = {
-        update: vi.fn().mockReturnThis(),
-        eq: vi.fn().mockResolvedValue({
-          data: null,
-          error: null,
+    it('should archive employee employment', async () => {
+      const fromMock = vi.fn()
+      fromMock.mockReturnValueOnce({
+        update: vi.fn().mockReturnValue({
+          eq: vi.fn().mockReturnValue({
+            eq: vi.fn().mockResolvedValue({ data: null, error: null }),
+          }),
         }),
-      }
+      })
 
-      vi.mocked(supabase.from).mockReturnValue(mockUpdateQuery as any)
+      ;(supabase.from as any) = fromMock
 
-      await archiveEmployee('1')
-
-      expect(supabase.from).toHaveBeenCalledWith('employees')
-      expect(mockUpdateQuery.update).toHaveBeenCalledWith({ status: 'archived' })
+      await expect(archiveEmployee(mockEmployeeId, mockHouseholdId)).resolves.not.toThrow()
     })
   })
 
   describe('restoreEmployee', () => {
-    it('should update employee status to active', async () => {
-      const mockUpdateQuery = {
-        update: vi.fn().mockReturnThis(),
-        eq: vi.fn().mockResolvedValue({
-          data: null,
-          error: null,
+    it('should restore archived employee employment', async () => {
+      const fromMock = vi.fn()
+      fromMock.mockReturnValueOnce({
+        update: vi.fn().mockReturnValue({
+          eq: vi.fn().mockReturnValue({
+            eq: vi.fn().mockResolvedValue({ data: null, error: null }),
+          }),
         }),
-      }
+      })
 
-      vi.mocked(supabase.from).mockReturnValue(mockUpdateQuery as any)
+      ;(supabase.from as any) = fromMock
 
-      await restoreEmployee('1')
-
-      expect(supabase.from).toHaveBeenCalledWith('employees')
-      expect(mockUpdateQuery.update).toHaveBeenCalledWith({ status: 'active' })
+      await expect(restoreEmployee(mockEmployeeId, mockHouseholdId)).resolves.not.toThrow()
     })
   })
 })

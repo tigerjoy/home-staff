@@ -1,47 +1,46 @@
-import type { Employee } from '../../types'
+import type { UIEmployee } from '../../types'
 
 /**
  * Export employees to CSV format
  */
-export function exportToCSV(employees: Employee[], filename: string = 'staff-directory.csv'): void {
-  // Get current role and salary for each employee
+export function exportToCSV(employees: UIEmployee[], filename: string): void {
+  // Define CSV headers
+  const headers = [
+    'Name',
+    'Role',
+    'Phone',
+    'Email',
+    'Start Date',
+    'Holiday Balance',
+    'Current Salary',
+    'Payment Method',
+    'Status',
+  ]
+
+  // Convert employees to CSV rows
   const rows = employees.map((emp) => {
-    const currentRole = emp.employmentHistory.find((e) => e.endDate === null)
+    const currentRole = emp.employmentHistory.find((e) => !e.endDate) || emp.employmentHistory[0]
     const currentSalary = emp.salaryHistory[0]
-    const primaryPhone = emp.phoneNumbers[0]
 
-    return {
-      Name: emp.name,
-      Role: currentRole?.role || '',
-      Department: currentRole?.department || '',
-      Phone: primaryPhone?.number || '',
-      'Holiday Balance': emp.holidayBalance,
-      Salary: currentSalary ? `₹${currentSalary.amount.toLocaleString('en-IN')}` : '',
-      'Payment Method': currentSalary?.paymentMethod || '',
-      Status: emp.status,
-    }
+    return [
+      emp.name || '',
+      currentRole?.role || '',
+      emp.phoneNumbers.map((p) => p.number).join('; ') || '',
+      '', // Email not in employee data
+      currentRole?.startDate || '',
+      emp.holidayBalance.toString(),
+      currentSalary?.amount.toString() || '',
+      currentSalary?.paymentMethod || '',
+      emp.status,
+    ]
   })
 
-  // Create CSV header
-  const headers = Object.keys(rows[0] || {})
-  const csvRows = [headers.join(',')]
-
-  // Create CSV rows
-  rows.forEach((row) => {
-    const values = headers.map((header) => {
-      const value = row[header as keyof typeof row]
-      // Escape quotes and wrap in quotes if contains comma
-      const stringValue = String(value)
-      if (stringValue.includes(',') || stringValue.includes('"') || stringValue.includes('\n')) {
-        return `"${stringValue.replace(/"/g, '""')}"`
-      }
-      return stringValue
-    })
-    csvRows.push(values.join(','))
-  })
+  // Combine headers and rows
+  const csvContent = [headers, ...rows]
+    .map((row) => row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(','))
+    .join('\n')
 
   // Create blob and download
-  const csvContent = csvRows.join('\n')
   const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
   const link = document.createElement('a')
   const url = URL.createObjectURL(blob)
@@ -52,45 +51,47 @@ export function exportToCSV(employees: Employee[], filename: string = 'staff-dir
   document.body.appendChild(link)
   link.click()
   document.body.removeChild(link)
+  URL.revokeObjectURL(url)
 }
 
 /**
- * Export employees to PDF format using browser print API
+ * Export employees to PDF format
+ * Note: This is a basic implementation. For production, consider using a library like jsPDF or pdfkit
  */
-export function exportToPDF(employees: Employee[]): void {
-  // Create a temporary window with formatted content
-  const printWindow = window.open('', '_blank')
-  if (!printWindow) {
-    alert('Please allow pop-ups to generate PDF')
-    return
-  }
+export function exportToPDF(employees: UIEmployee[]): void {
+  // Create a simple HTML table for PDF generation
+  const tableRows = employees
+    .map((emp) => {
+      const currentRole = emp.employmentHistory.find((e) => !e.endDate) || emp.employmentHistory[0]
+      const currentSalary = emp.salaryHistory[0]
 
-  // Format employees data
-  const currentRole = (emp: Employee) => emp.employmentHistory.find((e) => e.endDate === null)
-  const currentSalary = (emp: Employee) => emp.salaryHistory[0]
-  const primaryPhone = (emp: Employee) => emp.phoneNumbers[0]
-
-  const formatSalary = (amount: number) => {
-    return new Intl.NumberFormat('en-IN', {
-      style: 'currency',
-      currency: 'INR',
-      maximumFractionDigits: 0,
-    }).format(amount)
-  }
+      return `
+      <tr>
+        <td>${escapeHtml(emp.name || '')}</td>
+        <td>${escapeHtml(currentRole?.role || '')}</td>
+        <td>${escapeHtml(emp.phoneNumbers.map((p) => p.number).join(', ') || '')}</td>
+        <td>${escapeHtml(currentRole?.startDate || '')}</td>
+        <td>${emp.holidayBalance}</td>
+        <td>${currentSalary?.amount || ''}</td>
+        <td>${escapeHtml(currentSalary?.paymentMethod || '')}</td>
+        <td>${escapeHtml(emp.status)}</td>
+      </tr>
+    `
+    })
+    .join('')
 
   const htmlContent = `
     <!DOCTYPE html>
     <html>
       <head>
-        <title>Staff Directory Report</title>
+        <title>Staff Directory</title>
         <style>
           body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            padding: 20px;
-            color: #1c1917;
+            font-family: Arial, sans-serif;
+            margin: 20px;
           }
           h1 {
-            color: #92400e;
+            color: #333;
             margin-bottom: 20px;
           }
           table {
@@ -99,74 +100,78 @@ export function exportToPDF(employees: Employee[]): void {
             margin-top: 20px;
           }
           th, td {
-            padding: 10px;
+            border: 1px solid #ddd;
+            padding: 8px;
             text-align: left;
-            border-bottom: 1px solid #e7e5e4;
           }
           th {
-            background-color: #fef3c7;
-            font-weight: 600;
-            color: #78350f;
+            background-color: #f2f2f2;
+            font-weight: bold;
           }
-          tr:hover {
-            background-color: #fef3c7;
-          }
-          .summary {
-            margin-bottom: 20px;
-            padding: 15px;
-            background-color: #fef3c7;
-            border-radius: 8px;
+          tr:nth-child(even) {
+            background-color: #f9f9f9;
           }
         </style>
       </head>
       <body>
-        <h1>Staff Directory Report</h1>
-        <div class="summary">
-          <p><strong>Total Staff:</strong> ${employees.length}</p>
-          <p><strong>Generated:</strong> ${new Date().toLocaleString('en-IN')}</p>
-        </div>
+        <h1>Staff Directory</h1>
+        <p>Generated on: ${new Date().toLocaleString()}</p>
         <table>
           <thead>
             <tr>
               <th>Name</th>
               <th>Role</th>
-              <th>Department</th>
               <th>Phone</th>
+              <th>Start Date</th>
               <th>Holiday Balance</th>
-              <th>Salary</th>
+              <th>Current Salary</th>
+              <th>Payment Method</th>
               <th>Status</th>
             </tr>
           </thead>
           <tbody>
-            ${employees
-              .map(
-                (emp) => `
-              <tr>
-                <td>${emp.name}</td>
-                <td>${currentRole(emp)?.role || '—'}</td>
-                <td>${currentRole(emp)?.department || '—'}</td>
-                <td>${primaryPhone(emp)?.number || '—'}</td>
-                <td>${emp.holidayBalance} days</td>
-                <td>${currentSalary(emp) ? formatSalary(currentSalary(emp)!.amount) : '—'}</td>
-                <td>${emp.status}</td>
-              </tr>
-            `
-              )
-              .join('')}
+            ${tableRows}
           </tbody>
         </table>
       </body>
     </html>
   `
 
-  printWindow.document.write(htmlContent)
-  printWindow.document.close()
+  // Create blob and open in new window for printing/saving as PDF
+  const blob = new Blob([htmlContent], { type: 'text/html' })
+  const url = URL.createObjectURL(blob)
+  const windowRef = window.open(url, '_blank')
 
-  // Wait for content to load, then print
-  printWindow.onload = () => {
-    setTimeout(() => {
-      printWindow.print()
-      printWindow.close()
-    }, 250)
+  if (windowRef) {
+    windowRef.onload = () => {
+      setTimeout(() => {
+        windowRef.print()
+        URL.revokeObjectURL(url)
+      }, 250)
+    }
+  } else {
+    // Fallback: download as HTML file
+    const link = document.createElement('a')
+    link.setAttribute('href', url)
+    link.setAttribute('download', `staff-directory-${new Date().toISOString().split('T')[0]}.html`)
+    link.style.visibility = 'hidden'
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    URL.revokeObjectURL(url)
   }
+}
+
+/**
+ * Escape HTML special characters
+ */
+function escapeHtml(text: string): string {
+  const map: { [key: string]: string } = {
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#039;',
+  }
+  return text.replace(/[&<>"']/g, (m) => map[m])
 }

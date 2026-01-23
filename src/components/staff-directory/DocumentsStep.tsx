@@ -1,10 +1,10 @@
 import { useState } from 'react'
 import { Upload, FileText, Trash2, Eye, X, File, FileCheck, FileBadge } from 'lucide-react'
-import type { Employee, Document } from '../../types'
+import type { UIEmployee, Document } from '../../types'
 
 interface DocumentsStepProps {
-  data: Omit<Employee, 'id'>
-  onChange: (updates: Partial<Omit<Employee, 'id'>>) => void
+  data: Omit<UIEmployee, 'id' | 'householdId' | 'status' | 'holidayBalance'>
+  onChange: (updates: Partial<Omit<UIEmployee, 'id' | 'householdId' | 'status' | 'holidayBalance'>>) => void
 }
 
 const DOCUMENT_CATEGORIES: { value: Document['category']; label: string; icon: typeof FileText; color: string }[] = [

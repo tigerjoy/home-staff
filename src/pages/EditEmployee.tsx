@@ -1,31 +1,33 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { EmployeeForm } from '../components/staff-directory/EmployeeForm'
-import { fetchEmployee, updateEmployee } from '../lib/api/employees'
-import type { Employee } from '../types'
+import { fetchEmployee, updateEmployee, getCurrentEmployment, updateEmployment } from '../lib/api/employees'
+import { useHousehold } from '../hooks/useHousehold'
+import type { UIEmployee } from '../types'
 
 export function EditEmployee() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
-  const [employee, setEmployee] = useState<Employee | null>(null)
+  const { activeHouseholdId, loading: householdLoading } = useHousehold()
+  const [employee, setEmployee] = useState<UIEmployee | null>(null)
   const [currentStep, setCurrentStep] = useState(0)
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    if (id) {
+    if (id && activeHouseholdId) {
       loadEmployee()
     }
-  }, [id])
+  }, [id, activeHouseholdId])
 
   const loadEmployee = async () => {
-    if (!id) return
+    if (!id || !activeHouseholdId) return
 
     try {
       setLoading(true)
       setError(null)
-      const data = await fetchEmployee(id)
+      const data = await fetchEmployee(id, activeHouseholdId)
       setEmployee(data)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load employee')
@@ -35,14 +37,41 @@ export function EditEmployee() {
     }
   }
 
-  const handleSubmit = async (employeeData: Omit<Employee, 'id'>) => {
-    if (!id) return
+  const handleSubmit = async (employeeData: Omit<UIEmployee, 'id' | 'householdId' | 'status' | 'holidayBalance'>) => {
+    if (!id || !activeHouseholdId) return
 
     try {
       setSubmitting(true)
       setError(null)
 
-      await updateEmployee(id, employeeData)
+      // Update employee core data
+      await updateEmployee(id, {
+        name: employeeData.name,
+        photo: employeeData.photo,
+        phoneNumbers: employeeData.phoneNumbers,
+        addresses: employeeData.addresses,
+        documents: employeeData.documents,
+        customProperties: employeeData.customProperties,
+        notes: employeeData.notes,
+      })
+
+      // Update employment data if it changed
+      const currentEmployment = await getCurrentEmployment(id, activeHouseholdId)
+      if (currentEmployment) {
+        const currentRole = employeeData.employmentHistory[0]
+        const currentSalary = employeeData.salaryHistory[0]
+
+        if (currentRole && currentSalary) {
+          await updateEmployment(currentEmployment.id, {
+            role: currentRole.role,
+            startDate: currentRole.startDate,
+            endDate: currentRole.endDate || undefined,
+            currentSalary: currentSalary.amount,
+            paymentMethod: currentSalary.paymentMethod,
+            holidayBalance: employee?.holidayBalance ?? 0,
+          })
+        }
+      }
 
       // Navigate back to employee detail page
       navigate(`/staff/${id}`)
@@ -62,7 +91,7 @@ export function EditEmployee() {
     }
   }
 
-  if (loading) {
+  if (householdLoading || loading) {
     return (
       <div className="min-h-screen bg-stone-50 dark:bg-stone-950 flex items-center justify-center">
         <div className="text-center">

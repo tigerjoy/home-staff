@@ -4,11 +4,13 @@ import { StaffDirectory as StaffDirectoryComponent } from '../components/staff-d
 import { fetchEmployees, archiveEmployee, restoreEmployee } from '../lib/api/employees'
 import { fetchSummary } from '../lib/api/summary'
 import { exportToCSV, exportToPDF } from '../lib/utils/export'
-import type { Employee, Summary } from '../types'
+import { useHousehold } from '../hooks/useHousehold'
+import type { UIEmployee, Summary } from '../types'
 
 export function StaffDirectory() {
   const navigate = useNavigate()
-  const [employees, setEmployees] = useState<Employee[]>([])
+  const { activeHouseholdId, loading: householdLoading } = useHousehold()
+  const [employees, setEmployees] = useState<UIEmployee[]>([])
   const [summary, setSummary] = useState<Summary>({
     totalStaff: 0,
     activeStaff: 0,
@@ -20,21 +22,22 @@ export function StaffDirectory() {
   const [page, setPage] = useState(1)
   const [pageSize] = useState(20)
 
-  // TODO: Get household ID from context/auth - using placeholder for now
-  const householdId = '1'
-
   useEffect(() => {
-    loadData()
-  }, [householdId, page])
+    if (activeHouseholdId) {
+      loadData()
+    }
+  }, [activeHouseholdId, page])
 
   const loadData = async () => {
+    if (!activeHouseholdId) return
+
     try {
       setLoading(true)
       setError(null)
 
       const [employeesData, summaryData] = await Promise.all([
-        fetchEmployees(householdId, page, pageSize),
-        fetchSummary(householdId),
+        fetchEmployees(activeHouseholdId, page, pageSize),
+        fetchSummary(activeHouseholdId),
       ])
 
       setEmployees(employeesData.data)
@@ -56,12 +59,14 @@ export function StaffDirectory() {
   }
 
   const handleArchive = async (id: string) => {
+    if (!activeHouseholdId) return
+
     try {
       const employee = employees.find((e) => e.id === id)
       if (employee?.status === 'archived') {
-        await restoreEmployee(id)
+        await restoreEmployee(id, activeHouseholdId)
       } else {
-        await archiveEmployee(id)
+        await archiveEmployee(id, activeHouseholdId)
       }
       await loadData()
     } catch (err) {
@@ -97,7 +102,7 @@ export function StaffDirectory() {
     console.log('Filter role:', role)
   }
 
-  if (loading && employees.length === 0) {
+  if (householdLoading || (loading && employees.length === 0)) {
     return (
       <div className="min-h-screen bg-stone-50 dark:bg-stone-950 flex items-center justify-center">
         <div className="text-center">

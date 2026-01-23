@@ -1,10 +1,10 @@
 import { useState } from 'react'
 import { Camera, Plus, Trash2, Phone, MapPin } from 'lucide-react'
-import type { Employee, PhoneNumber, Address } from '../../types'
+import type { UIEmployee, PhoneNumber, Address } from '../../types'
 
 interface BasicInfoStepProps {
-  data: Omit<Employee, 'id'>
-  onChange: (updates: Partial<Omit<Employee, 'id'>>) => void
+  data: Omit<UIEmployee, 'id' | 'householdId' | 'status' | 'holidayBalance'>
+  onChange: (updates: Partial<Omit<UIEmployee, 'id' | 'householdId' | 'status' | 'holidayBalance'>>) => void
 }
 
 const PHONE_LABELS = ['Mobile', 'Home', 'Work', 'Emergency', 'Other']

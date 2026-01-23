@@ -2,57 +2,61 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { EmployeeForm } from '../components/staff-directory/EmployeeForm'
 import { createEmployee } from '../lib/api/employees'
-import { uploadPhoto as uploadPhotoFile, uploadDocument as uploadDocumentFile } from '../lib/storage/documents'
-import type { Employee, Document } from '../types'
+import { useHousehold } from '../hooks/useHousehold'
+import type { UIEmployee } from '../types'
 
 export function AddEmployee() {
   const navigate = useNavigate()
+  const { activeHouseholdId, loading: householdLoading } = useHousehold()
   const [currentStep, setCurrentStep] = useState(0)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  // TODO: Get household ID from context/auth - using placeholder for now
-  const householdId = '1'
+  const handleSubmit = async (employeeData: Omit<UIEmployee, 'id' | 'householdId' | 'status' | 'holidayBalance'>) => {
+    if (!activeHouseholdId) {
+      setError('No active household selected')
+      return
+    }
 
-  const handleSubmit = async (employeeData: Omit<Employee, 'id'>) => {
     try {
       setLoading(true)
       setError(null)
 
-      // Create employee first to get the ID
-      let employeeToCreate: Omit<Employee, 'id'> = {
-        ...employeeData,
-        householdId,
+      // Extract current employment data from form
+      const currentEmployment = employeeData.employmentHistory[0]
+      const currentSalary = employeeData.salaryHistory[0]
+
+      if (!currentEmployment || !currentEmployment.startDate) {
+        throw new Error('Employment start date is required')
       }
 
-      // Upload photo if it's a File object (base64 string if from FileReader)
-      let photoUrl: string | null = employeeData.photo
-      if (employeeData.photo && employeeData.photo.startsWith('data:')) {
-        // Photo is base64 - convert to File and upload
-        // For now, we'll skip photo upload on create and let user update it later
-        // or we could extract and upload here
-        photoUrl = null // Will be set after employee creation
+      if (!currentSalary || !currentSalary.amount) {
+        throw new Error('Current salary is required')
       }
 
-      // Create employee without documents/photos first
-      const employeeToSave = {
-        ...employeeToCreate,
-        photo: photoUrl,
-        documents: [], // Documents will be uploaded after employee creation
+      // Create employee core data (without household-specific fields)
+      const employeeCoreData = {
+        name: employeeData.name,
+        photo: employeeData.photo,
+        phoneNumbers: employeeData.phoneNumbers,
+        addresses: employeeData.addresses,
+        documents: employeeData.documents,
+        customProperties: employeeData.customProperties,
+        notes: employeeData.notes,
       }
 
-      const createdEmployee = await createEmployee(employeeToSave)
-      const employeeId = Number(createdEmployee.id)
-
-      // Upload documents if any
-      const documentsToUpload = employeeData.documents.filter(
-        (d): d is Document & { file?: File } => d.url.startsWith('blob:') || d.url.startsWith('data:')
-      )
-
-      if (documentsToUpload.length > 0) {
-        // For now, skip document uploads on create - they can be added via detail page
-        // This is because we need actual File objects, not base64 strings
+      // Create employment data
+      const employmentData = {
+        householdId: activeHouseholdId,
+        employmentType: 'monthly' as const, // Default to monthly, can be made configurable later
+        role: currentEmployment.role,
+        startDate: currentEmployment.startDate,
+        holidayBalance: 0, // Default holiday balance
+        currentSalary: currentSalary.amount,
+        paymentMethod: currentSalary.paymentMethod,
       }
+
+      const createdEmployee = await createEmployee(employeeCoreData, employmentData)
 
       // Navigate to the created employee's detail page
       navigate(`/staff/${createdEmployee.id}`)
@@ -66,6 +70,33 @@ export function AddEmployee() {
 
   const handleCancel = () => {
     navigate('/staff')
+  }
+
+  if (householdLoading) {
+    return (
+      <div className="min-h-screen bg-stone-50 dark:bg-stone-950 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-amber-500 mx-auto mb-4"></div>
+          <p className="text-stone-600 dark:text-stone-400">Loading...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (!activeHouseholdId) {
+    return (
+      <div className="min-h-screen bg-stone-50 dark:bg-stone-950 flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-red-600 dark:text-red-400 mb-4">No active household selected</p>
+          <button
+            onClick={() => navigate('/staff')}
+            className="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-xl"
+          >
+            Go Back
+          </button>
+        </div>
+      </div>
+    )
   }
 
   return (

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Check, ChevronLeft, ChevronRight, User, Briefcase, FileText, Wallet, Settings2 } from 'lucide-react'
-import type { Employee, EmployeeFormProps } from '../../types'
+import type { UIEmployee, EmployeeFormProps } from '../../types'
 import { BasicInfoStep } from './BasicInfoStep'
 import { RoleStep } from './RoleStep'
 import { DocumentsStep } from './DocumentsStep'
@@ -15,11 +15,9 @@ const STEPS = [
   { id: 4, title: 'Custom Fields', icon: Settings2, description: 'Additional properties & notes' },
 ]
 
-const emptyEmployee: Omit<Employee, 'id'> = {
-  householdId: '',
+const emptyEmployee: Omit<UIEmployee, 'id' | 'householdId' | 'status' | 'holidayBalance'> = {
   name: '',
   photo: null,
-  status: 'active',
   phoneNumbers: [{ number: '', label: 'Mobile' }],
   addresses: [{ address: '', label: 'Current' }],
   employmentHistory: [{ role: '', department: '', startDate: '', endDate: null }],
@@ -27,7 +25,8 @@ const emptyEmployee: Omit<Employee, 'id'> = {
   documents: [],
   customProperties: [],
   notes: [],
-  holidayBalance: 0,
+  createdAt: new Date().toISOString(),
+  updatedAt: new Date().toISOString(),
 }
 
 export function EmployeeForm({
@@ -37,9 +36,9 @@ export function EmployeeForm({
   onSubmit,
   onCancel,
 }: EmployeeFormProps) {
-  const [formData, setFormData] = useState<Omit<Employee, 'id'>>(() => {
+  const [formData, setFormData] = useState<Omit<UIEmployee, 'id' | 'householdId' | 'status' | 'holidayBalance'>>(() => {
     if (employee) {
-      const { id, ...rest } = employee
+      const { id, householdId, status, holidayBalance, ...rest } = employee
       return rest
     }
     return emptyEmployee
@@ -54,7 +53,7 @@ export function EmployeeForm({
     }
   }, [employee])
 
-  const updateFormData = (updates: Partial<Omit<Employee, 'id'>>) => {
+  const updateFormData = (updates: Partial<Omit<UIEmployee, 'id' | 'householdId' | 'status' | 'holidayBalance'>>) => {
     setFormData(prev => ({ ...prev, ...updates }))
   }
 

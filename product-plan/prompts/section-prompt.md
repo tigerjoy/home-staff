@@ -8,9 +8,9 @@ Use this template when implementing sections one at a time. Fill in the variable
 
 Replace these before copying the prompt:
 
-- **SECTION_NAME** = `[Human-readable name, e.g., "Staff Directory" or "Payroll & Finance"]`
-- **SECTION_ID** = `[Folder name, e.g., "staff-directory" or "payroll-and-finance"]`
-- **NN** = `[Milestone number, e.g., "04" for Staff Directory — sections start at 02]`
+- **SECTION_NAME** = `Staff Directory`
+- **SECTION_ID** = "staff-directory"
+- **NN** = `04`
 
 ---
 

@@ -1,9 +1,9 @@
 import { Plus, Trash2, Wallet, Calendar, CreditCard, IndianRupee } from 'lucide-react'
-import type { Employee, SalaryRecord } from '../../types'
+import type { UIEmployee, SalaryRecord } from '../../types'
 
 interface SalaryStepProps {
-  data: Omit<Employee, 'id'>
-  onChange: (updates: Partial<Omit<Employee, 'id'>>) => void
+  data: Omit<UIEmployee, 'id' | 'householdId' | 'status' | 'holidayBalance'>
+  onChange: (updates: Partial<Omit<UIEmployee, 'id' | 'householdId' | 'status' | 'holidayBalance'>>) => void
 }
 
 const PAYMENT_METHODS: { value: SalaryRecord['paymentMethod']; label: string }[] = [

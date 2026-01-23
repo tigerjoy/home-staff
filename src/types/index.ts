@@ -112,6 +112,103 @@ export interface SalaryRecord {
   effectiveDate: string
 }
 
+/**
+ * UI-specific Employee type that includes household-specific data derived from Employment.
+ * This is what the UI components expect.
+ */
+export interface UIEmployee extends Employee {
+  /** Current employment status (from current Employment) */
+  status: 'active' | 'archived'
+  /** Employment history derived from Employment records */
+  employmentHistory: EmploymentRecord[]
+  /** Salary history derived from Employment records */
+  salaryHistory: SalaryRecord[]
+  /** Holiday balance from current Employment */
+  holidayBalance: number
+  /** Current household ID (from current Employment) */
+  householdId: string
+}
+
+/**
+ * Summary statistics for staff directory
+ */
+export interface Summary {
+  totalStaff: number
+  activeStaff: number
+  archivedStaff: number
+  roleBreakdown: { [role: string]: number }
+}
+
+/**
+ * Employee form component props
+ */
+export interface EmployeeFormProps {
+  /** Existing employee data when editing, undefined when creating */
+  employee?: UIEmployee
+  /** Current step in the wizard (0-4) */
+  currentStep: number
+  /** Called when user moves to a different step */
+  onStepChange?: (step: number) => void
+  /** Called when form is submitted */
+  onSubmit?: (employee: Omit<UIEmployee, 'id' | 'householdId' | 'status' | 'holidayBalance'>) => void
+  /** Called when user cancels the form */
+  onCancel?: () => void
+}
+
+/**
+ * Employee detail component props
+ */
+export interface EmployeeDetailProps {
+  /** The employee to display */
+  employee: UIEmployee
+  /** Called when user wants to edit the employee */
+  onEdit?: () => void
+  /** Called when user wants to archive the employee */
+  onArchive?: () => void
+  /** Called when user wants to go back to the list */
+  onBack?: () => void
+  /** Called when user uploads a new document */
+  onUploadDocument?: (file: File, category: Document['category']) => void
+  /** Called when user deletes a document */
+  onDeleteDocument?: (documentName: string) => void
+  /** Called when user adds a custom property */
+  onAddCustomProperty?: (property: CustomProperty) => void
+  /** Called when user removes a custom property */
+  onRemoveCustomProperty?: (propertyName: string) => void
+  /** Called when user adds a note */
+  onAddNote?: (content: string) => void
+  /** Called when user deletes a note */
+  onDeleteNote?: (createdAt: string) => void
+}
+
+/**
+ * Staff directory component props
+ */
+export interface StaffDirectoryProps {
+  /** Summary statistics for dashboard cards */
+  summary: Summary
+  /** The list of employees to display */
+  employees: UIEmployee[]
+  /** Called when user wants to view an employee's full profile */
+  onView?: (id: string) => void
+  /** Called when user wants to edit an employee */
+  onEdit?: (id: string) => void
+  /** Called when user wants to archive an employee */
+  onArchive?: (id: string) => void
+  /** Called when user wants to restore an archived employee */
+  onRestore?: (id: string) => void
+  /** Called when user wants to create a new employee */
+  onCreate?: () => void
+  /** Called when user wants to export the staff list */
+  onExport?: (format: 'csv' | 'pdf') => void
+  /** Called when user searches or filters the list */
+  onSearch?: (query: string) => void
+  /** Called when user filters by status */
+  onFilterStatus?: (status: 'all' | 'active' | 'archived') => void
+  /** Called when user filters by role */
+  onFilterRole?: (role: string | null) => void
+}
+
 export interface Document {
   name: string
   url: string
@@ -178,6 +275,49 @@ export interface PublicHoliday {
   householdId: string
   date: string
   name: string
+}
+
+// =============================================================================
+// Household Defaults
+// =============================================================================
+
+/**
+ * Household-level holiday rule with Google Calendar-style recurrence pattern
+ */
+export interface HouseholdHolidayRule {
+  id: string
+  householdId: string
+  ruleType: 'days_per_month' | 'recurring' | 'custom'
+  recurrenceIntervalValue: number
+  recurrenceIntervalUnit: 'day' | 'week' | 'month' | 'year'
+  repeatOnDaysOfWeek?: number[] // 0=Sunday, 1=Monday, ..., 6=Saturday
+  repeatOnDayOfMonth?: number // 1-31
+  daysPerMonth?: number
+  endsType: 'never' | 'on_date' | 'after_occurrences'
+  endsDate?: string
+  endsOccurrences?: number
+  createdAt: string
+  updatedAt: string
+}
+
+export interface HouseholdHolidayRuleInput {
+  ruleType: 'days_per_month' | 'recurring' | 'custom'
+  recurrenceIntervalValue?: number
+  recurrenceIntervalUnit?: 'day' | 'week' | 'month' | 'year'
+  repeatOnDaysOfWeek?: number[]
+  repeatOnDayOfMonth?: number
+  daysPerMonth?: number
+  endsType?: 'never' | 'on_date' | 'after_occurrences'
+  endsDate?: string
+  endsOccurrences?: number
+}
+
+export interface HouseholdAttendanceSettings {
+  id: string
+  householdId: string
+  trackingMethod: 'present_by_default' | 'manual_entry'
+  createdAt: string
+  updatedAt: string
 }
 
 // =============================================================================
