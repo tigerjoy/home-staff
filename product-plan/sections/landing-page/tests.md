@@ -2,149 +2,94 @@
 
 These test-writing instructions are **framework-agnostic**. Adapt them to your testing setup (Jest, Vitest, Playwright, Cypress, React Testing Library, etc.).
 
-## Overview
-
-Test the marketing landing page including navigation, CTAs, and section display.
-
 ---
 
 ## User Flow Tests
 
-### Flow 1: View Landing Page
+### Flow 1: Conversion Click
 
-**Scenario:** Visitor views the complete landing page
-
-**Setup:**
-- Provide all landing page data (hero, problems, features, testimonials, pricing, navigation, footer)
+**Scenario:** User decides to sign up from the hero section
 
 **Steps:**
-1. Navigate to landing page at `/`
+1. Load landing page
+2. Click "Get Started" button in the Hero section
+3. Verify `onGetStarted` callback is triggered
 
 **Expected Results:**
-- [ ] Navbar displays with logo "HomeStaff"
-- [ ] Navbar shows navigation links: "Features", "Testimonials", "Pricing"
-- [ ] Navbar shows "Login" and "Sign Up" buttons
-- [ ] Hero section displays headline "Manage Your Household Staff with Ease"
-- [ ] Hero section displays "Get Started Free" button
-- [ ] Problems section displays 4 problem/solution cards
-- [ ] Features section displays 6 feature cards with icons
-- [ ] Testimonials section displays user quotes with names
-- [ ] Pricing section displays "Free for Everyone" promotion
-- [ ] Footer displays company name and social links
-- [ ] Sticky CTA bar appears when scrolling
+- [ ] Primary CTA button is clearly visible and clickable
+- [ ] Redirect or callback happens immediately
 
----
+### Flow 2: Navigation Smooth Scroll
 
-### Flow 2: Click Get Started CTA
-
-**Scenario:** Visitor clicks the main call-to-action
-
-**Setup:**
-- Mock `onGetStarted` callback
+**Scenario:** User wants to see pricing
 
 **Steps:**
-1. Click "Get Started Free" button in hero section
+1. Load landing page
+2. Click "Pricing" in the Navbar
+3. Verify the window scrolls to the pricing section
 
 **Expected Results:**
-- [ ] `onGetStarted` callback is called
-- [ ] (In real app) User is redirected to `/register`
+- [ ] Navbar anchor links are functional
+- [ ] Scroll behavior is smooth (if possible to test in environment)
 
----
+### Flow 3: Sticky CTA Visibility
 
-### Flow 3: Click Login
-
-**Scenario:** Visitor clicks Login button
-
-**Setup:**
-- Mock `onLogin` callback
+**Scenario:** User scrolls down the page
 
 **Steps:**
-1. Click "Login" button in navbar
+1. Load landing page
+2. Scroll past the hero section
+3. Verify Sticky CTA Bar becomes visible at the bottom
 
 **Expected Results:**
-- [ ] `onLogin` callback is called
-- [ ] (In real app) User is redirected to `/login`
-
----
-
-### Flow 4: Navigate to Section
-
-**Scenario:** Visitor clicks navigation link to scroll to section
-
-**Setup:**
-- Mock `onNavigate` callback
-
-**Steps:**
-1. Click "Features" link in navbar
-
-**Expected Results:**
-- [ ] `onNavigate` callback is called with `#features`
-- [ ] (In real app) Page smooth-scrolls to Features section
+- [ ] Sticky CTA Bar is hidden at the top (to avoid redundancy with Hero)
+- [ ] Sticky CTA Bar appears after a certain scroll threshold
 
 ---
 
 ## Component Interaction Tests
 
-### Navbar
+### Navbar Component
+- [ ] Displays logo correctly
+- [ ] Shows Login and Sign Up buttons
+- [ ] Anchor links match the section IDs on the page
 
-**Renders correctly:**
-- [ ] Logo displays "HomeStaff"
-- [ ] Navigation links are visible on desktop
-- [ ] Hamburger menu appears on mobile
-- [ ] Login and Sign Up buttons are visible
-
-**User interactions:**
-- [ ] Clicking "Login" calls `onLogin`
-- [ ] Clicking "Sign Up" calls `onSignUp`
-- [ ] Clicking nav link calls `onNavigate` with correct href
+### PricingSection Component
+- [ ] Shows "Free for Limited Time" messaging prominently
+- [ ] Does not show complex pricing tables (as per spec)
 
 ---
 
-### Hero Section
+## Edge Cases
 
-**Renders correctly:**
-- [ ] Headline text is visible
-- [ ] Subtext is visible
-- [ ] CTA button displays correct text
-
-**User interactions:**
-- [ ] Clicking CTA button calls `onGetStarted`
-
----
-
-### Sticky CTA Bar
-
-**Renders correctly:**
-- [ ] Bar is hidden at top of page
-- [ ] Bar appears when user scrolls down
-
-**User interactions:**
-- [ ] Clicking CTA in bar calls `onGetStarted`
-
----
-
-## Responsive Tests
-
-- [ ] Mobile: Navbar collapses to hamburger menu
-- [ ] Mobile: Hero text is readable and not cut off
-- [ ] Mobile: Feature grid stacks vertically
-- [ ] Mobile: Testimonials stack vertically
-- [ ] Tablet: Layout adjusts appropriately
-- [ ] Desktop: Full navbar is visible
-
----
-
-## Dark Mode Tests
-
-- [ ] Background colors adapt to dark mode
-- [ ] Text colors are readable in dark mode
-- [ ] Buttons maintain proper contrast
+- [ ] Page renders correctly on mobile devices (responsive check)
+- [ ] Navbar handles long list of links by wrapping or hiding (though current spec is minimal)
+- [ ] Very short content (on large screens) doesn't break the layout
 
 ---
 
 ## Accessibility Checks
 
-- [ ] All images have alt text
-- [ ] Navigation links are keyboard accessible
-- [ ] CTA buttons have proper focus states
-- [ ] Color contrast meets WCAG AA standards
+- [ ] All buttons have descriptive aria-labels
+- [ ] Color contrast meets WCAG AA standards for both light and dark modes
+- [ ] Navigation is possible via keyboard (Tab key)
+
+---
+
+## Sample Test Data
+
+```typescript
+const mockLandingData = {
+  hero: {
+    title: "Manage Your Household Staff with Ease",
+    subtitle: "The all-in-one platform for payroll, attendance, and directory management."
+  },
+  features: [
+    { title: "Staff Directory", description: "Keep all records in one place." },
+    { title: "Smart Attendance", description: "Present by default tracking." }
+  ],
+  testimonials: [
+    { name: "Anita Kapoor", quote: "HomeStaff changed my life!", avatar: "/avatars/anita.jpg" }
+  ]
+};
+```

@@ -1,4 +1,4 @@
-import type { ForgotPasswordForm } from '@/../product/sections/user-authentication/types'
+import type { ForgotPasswordForm } from '../types'
 import { useState, useRef } from 'react'
 import { Mail, Lock, ArrowLeft, ArrowRight, Loader2, Eye, EyeOff, Check, X, KeyRound } from 'lucide-react'
 

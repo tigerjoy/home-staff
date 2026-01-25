@@ -3,7 +3,7 @@ import type {
   OnboardingAndSetupProps,
   OnboardingStep,
   PresetOption,
-} from '@/../product/sections/onboarding-and-setup/types'
+} from '../types'
 import {
   Home,
   Settings,
@@ -180,11 +180,15 @@ function EmployeeStep({
   setEmployeeName,
   employeeRole,
   setEmployeeRole,
+  employmentType,
+  setEmploymentType,
 }: {
   employeeName: string
   setEmployeeName: (name: string) => void
   employeeRole: string
   setEmployeeRole: (role: string) => void
+  employmentType: 'monthly' | 'adhoc'
+  setEmploymentType: (type: 'monthly' | 'adhoc') => void
 }) {
   const roles = ['Housekeeper', 'Cook', 'Driver', 'Gardener', 'Nanny', 'Security', 'Other']
 
@@ -203,6 +207,40 @@ function EmployeeStep({
       </div>
 
       <div className="max-w-md mx-auto space-y-5">
+        <div>
+          <label className="block text-sm font-medium text-stone-700 dark:text-stone-300 mb-2">
+            Employment Type
+          </label>
+          <div className="grid grid-cols-2 gap-3">
+            <button
+              onClick={() => setEmploymentType('monthly')}
+              className={`
+                px-4 py-3 rounded-xl border-2 text-sm font-medium transition-all text-center
+                ${
+                  employmentType === 'monthly'
+                    ? 'border-amber-500 bg-amber-50 dark:bg-amber-950/30 text-amber-700 dark:text-amber-300'
+                    : 'border-stone-200 dark:border-stone-700 text-stone-700 dark:text-stone-300 hover:border-amber-300 dark:hover:border-amber-600'
+                }
+              `}
+            >
+              Monthly Staff
+            </button>
+            <button
+              onClick={() => setEmploymentType('adhoc')}
+              className={`
+                px-4 py-3 rounded-xl border-2 text-sm font-medium transition-all text-center
+                ${
+                  employmentType === 'adhoc'
+                    ? 'border-amber-500 bg-amber-50 dark:bg-amber-950/30 text-amber-700 dark:text-amber-300'
+                    : 'border-stone-200 dark:border-stone-700 text-stone-700 dark:text-stone-300 hover:border-amber-300 dark:hover:border-amber-600'
+                }
+              `}
+            >
+              Ad-hoc Worker
+            </button>
+          </div>
+        </div>
+
         <div>
           <label className="block text-sm font-medium text-stone-700 dark:text-stone-300 mb-2">
             Employee Name
@@ -365,6 +403,7 @@ export function OnboardingWizard({
   const [selectedAttendance, setSelectedAttendance] = useState('a1')
   const [employeeName, setEmployeeName] = useState('')
   const [employeeRole, setEmployeeRole] = useState('')
+  const [employmentType, setEmploymentType] = useState<'monthly' | 'adhoc'>('monthly')
 
   const currentStep = steps[currentIndex]
   const isFirstStep = currentIndex === 0
@@ -400,7 +439,7 @@ export function OnboardingWizard({
       case 'step-defaults':
         return { holidayRule: selectedHolidayRule, attendance: selectedAttendance }
       case 'step-employee':
-        return { name: employeeName, role: employeeRole }
+        return { name: employeeName, role: employeeRole, employmentType }
       default:
         return {}
     }
@@ -447,6 +486,8 @@ export function OnboardingWizard({
             setEmployeeName={setEmployeeName}
             employeeRole={employeeRole}
             setEmployeeRole={setEmployeeRole}
+            employmentType={employmentType}
+            setEmploymentType={setEmploymentType}
           />
         )
       case 'step-welcome':

@@ -1,12 +1,12 @@
 import { X, TrendingUp, TrendingDown, Minus, AlertTriangle, Gift, Coins, Calendar } from 'lucide-react'
-import type { PayrollRecord } from '@/../product/sections/payroll-and-finance/types'
+import type { MonthlyPayrollRecord } from '../types'
 
 // =============================================================================
 // Types
 // =============================================================================
 
 interface CalculationBreakdownProps {
-  record: PayrollRecord
+  record: MonthlyPayrollRecord
   onClose?: () => void
 }
 

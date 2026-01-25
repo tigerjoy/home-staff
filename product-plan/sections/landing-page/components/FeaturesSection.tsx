@@ -1,4 +1,4 @@
-import type { Feature } from '@/../product/sections/landing-page/types'
+import type { Feature } from '../types'
 import type { LucideIcon } from 'lucide-react'
 import {
   Users,

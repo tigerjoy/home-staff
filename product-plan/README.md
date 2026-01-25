@@ -1,22 +1,31 @@
 # HomeStaff — Design Handoff
 
-This folder contains everything needed to implement HomeStaff, a household workforce management and payroll platform.
+This folder contains everything needed to implement HomeStaff.
 
 ## What's Included
 
-**Ready-to-Use Prompts:**
-- `prompts/one-shot-prompt.md` — Prompt for full implementation in one session
+### Ready-to-Use Prompts
+- `prompts/one-shot-prompt.md` — Prompt template for full implementation
 - `prompts/section-prompt.md` — Prompt template for section-by-section implementation
 
-**Instructions:**
-- `product-overview.md` — Product summary (always provide with instructions)
-- `instructions/one-shot-instructions.md` — All milestones combined
-- `instructions/incremental/` — 9 milestone instructions (foundation + 8 sections)
+### Instructions
+- `product-overview.md` — Product summary (provide with every implementation)
+- `instructions/one-shot-instructions.md` — All milestones combined for full implementation
+- `instructions/incremental/` — 9 milestone instructions:
+  1. Foundation (design tokens, data model, shell)
+  2. Landing Page
+  3. User Authentication
+  4. Staff Directory
+  5. Attendance & Holidays
+  6. Payroll & Finance
+  7. Settings & Access
+  8. Onboarding & Setup
+  9. Employee Portal
 
-**Design Assets:**
-- `design-system/` — Colors, fonts, design tokens
-- `data-model/` — Entity types, relationships, sample data
-- `shell/` — Application shell components (sidebar, nav, user menu)
+### Design Assets
+- `design-system/` — Colors, fonts, tokens
+- `data-model/` — Core entities and TypeScript types
+- `shell/` — Application shell components
 - `sections/` — 8 section component packages with test instructions
 
 ## How to Use This
@@ -25,8 +34,8 @@ This folder contains everything needed to implement HomeStaff, a household workf
 
 Build your app milestone by milestone for better control:
 
-1. Copy the `product-plan/` folder to your implementation codebase
-2. Start with Foundation (`instructions/incremental/01-foundation.md`)
+1. Copy the `product-plan/` folder to your codebase
+2. Start with Foundation (`instructions/incremental/01-foundation.md`) — includes design tokens, data model, routing, and application shell
 3. For each section:
    - Open `prompts/section-prompt.md`
    - Fill in the section variables at the top (SECTION_NAME, SECTION_ID, NN)
@@ -34,22 +43,11 @@ Build your app milestone by milestone for better control:
    - Answer questions and implement
 4. Review and test after each milestone
 
-**Milestone Order:**
-1. Foundation — Design tokens, data model, routing, shell
-2. Landing Page — Marketing page
-3. User Authentication — Login, register, social auth
-4. Staff Directory — Employee profiles and wizard
-5. Attendance & Holidays — Present-by-default tracking
-6. Payroll & Finance — Salary calculations and payments
-7. Settings & Access — Household and member management
-8. Onboarding & Setup — New user wizard
-9. Employee Portal — Public staff portal
-
 ### Option B: One-Shot
 
 Build the entire app in one session:
 
-1. Copy the `product-plan/` folder to your implementation codebase
+1. Copy the `product-plan/` folder to your codebase
 2. Open `prompts/one-shot-prompt.md`
 3. Add any additional notes to the prompt
 4. Copy/paste the prompt into your coding agent
@@ -67,59 +65,18 @@ Each section includes a `tests.md` file with test-writing instructions. For best
 
 The test instructions are **framework-agnostic** — they describe WHAT to test, not HOW. Adapt to your testing setup (Jest, Vitest, Playwright, Cypress, RSpec, Minitest, PHPUnit, etc.).
 
-## File Structure
+## Section Overview
 
-```
-product-plan/
-├── README.md                    # This file
-├── product-overview.md          # Product summary
-│
-├── prompts/                     # Ready-to-use prompts
-│   ├── one-shot-prompt.md
-│   └── section-prompt.md
-│
-├── instructions/                # Implementation instructions
-│   ├── one-shot-instructions.md
-│   └── incremental/
-│       ├── 01-foundation.md
-│       ├── 02-landing-page.md
-│       ├── 03-user-authentication.md
-│       ├── 04-staff-directory.md
-│       ├── 05-attendance-and-holidays.md
-│       ├── 06-payroll-and-finance.md
-│       ├── 07-settings-and-access.md
-│       ├── 08-onboarding-and-setup.md
-│       └── 09-employee-portal.md
-│
-├── design-system/               # Design tokens
-│   ├── tokens.css
-│   ├── tailwind-colors.md
-│   └── fonts.md
-│
-├── data-model/                  # Data model
-│   ├── README.md
-│   ├── types.ts
-│   └── sample-data.json
-│
-├── shell/                       # Application shell
-│   ├── README.md
-│   └── components/
-│
-└── sections/                    # Section packages
-    ├── landing-page/
-    ├── user-authentication/
-    ├── staff-directory/
-    ├── attendance-and-holidays/
-    ├── payroll-and-finance/
-    ├── settings-and-access/
-    ├── onboarding-and-setup/
-    └── employee-portal/
-        ├── README.md
-        ├── tests.md
-        ├── types.ts
-        ├── sample-data.json
-        └── components/
-```
+| Section | Route | Shell | Description |
+|---------|-------|-------|-------------|
+| Landing Page | `/` | No | Marketing page with hero, features, CTA |
+| User Authentication | `/login`, `/register` | No | Social auth, email/password, verification |
+| Staff Directory | `/staff` | Yes | Employee profiles, add/edit/archive |
+| Attendance & Holidays | `/attendance` | Yes | Present by default, holiday rules |
+| Payroll & Finance | `/payroll` | Yes | Salary, advances, payments |
+| Settings & Access | `/settings` | Yes | Households, members, permissions |
+| Onboarding & Setup | `/onboarding` | No | New user wizard |
+| Employee Portal | `/portal` | No | Public staff view via phone |
 
 ## Tips
 
@@ -129,21 +86,28 @@ product-plan/
 - **Review thoroughly** — Check plans and implementations carefully to catch details and inconsistencies.
 - **Fill in the gaps** — Backend business logic may need manual additions. Incremental implementation helps you identify these along the way.
 
-## Design System Summary
+## Design System Quick Reference
 
 **Colors:**
 - Primary: `amber` — Buttons, links, accents
-- Secondary: `orange` — Tags, highlights
+- Secondary: `orange` — Highlights, gradients
 - Neutral: `stone` — Backgrounds, text, borders
 
 **Typography:**
-- Heading & Body: Nunito Sans
-- Monospace: Fira Code
+- Heading/Body: Nunito Sans
+- Code: Fira Code
 
-**Framework:**
-- Tailwind CSS v4
-- React components with TypeScript
-- Lucide React icons
+**Common Patterns:**
+```tsx
+// Primary button
+className="bg-amber-500 hover:bg-amber-600 text-white rounded-xl px-4 py-2"
+
+// Card
+className="bg-white dark:bg-stone-900 rounded-2xl border border-stone-200 dark:border-stone-800 p-6"
+
+// Input
+className="bg-stone-50 dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-xl"
+```
 
 ---
 

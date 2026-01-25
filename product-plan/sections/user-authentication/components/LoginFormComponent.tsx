@@ -1,4 +1,4 @@
-import type { LoginForm } from '@/../product/sections/user-authentication/types'
+import type { LoginForm } from '../types'
 import { useState } from 'react'
 import { Eye, EyeOff, Mail, Lock, ArrowRight, Loader2 } from 'lucide-react'
 

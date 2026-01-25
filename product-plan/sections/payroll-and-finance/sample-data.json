@@ -1,27 +1,32 @@
 {
   "_meta": {
     "models": {
-      "payrollRecords": "Monthly salary calculations including bonuses, penalties, and encashments.",
-      "advances": "Records of salary advances given to employees and their repayment status.",
-      "ledgerEntries": "Historical log of all completed financial transactions for audit and tracking.",
-      "settlementItems": "Pending items for the current month that require a user decision on holiday imbalances."
+      "monthlyPayroll": "Monthly salary calculations for Monthly employees including base salary, bonuses, penalties, and encashments.",
+      "adhocPayments": "One-off payment records for Ad-hoc employees — work description, amount, and date. No salary calculation.",
+      "advances": "Salary advances given to Monthly employees and their repayment status.",
+      "ledger": "Historical log of all completed financial transactions for audit and tracking.",
+      "settlementWorkspace": "Pending items for the current month that require user decisions on holiday imbalances (Monthly employees only)."
     },
     "relationships": [
-      "Payroll records belong to an Employee (linked by id)",
-      "Settlement items are generated based on the holidayBalance in the Staff Directory and Absences in Attendance",
-      "Ledger entries are created when a Payroll Record is marked as 'Paid'"
+      "Monthly Payroll records belong to Monthly Employments (linked by employmentId)",
+      "Ad-hoc Payments belong to Ad-hoc Employments (separate from monthly payroll)",
+      "Advances are only for Monthly employees and tracked for repayment",
+      "Ledger entries are created when transactions are finalized",
+      "Settlement items are generated based on holiday balance discrepancies"
     ]
   },
   "summary": {
-    "totalPayroll": 105500,
+    "totalMonthlyPayroll": 97000,
+    "totalAdhocPayments": 3500,
     "outstandingAdvances": 15000,
-    "pendingSettlements": 3
+    "pendingSettlements": 2
   },
-  "currentPayroll": [
+  "monthlyPayroll": [
     {
       "id": "pay-2024-01-emp-001",
-      "employeeId": "emp-001",
+      "employmentId": "emp-001",
       "employeeName": "Lakshmi Devi",
+      "employmentType": "monthly",
       "baseSalary": 18000,
       "bonuses": 500,
       "penalties": 0,
@@ -33,8 +38,9 @@
     },
     {
       "id": "pay-2024-01-emp-002",
-      "employeeId": "emp-002",
+      "employmentId": "emp-002",
       "employeeName": "Raju Sharma",
+      "employmentType": "monthly",
       "baseSalary": 22000,
       "bonuses": 0,
       "penalties": 733,
@@ -45,9 +51,38 @@
       "holidayImbalance": -1
     },
     {
+      "id": "pay-2024-01-emp-003",
+      "employmentId": "emp-003",
+      "employeeName": "Meena Kumari",
+      "employmentType": "monthly",
+      "baseSalary": 20000,
+      "bonuses": 0,
+      "penalties": 0,
+      "encashments": 0,
+      "advanceRepayment": 0,
+      "netPayable": 20000,
+      "status": "calculated",
+      "holidayImbalance": 0
+    },
+    {
+      "id": "pay-2024-01-emp-004",
+      "employmentId": "emp-004",
+      "employeeName": "Suresh Kumar",
+      "employmentType": "monthly",
+      "baseSalary": 12000,
+      "bonuses": 0,
+      "penalties": 0,
+      "encashments": 0,
+      "advanceRepayment": 0,
+      "netPayable": 12000,
+      "status": "calculated",
+      "holidayImbalance": 0
+    },
+    {
       "id": "pay-2024-01-emp-005",
-      "employeeId": "emp-005",
+      "employmentId": "emp-005",
       "employeeName": "Priya Singh",
+      "employmentType": "monthly",
       "baseSalary": 25000,
       "bonuses": 0,
       "penalties": 0,
@@ -58,28 +93,68 @@
       "holidayImbalance": 12
     }
   ],
+  "adhocPayments": [
+    {
+      "id": "adhoc-001",
+      "employmentId": "emp-007",
+      "employeeName": "Mohan Lal",
+      "employmentType": "adhoc",
+      "description": "Fixed kitchen sink plumbing issue",
+      "amount": 1500,
+      "date": "2024-01-08",
+      "status": "paid",
+      "receipts": [
+        {
+          "id": "rcpt-adhoc-001",
+          "url": "https://receipts.example.com/adhoc-001/cash-payment.png",
+          "fileName": "plumber-payment-jan2024.png",
+          "fileType": "image",
+          "uploadedAt": "2024-01-08T11:30:00Z"
+        }
+      ]
+    },
+    {
+      "id": "adhoc-002",
+      "employmentId": "emp-007",
+      "employeeName": "Mohan Lal",
+      "employmentType": "adhoc",
+      "description": "Repaired bathroom water heater connection",
+      "amount": 2000,
+      "date": "2024-01-15",
+      "status": "paid",
+      "receipts": []
+    }
+  ],
   "advances": [
     {
       "id": "adv-1",
-      "employeeId": "emp-002",
+      "employmentId": "emp-002",
+      "employeeName": "Raju Sharma",
       "amount": 10000,
       "date": "2023-11-15",
       "repaidAmount": 4000,
+      "monthlyDeduction": 2000,
+      "reason": "Emergency home repair",
       "status": "active"
     },
     {
       "id": "adv-2",
-      "employeeId": "emp-004",
+      "employmentId": "emp-004",
+      "employeeName": "Suresh Kumar",
       "amount": 5000,
       "date": "2024-01-05",
       "repaidAmount": 0,
+      "monthlyDeduction": 1000,
+      "reason": "Medical expenses",
       "status": "active"
     }
   ],
   "ledger": [
     {
       "id": "tr-101",
-      "employeeId": "emp-001",
+      "employmentId": "emp-001",
+      "employeeName": "Lakshmi Devi",
+      "employmentType": "monthly",
       "date": "2023-12-31",
       "type": "Salary",
       "amount": 18000,
@@ -97,7 +172,9 @@
     },
     {
       "id": "tr-102",
-      "employeeId": "emp-002",
+      "employmentId": "emp-002",
+      "employeeName": "Raju Sharma",
+      "employmentType": "monthly",
       "date": "2023-12-31",
       "type": "Salary",
       "amount": 22000,
@@ -122,7 +199,9 @@
     },
     {
       "id": "tr-103",
-      "employeeId": "emp-002",
+      "employmentId": "emp-002",
+      "employeeName": "Raju Sharma",
+      "employmentType": "monthly",
       "date": "2023-11-15",
       "type": "Advance",
       "amount": 10000,
@@ -140,30 +219,47 @@
     },
     {
       "id": "tr-104",
-      "employeeId": "emp-003",
+      "employmentId": "emp-003",
+      "employeeName": "Meena Kumari",
+      "employmentType": "monthly",
       "date": "2023-12-31",
       "type": "Salary",
       "amount": 20000,
       "status": "Paid",
-      "reference": "Dec 2023 Payroll"
+      "reference": "Dec 2023 Payroll",
+      "receipts": []
+    },
+    {
+      "id": "tr-105",
+      "employmentId": "emp-007",
+      "employeeName": "Mohan Lal",
+      "employmentType": "adhoc",
+      "date": "2023-08-20",
+      "type": "AdhocPayment",
+      "amount": 800,
+      "status": "Paid",
+      "reference": "Fixed leaky tap in guest bathroom",
+      "receipts": []
     }
   ],
   "settlementWorkspace": [
     {
-      "employeeId": "emp-001",
+      "employmentId": "emp-001",
       "name": "Lakshmi Devi",
       "days": 2,
       "type": "excess_absence",
       "dailyRate": 600,
-      "potentialPenalty": 1200
+      "potentialPenalty": 1200,
+      "options": ["penalize", "carry_forward"]
     },
     {
-      "employeeId": "emp-005",
+      "employmentId": "emp-005",
       "name": "Priya Singh",
       "days": 12,
       "type": "unused_leave",
       "dailyRate": 833,
-      "potentialEncashment": 9996
+      "potentialEncashment": 9996,
+      "options": ["encash", "carry_forward", "lapse"]
     }
   ]
 }

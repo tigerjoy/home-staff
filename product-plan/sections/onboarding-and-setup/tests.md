@@ -1,172 +1,83 @@
 # Test Instructions: Onboarding & Setup
 
-These test-writing instructions are **framework-agnostic**. Adapt them to your testing setup.
-
-## Overview
-
-Test the multi-step onboarding wizard including required/optional steps, progress saving, and completion.
+These test-writing instructions are **framework-agnostic**. Adapt them to your testing setup (Jest, Vitest, Playwright, Cypress, React Testing Library, etc.).
 
 ---
 
 ## User Flow Tests
 
-### Flow 1: Complete Full Onboarding
+### Flow 1: Complete Onboarding Success
 
-**Scenario:** New user completes all steps
-
-**Setup:**
-- Mock all onboarding callbacks
-- Start with fresh onboarding state
+**Scenario:** New user completes all steps of the wizard
 
 **Steps:**
-1. Navigate to `/onboarding`
-2. Enter household name "Morgan Residence"
-3. Click "Next"
-4. Select holiday preset "4 Days per Month"
-5. Select attendance preset "Present by Default"
-6. Click "Next"
-7. Enter first employee name "Lakshmi Devi"
-8. Enter role "Housekeeper"
-9. Click "Next"
-10. Click "Go to Dashboard"
+1. Load Onboarding Wizard.
+2. Enter "My Home" in Household Name field and click "Next".
+3. Enter "Lakshmi" and "Housekeeper" in Add Staff step and click "Next".
+4. Select default currency and click "Next".
+5. Click "Finish Setup" on summary screen.
 
 **Expected Results:**
-- [ ] Step 1: `onNextStep` called with household name
-- [ ] Step 2: `onNextStep` called with preset selections
-- [ ] Step 3: `onNextStep` called with employee data
-- [ ] Step 4: `onComplete` called
-- [ ] (In real app) Redirected to Staff Directory
+- [ ] `onStepComplete` is called for each step.
+- [ ] `onFinish` is called at the end.
+- [ ] Final redirect state is triggered.
 
----
+### Flow 2: Skipping Optional Steps
 
-### Flow 2: Skip Optional Steps
-
-**Scenario:** User skips optional steps
+**Scenario:** User wants to set up staff later
 
 **Steps:**
-1. Enter household name
-2. Click "Next"
-3. Click "Skip" on defaults step
-4. Click "Skip" on employee step
-5. Click "Go to Dashboard"
+1. Complete Household Name step.
+2. On Add First Employee step, click the "Skip" button.
+3. Verify the wizard advances to the next step without creating an employee.
 
 **Expected Results:**
-- [ ] `onSkipStep` called for each skipped step
-- [ ] Wizard advances correctly
-- [ ] `onComplete` called at end
-- [ ] Household created without defaults or employees
+- [ ] `onSkipStep` callback is triggered.
+- [ ] Wizard advances to Step 3.
 
 ---
 
-### Flow 3: Go Back in Wizard
+## Component Interaction Tests
 
-**Scenario:** User goes back to previous step
+### ProgressStepper
+- [ ] Shows "Active" status for the current step.
+- [ ] Shows "Completed" checkmarks for previous steps.
+- [ ] Prevents clicking on future steps (navigation must be linear).
 
-**Steps:**
-1. Complete step 1
-2. Click "Next"
-3. On step 2, click "Back"
-
-**Expected Results:**
-- [ ] `onPreviousStep` called
-- [ ] Returns to step 1
-- [ ] Previously entered data is preserved
+### HouseholdSetupStep
+- [ ] "Next" button is disabled if the household name is empty.
+- [ ] Character limit on household name is enforced.
 
 ---
 
-### Flow 4: Progress Auto-Save
+## Edge Cases
 
-**Scenario:** Progress is saved automatically
-
-**Setup:**
-- Mock `onSaveProgress` callback
-
-**Steps:**
-1. Enter household name
-2. Wait for auto-save (or click Next)
-
-**Expected Results:**
-- [ ] `onSaveProgress` called with step ID and data
-- [ ] Progress is persisted
-
----
-
-### Flow 5: Resume Interrupted Onboarding
-
-**Scenario:** User returns after leaving mid-way
-
-**Setup:**
-- Provide config with currentStepIndex: 1 (step 2)
-- Provide completed step 1 data
-
-**Steps:**
-1. Navigate to `/onboarding`
-
-**Expected Results:**
-- [ ] Wizard opens at step 2 (not step 1)
-- [ ] Step 1 shows as completed in stepper
-- [ ] Previously entered data is available
-
----
-
-## Component Tests
-
-### Progress Stepper
-
-**Expected Results:**
-- [ ] Shows current step number ("Step 2 of 4")
-- [ ] Completed steps have checkmark
-- [ ] Current step is highlighted
-- [ ] Future steps are dimmed
-
----
-
-### Required vs Optional Steps
-
-**Step 1 (Required):**
-- [ ] Cannot skip, only "Next" button
-
-**Step 2 (Optional):**
-- [ ] Shows both "Skip" and "Next" buttons
-- [ ] Can proceed without filling
-
-**Step 4 (Required):**
-- [ ] Only "Go to Dashboard" button (no skip)
-
----
-
-### Form Validation
-
-**Household Name:**
-- [ ] Cannot proceed with empty name
-- [ ] Error message appears
-
----
-
-## Layout Tests
-
-### Full Screen
-
-**Expected Results:**
-- [ ] No sidebar navigation visible
-- [ ] No app shell chrome
-- [ ] Centered content area
-- [ ] Clean, focused design
-
----
-
-## Mobile Responsiveness
-
-**Expected Results:**
-- [ ] Forms are usable on mobile
-- [ ] Stepper adapts to small screens
-- [ ] Navigation buttons are touch-friendly
+- **Resume Onboarding:** If a user closes the browser at Step 2, verify that re-opening the app loads the wizard at Step 2 with Step 1 data preserved.
+- **Multiple Employees:** Verify that the "Add Staff" step in onboarding only handles a single employee for simplicity (additional staff should be added via the main Staff Directory).
+- **Network Failure:** Verify that if `onStepComplete` fails, the user remains on the current step with an error message.
 
 ---
 
 ## Accessibility Checks
 
-- [ ] Progress stepper announces current step
-- [ ] Form fields have labels
-- [ ] Required fields are indicated
-- [ ] Keyboard navigation works
+- [ ] All form inputs have clear, visible labels.
+- [ ] Keyboard focus is moved to the top of the card when a step changes.
+- [ ] Progress (e.g., "Step 2 of 4") is announced by screen readers.
+
+---
+
+## Sample Test Data
+
+```typescript
+const mockOnboardingData = {
+  householdName: "Greenwood Villa",
+  firstEmployee: {
+    name: "Raju",
+    role: "Driver"
+  },
+  defaults: {
+    currency: "INR",
+    timezone: "IST"
+  }
+};
+```

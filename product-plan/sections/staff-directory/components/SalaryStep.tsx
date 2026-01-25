@@ -1,5 +1,5 @@
 import { Plus, Trash2, Wallet, Calendar, CreditCard, IndianRupee } from 'lucide-react'
-import type { Employee, SalaryRecord } from '@/../product/sections/staff-directory/types'
+import type { Employee, SalaryRecord } from '../types'
 
 interface SalaryStepProps {
   data: Omit<Employee, 'id'>
@@ -14,24 +14,38 @@ const PAYMENT_METHODS: { value: SalaryRecord['paymentMethod']; label: string }[]
 ]
 
 export function SalaryStep({ data, onChange }: SalaryStepProps) {
+  const salaryHistory = data.salaryHistory || [{ amount: 0, paymentMethod: 'Bank Transfer', effectiveDate: '' }]
+
   const updateSalaryRecord = (index: number, updates: Partial<SalaryRecord>) => {
-    const newHistory = [...data.salaryHistory]
+    const newHistory = [...salaryHistory]
     newHistory[index] = { ...newHistory[index], ...updates }
-    onChange({ salaryHistory: newHistory })
+
+    const changes: Partial<Omit<Employee, 'id'>> = { salaryHistory: newHistory }
+
+    // Sync with employment object if it's the current salary
+    if (index === 0) {
+      changes.employment = {
+        ...data.employment,
+        currentSalary: newHistory[0].amount,
+        paymentMethod: newHistory[0].paymentMethod
+      }
+    }
+
+    onChange(changes)
   }
 
   const addSalaryRecord = () => {
     onChange({
       salaryHistory: [
         { amount: 0, paymentMethod: 'Bank Transfer', effectiveDate: '' },
-        ...data.salaryHistory,
+        ...salaryHistory,
       ],
     })
   }
 
   const removeSalaryRecord = (index: number) => {
-    if (data.salaryHistory.length > 1) {
-      onChange({ salaryHistory: data.salaryHistory.filter((_, i) => i !== index) })
+    if (salaryHistory.length > 1) {
+      onChange({ salaryHistory: salaryHistory.filter((_, i) => i !== index) })
     }
   }
 
@@ -48,11 +62,46 @@ export function SalaryStep({ data, onChange }: SalaryStepProps) {
     }).format(amount)
   }
 
-  const currentSalary = data.salaryHistory[0]
-  const pastSalaries = data.salaryHistory.slice(1)
+  const currentSalary = salaryHistory[0]
+  const pastSalaries = salaryHistory.slice(1)
 
-  // Calculate total compensation over time
-  const totalCompensation = data.salaryHistory.reduce((sum, s) => sum + s.amount, 0)
+  const isAdhoc = data.employment.employmentType === 'adhoc'
+
+  if (isAdhoc) {
+    return (
+      <div className="space-y-8">
+        <div>
+          <h2 className="text-xl font-semibold text-stone-900 dark:text-stone-100">
+            Salary & Compensation
+          </h2>
+          <p className="mt-1 text-sm text-stone-500 dark:text-stone-400">
+            Compensation details for ad-hoc employment
+          </p>
+        </div>
+
+        <div className="p-8 rounded-2xl bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900 text-center">
+          <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-amber-100 dark:bg-amber-900/50 flex items-center justify-center">
+            <Wallet className="w-8 h-8 text-amber-600 dark:text-amber-400" />
+          </div>
+          <h3 className="text-lg font-semibold text-amber-900 dark:text-amber-100 mb-2">
+            Ad-hoc Employment
+          </h3>
+          <p className="text-stone-600 dark:text-stone-400 max-w-md mx-auto">
+            This employee is marked as ad-hoc. Regular monthly salary and holiday tracking are disabled for this relationship. You can still record individual payments in the Payroll section.
+          </p>
+          <button
+            type="button"
+            onClick={() => onChange({
+              employment: { ...data.employment, employmentType: 'monthly' }
+            })}
+            className="mt-6 text-sm font-medium text-amber-600 dark:text-amber-400 hover:underline"
+          >
+            Switch to Monthly Employment to set a salary
+          </button>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-8">
@@ -254,18 +303,18 @@ export function SalaryStep({ data, onChange }: SalaryStepProps) {
       </div>
 
       {/* Summary Stats */}
-      {data.salaryHistory.length > 1 && (
+      {salaryHistory.length > 1 && (
         <div className="grid sm:grid-cols-3 gap-4">
           <div className="p-4 rounded-xl bg-stone-100 dark:bg-stone-800/50 border border-stone-200 dark:border-stone-700">
             <p className="text-xs text-stone-500 dark:text-stone-400 mb-1">Total Records</p>
             <p className="text-lg font-semibold text-stone-900 dark:text-stone-100">
-              {data.salaryHistory.length}
+              {salaryHistory.length}
             </p>
           </div>
           <div className="p-4 rounded-xl bg-stone-100 dark:bg-stone-800/50 border border-stone-200 dark:border-stone-700">
             <p className="text-xs text-stone-500 dark:text-stone-400 mb-1">Highest Salary</p>
             <p className="text-lg font-semibold text-stone-900 dark:text-stone-100">
-              {formatCurrency(Math.max(...data.salaryHistory.map(s => s.amount)))}
+              {formatCurrency(Math.max(...salaryHistory.map(s => s.amount)))}
             </p>
           </div>
           <div className="p-4 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900">
@@ -278,7 +327,7 @@ export function SalaryStep({ data, onChange }: SalaryStepProps) {
       )}
 
       {/* Validation Hint */}
-      {!data.salaryHistory.some(s => s.amount > 0) && (
+      {!salaryHistory.some(s => s.amount > 0) && (
         <div className="p-4 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900">
           <p className="text-sm text-amber-700 dark:text-amber-300">
             Please enter a salary amount to continue.

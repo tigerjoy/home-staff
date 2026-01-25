@@ -1,4 +1,4 @@
-import type { StickyCta } from '@/../product/sections/landing-page/types'
+import type { StickyCta } from '../types'
 import { ArrowRight, X } from 'lucide-react'
 import { useState } from 'react'
 

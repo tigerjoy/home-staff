@@ -1,4 +1,4 @@
-import type { LandingPageProps } from '@/../product/sections/landing-page/types'
+import type { LandingPageProps } from '../types'
 import { Navbar } from './Navbar'
 import { HeroSection } from './HeroSection'
 import { ProblemsSection } from './ProblemsSection'

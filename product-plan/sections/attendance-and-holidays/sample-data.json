@@ -1,112 +1,209 @@
 {
   "_meta": {
     "models": {
-      "employees": "Minimal employee details needed for attendance display.",
-      "leaveRecords": "Records of days where an employee was NOT present (Absent, Sick, Casual, etc.). If no record exists for a working day, they are assumed Present.",
-      "holidays": "Specific calendar dates that are public holidays for everyone.",
-      "holidayRules": "Recurring weekly off-days for employees (e.g., Sundays)."
+      "employments": "Monthly employments in the current household that are subject to attendance tracking. Ad-hoc employees are excluded.",
+      "absenceRecords": "Records of specific dates when a Monthly employee was absent from this household. The system assumes 'present by default' — if no record exists for a date, the employee was present.",
+      "inactivityPeriods": "Blocks of time when an employee is completely inactive at this household (e.g., gone home for months). No attendance is tracked during these periods.",
+      "holidayRules": "Defines holiday entitlement per Employment — either a fixed monthly allowance or a recurrence pattern like 'Every Sunday'.",
+      "publicHolidays": "Calendar dates that are holidays for the entire household."
     },
     "relationships": [
-      "Employees have many LeaveRecords",
-      "Employees have specific HolidayRules (weekly offs)",
-      "Holidays apply to the entire household context"
+      "Each Employment (Monthly only) has absence records and a running holiday balance",
+      "Absence records reduce the holiday balance for that Employment",
+      "Holiday Rules define how many days off an employee earns per month",
+      "Inactivity Periods pause attendance tracking entirely for an Employment",
+      "Public Holidays apply to all employments in the household"
     ]
   },
-  "employees": [
+  "employments": [
     {
       "id": "emp-001",
-      "name": "Rajesh Kumar",
-      "role": "Driver",
-      "avatar": "https://randomuser.me/api/portraits/men/32.jpg",
+      "employeeId": "emp-001",
+      "name": "Lakshmi Devi",
+      "role": "Housekeeper",
+      "avatar": null,
+      "employmentType": "monthly",
       "status": "active",
-      "joiningDate": "2023-01-15",
-      "holidayBalance": 8
+      "startDate": "2019-03-15",
+      "holidayBalance": 8,
+      "otherHouseholds": [
+        { "id": "hh-002", "name": "Springfield Vacation Home" }
+      ]
     },
     {
       "id": "emp-002",
-      "name": "Sunita Devi",
-      "role": "Housekeeper",
-      "avatar": "https://randomuser.me/api/portraits/women/44.jpg",
+      "employeeId": "emp-002",
+      "name": "Raju Sharma",
+      "role": "Driver",
+      "avatar": null,
+      "employmentType": "monthly",
       "status": "active",
-      "joiningDate": "2023-03-01",
-      "holidayBalance": 5
+      "startDate": "2020-06-01",
+      "holidayBalance": 12,
+      "otherHouseholds": []
     },
     {
       "id": "emp-003",
-      "name": "Amit Singh",
-      "role": "Gardener",
-      "avatar": "https://randomuser.me/api/portraits/men/12.jpg",
-      "status": "active",
-      "joiningDate": "2023-06-10",
-      "holidayBalance": 10
-    }
-  ],
-  "leaveRecords": [
-    {
-      "id": "lv-101",
-      "employeeId": "emp-001",
-      "date": "2024-03-05",
-      "type": "sick",
-      "notes": "Fever"
-    },
-    {
-      "id": "lv-102",
-      "employeeId": "emp-001",
-      "date": "2024-03-06",
-      "type": "sick",
-      "notes": "Recovering"
-    },
-    {
-      "id": "lv-103",
-      "employeeId": "emp-002",
-      "date": "2024-03-10",
-      "type": "unpaid",
-      "notes": "Family emergency"
-    },
-    {
-      "id": "lv-104",
       "employeeId": "emp-003",
-      "date": "2024-03-15",
-      "type": "casual",
-      "notes": "Personal work"
+      "name": "Meena Kumari",
+      "role": "Cook",
+      "avatar": null,
+      "employmentType": "monthly",
+      "status": "active",
+      "startDate": "2020-03-01",
+      "holidayBalance": 5,
+      "otherHouseholds": []
     },
     {
-      "id": "lv-105",
-      "employeeId": "emp-002",
-      "date": "2024-03-20",
-      "type": "paid",
-      "notes": "Approved annual leave"
+      "id": "emp-004",
+      "employeeId": "emp-004",
+      "name": "Suresh Kumar",
+      "role": "Gardener",
+      "avatar": null,
+      "employmentType": "monthly",
+      "status": "active",
+      "startDate": "2022-04-01",
+      "holidayBalance": 10,
+      "otherHouseholds": []
+    },
+    {
+      "id": "emp-005",
+      "employeeId": "emp-005",
+      "name": "Priya Singh",
+      "role": "Nanny",
+      "avatar": null,
+      "employmentType": "monthly",
+      "status": "active",
+      "startDate": "2023-02-01",
+      "holidayBalance": 6,
+      "otherHouseholds": [
+        { "id": "hh-002", "name": "Springfield Vacation Home" }
+      ]
     }
   ],
-  "holidays": [
+  "absenceRecords": [
     {
-      "id": "hol-001",
-      "date": "2024-01-26",
-      "name": "Republic Day",
-      "type": "public"
+      "id": "abs-101",
+      "employmentId": "emp-001",
+      "date": "2024-03-05",
+      "reason": "Sick - Fever",
+      "appliedToOtherHouseholds": true
     },
     {
-      "id": "hol-002",
-      "date": "2024-03-25",
-      "name": "Holi",
-      "type": "festival"
+      "id": "abs-102",
+      "employmentId": "emp-001",
+      "date": "2024-03-06",
+      "reason": "Sick - Recovering",
+      "appliedToOtherHouseholds": true
+    },
+    {
+      "id": "abs-103",
+      "employmentId": "emp-003",
+      "date": "2024-03-10",
+      "reason": "Family emergency",
+      "appliedToOtherHouseholds": false
+    },
+    {
+      "id": "abs-104",
+      "employmentId": "emp-004",
+      "date": "2024-03-15",
+      "reason": "Personal work",
+      "appliedToOtherHouseholds": false
+    },
+    {
+      "id": "abs-105",
+      "employmentId": "emp-003",
+      "date": "2024-03-20",
+      "reason": "Approved leave",
+      "appliedToOtherHouseholds": false
+    }
+  ],
+  "inactivityPeriods": [
+    {
+      "id": "inact-001",
+      "employmentId": "emp-003",
+      "startDate": "2023-12-25",
+      "endDate": "2023-12-31",
+      "reason": "Family wedding in Jaipur",
+      "appliedToOtherHouseholds": false
+    },
+    {
+      "id": "inact-002",
+      "employmentId": "emp-001",
+      "startDate": "2022-06-01",
+      "endDate": "2022-07-15",
+      "reason": "Went home to village for summer",
+      "appliedToOtherHouseholds": true
     }
   ],
   "holidayRules": [
     {
-      "employeeId": "emp-001",
-      "dayOfWeek": 0,
-      "type": "weekly_off"
+      "id": "rule-001",
+      "employmentId": "emp-001",
+      "type": "fixed",
+      "monthlyAllowance": 4,
+      "weeklyOffDays": [],
+      "autoMarkAbsence": false
     },
     {
-      "employeeId": "emp-002",
-      "dayOfWeek": 0,
-      "type": "weekly_off"
+      "id": "rule-002",
+      "employmentId": "emp-002",
+      "type": "recurring",
+      "monthlyAllowance": null,
+      "weeklyOffDays": [0],
+      "autoMarkAbsence": true
     },
     {
-      "employeeId": "emp-003",
-      "dayOfWeek": 0,
-      "type": "weekly_off"
+      "id": "rule-003",
+      "employmentId": "emp-003",
+      "type": "fixed",
+      "monthlyAllowance": 4,
+      "weeklyOffDays": [],
+      "autoMarkAbsence": false
+    },
+    {
+      "id": "rule-004",
+      "employmentId": "emp-004",
+      "type": "recurring",
+      "monthlyAllowance": null,
+      "weeklyOffDays": [0],
+      "autoMarkAbsence": true
+    },
+    {
+      "id": "rule-005",
+      "employmentId": "emp-005",
+      "type": "recurring",
+      "monthlyAllowance": null,
+      "weeklyOffDays": [0, 6],
+      "autoMarkAbsence": false
     }
-  ]
+  ],
+  "publicHolidays": [
+    {
+      "id": "hol-001",
+      "date": "2024-01-26",
+      "name": "Republic Day"
+    },
+    {
+      "id": "hol-002",
+      "date": "2024-03-25",
+      "name": "Holi"
+    },
+    {
+      "id": "hol-003",
+      "date": "2024-08-15",
+      "name": "Independence Day"
+    },
+    {
+      "id": "hol-004",
+      "date": "2024-10-02",
+      "name": "Gandhi Jayanti"
+    },
+    {
+      "id": "hol-005",
+      "date": "2024-11-01",
+      "name": "Diwali"
+    }
+  ],
+  "selectedDate": "2024-03-20"
 }

@@ -1,6 +1,6 @@
-import { Eye, Pencil, Archive, MoreHorizontal, Palmtree } from 'lucide-react'
+import { Eye, Pencil, Archive, MoreHorizontal, Palmtree, CalendarClock, Wrench } from 'lucide-react'
 import { useState } from 'react'
-import type { Employee } from '@/../product/sections/staff-directory/types'
+import type { Employee } from '../types'
 
 interface EmployeeTableProps {
   employees: Employee[]
@@ -41,6 +41,9 @@ export function EmployeeTable({ employees, onView, onEdit, onArchive }: Employee
                 Role
               </th>
               <th className="text-left text-xs font-semibold text-stone-500 dark:text-stone-400 uppercase tracking-wider px-5 py-3 hidden lg:table-cell">
+                Type
+              </th>
+              <th className="text-left text-xs font-semibold text-stone-500 dark:text-stone-400 uppercase tracking-wider px-5 py-3 hidden lg:table-cell">
                 Phone
               </th>
               <th className="text-left text-xs font-semibold text-stone-500 dark:text-stone-400 uppercase tracking-wider px-5 py-3 hidden lg:table-cell">
@@ -62,9 +65,10 @@ export function EmployeeTable({ employees, onView, onEdit, onArchive }: Employee
           </thead>
           <tbody className="divide-y divide-stone-100 dark:divide-stone-800">
             {employees.map((employee) => {
-              const currentRole = employee.employmentHistory.find(e => e.endDate === null)
+              const { employment } = employee
+              const isMonthly = employment.employmentType === 'monthly'
+              const isArchived = employment.status === 'archived'
               const primaryPhone = employee.phoneNumbers[0]
-              const currentSalary = employee.salaryHistory[0]
               const initials = employee.name
                 .split(' ')
                 .map(n => n[0])
@@ -77,7 +81,7 @@ export function EmployeeTable({ employees, onView, onEdit, onArchive }: Employee
                   key={employee.id}
                   className={`
                     group transition-colors hover:bg-amber-50/50 dark:hover:bg-amber-950/20
-                    ${employee.status === 'archived' ? 'opacity-60' : ''}
+                    ${isArchived ? 'opacity-60' : ''}
                   `}
                 >
                   {/* Employee */}
@@ -99,7 +103,7 @@ export function EmployeeTable({ employees, onView, onEdit, onArchive }: Employee
                           {employee.name}
                         </p>
                         <p className="text-sm text-stone-500 dark:text-stone-400 md:hidden">
-                          {currentRole?.role}
+                          {employment.role}
                         </p>
                       </div>
                     </div>
@@ -107,14 +111,27 @@ export function EmployeeTable({ employees, onView, onEdit, onArchive }: Employee
 
                   {/* Role */}
                   <td className="px-5 py-4 hidden md:table-cell">
-                    <div>
-                      <p className="text-sm text-stone-900 dark:text-stone-100">
-                        {currentRole?.role || '—'}
-                      </p>
-                      <p className="text-xs text-stone-500 dark:text-stone-400">
-                        {currentRole?.department}
-                      </p>
-                    </div>
+                    <p className="text-sm text-stone-900 dark:text-stone-100">
+                      {employment.role}
+                    </p>
+                  </td>
+
+                  {/* Type */}
+                  <td className="px-5 py-4 hidden lg:table-cell">
+                    <span className={`
+                      inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium
+                      ${isMonthly
+                        ? 'bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-300'
+                        : 'bg-purple-50 text-purple-700 dark:bg-purple-950 dark:text-purple-300'
+                      }
+                    `}>
+                      {isMonthly ? (
+                        <CalendarClock className="w-3 h-3" />
+                      ) : (
+                        <Wrench className="w-3 h-3" />
+                      )}
+                      {isMonthly ? 'Monthly' : 'Ad-hoc'}
+                    </span>
                   </td>
 
                   {/* Phone */}
@@ -127,26 +144,34 @@ export function EmployeeTable({ employees, onView, onEdit, onArchive }: Employee
                   {/* Start Date */}
                   <td className="px-5 py-4 hidden lg:table-cell">
                     <span className="text-sm text-stone-600 dark:text-stone-400">
-                      {currentRole ? formatDate(currentRole.startDate) : '—'}
+                      {formatDate(employment.startDate)}
                     </span>
                   </td>
 
                   {/* Holiday Balance */}
                   <td className="px-5 py-4 hidden sm:table-cell">
-                    <div className="flex items-center gap-1.5">
-                      <Palmtree className="w-4 h-4 text-amber-500" />
-                      <span className="text-sm font-medium text-stone-900 dark:text-stone-100">
-                        {employee.holidayBalance}
-                        <span className="text-xs font-normal text-stone-500 ml-1">days</span>
-                      </span>
-                    </div>
+                    {isMonthly && employment.holidayBalance !== null ? (
+                      <div className="flex items-center gap-1.5">
+                        <Palmtree className="w-4 h-4 text-amber-500" />
+                        <span className="text-sm font-medium text-stone-900 dark:text-stone-100">
+                          {employment.holidayBalance}
+                          <span className="text-xs font-normal text-stone-500 ml-1">days</span>
+                        </span>
+                      </div>
+                    ) : (
+                      <span className="text-xs text-stone-400 dark:text-stone-500">—</span>
+                    )}
                   </td>
 
                   {/* Salary */}
                   <td className="px-5 py-4 hidden xl:table-cell">
-                    <span className="text-sm font-medium text-stone-900 dark:text-stone-100">
-                      {currentSalary ? formatSalary(currentSalary.amount) : '—'}
-                    </span>
+                    {isMonthly && employment.currentSalary !== null ? (
+                      <span className="text-sm font-medium text-stone-900 dark:text-stone-100">
+                        {formatSalary(employment.currentSalary)}
+                      </span>
+                    ) : (
+                      <span className="text-xs text-stone-400 dark:text-stone-500">Per job</span>
+                    )}
                   </td>
 
                   {/* Status */}
@@ -154,13 +179,13 @@ export function EmployeeTable({ employees, onView, onEdit, onArchive }: Employee
                     <span
                       className={`
                         inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
-                        ${employee.status === 'active'
+                        ${!isArchived
                           ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300'
                           : 'bg-stone-100 text-stone-600 dark:bg-stone-800 dark:text-stone-400'
                         }
                       `}
                     >
-                      {employee.status === 'active' ? 'Active' : 'Archived'}
+                      {isArchived ? 'Archived' : 'Active'}
                     </span>
                   </td>
 
@@ -199,7 +224,7 @@ export function EmployeeTable({ employees, onView, onEdit, onArchive }: Employee
                               className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950"
                             >
                               <Archive className="w-4 h-4" />
-                              {employee.status === 'archived' ? 'Restore' : 'Archive'}
+                              {isArchived ? 'Restore' : 'Archive'}
                             </button>
                           </div>
                         </>

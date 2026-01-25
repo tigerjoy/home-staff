@@ -1,5 +1,5 @@
-import { Users, UserCheck, UserX, Briefcase } from 'lucide-react'
-import type { Summary } from '@/../product/sections/staff-directory/types'
+import { Users, UserCheck, UserX, Briefcase, CalendarClock, Wrench } from 'lucide-react'
+import type { Summary } from '../types'
 
 interface SummaryCardsProps {
   summary: Summary
@@ -11,7 +11,7 @@ export function SummaryCards({ summary }: SummaryCardsProps) {
     .slice(0, 3)
 
   return (
-    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+    <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
       {/* Total Staff */}
       <div className="bg-white dark:bg-stone-900 rounded-2xl border border-stone-200 dark:border-stone-800 p-5 transition-all hover:shadow-md hover:border-amber-200 dark:hover:border-amber-800">
         <div className="flex items-center gap-3 mb-3">
@@ -54,6 +54,36 @@ export function SummaryCards({ summary }: SummaryCardsProps) {
         </p>
         <p className="text-sm text-stone-500 dark:text-stone-400 mt-1">
           Archived
+        </p>
+      </div>
+
+      {/* Monthly Staff */}
+      <div className="bg-white dark:bg-stone-900 rounded-2xl border border-stone-200 dark:border-stone-800 p-5 transition-all hover:shadow-md hover:border-blue-200 dark:hover:border-blue-800">
+        <div className="flex items-center gap-3 mb-3">
+          <div className="p-2.5 rounded-xl bg-blue-50 dark:bg-blue-950">
+            <CalendarClock className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+          </div>
+        </div>
+        <p className="text-3xl font-bold text-stone-900 dark:text-stone-100 tracking-tight">
+          {summary.monthlyStaff}
+        </p>
+        <p className="text-sm text-stone-500 dark:text-stone-400 mt-1">
+          Monthly
+        </p>
+      </div>
+
+      {/* Ad-hoc Staff */}
+      <div className="bg-white dark:bg-stone-900 rounded-2xl border border-stone-200 dark:border-stone-800 p-5 transition-all hover:shadow-md hover:border-purple-200 dark:hover:border-purple-800">
+        <div className="flex items-center gap-3 mb-3">
+          <div className="p-2.5 rounded-xl bg-purple-50 dark:bg-purple-950">
+            <Wrench className="w-5 h-5 text-purple-600 dark:text-purple-400" />
+          </div>
+        </div>
+        <p className="text-3xl font-bold text-stone-900 dark:text-stone-100 tracking-tight">
+          {summary.adhocStaff}
+        </p>
+        <p className="text-sm text-stone-500 dark:text-stone-400 mt-1">
+          Ad-hoc
         </p>
       </div>
 

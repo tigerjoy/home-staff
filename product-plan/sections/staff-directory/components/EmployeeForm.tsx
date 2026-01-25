@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Check, ChevronLeft, ChevronRight, User, Briefcase, FileText, Wallet, Settings2 } from 'lucide-react'
-import type { Employee, EmployeeFormProps } from '@/../product/sections/staff-directory/types'
+import type { Employee, EmployeeFormProps } from '../types'
 import { BasicInfoStep } from './BasicInfoStep'
 import { RoleStep } from './RoleStep'
 import { DocumentsStep } from './DocumentsStep'
@@ -26,11 +26,21 @@ const emptyEmployee: Omit<Employee, 'id'> = {
   documents: [],
   customProperties: [],
   notes: [],
+  employment: {
+    employmentType: 'monthly',
+    role: '',
+    startDate: '',
+    status: 'active',
+    holidayBalance: null,
+    currentSalary: null,
+    paymentMethod: 'Bank Transfer'
+  }
 }
 
 export function EmployeeForm({
   employee,
   currentStep,
+  isLinkingExisting,
   onStepChange,
   onSubmit,
   onCancel,
@@ -77,11 +87,13 @@ export function EmployeeForm({
       case 0:
         return formData.name.trim() !== ''
       case 1:
-        return formData.employmentHistory.some(e => e.role.trim() !== '')
+        return (formData.employmentHistory || []).some(e => e.role.trim() !== '')
       case 2:
         return true // Documents are optional
       case 3:
-        return formData.salaryHistory.some(s => s.amount > 0)
+        // For adhoc employees, salary is optional/skipped
+        if (formData.employment.employmentType === 'adhoc') return true
+        return (formData.salaryHistory || []).some(s => s.amount > 0)
       case 4:
         return true // Custom fields are optional
       default:
@@ -121,7 +133,6 @@ export function EmployeeForm({
             {STEPS.map((step) => {
               const Icon = step.icon
               const isActive = step.id === currentStep
-              const isComplete = step.id < currentStep || (step.id === currentStep && isStepComplete(step.id))
               const isPast = step.id < currentStep
 
               return (
@@ -192,6 +203,7 @@ export function EmployeeForm({
                 <BasicInfoStep
                   data={formData}
                   onChange={updateFormData}
+                  isLinkingExisting={isLinkingExisting}
                 />
               )}
               {currentStep === 1 && (

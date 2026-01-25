@@ -15,7 +15,7 @@ import {
   Eye,
   FileText
 } from 'lucide-react'
-import type { LedgerEntry } from '@/../product/sections/payroll-and-finance/types'
+import type { LedgerEntry } from '../types'
 
 // =============================================================================
 // Types
@@ -83,6 +83,12 @@ function getTypeConfig(type: LedgerEntry['type']) {
       color: 'text-purple-600 dark:text-purple-400',
       bg: 'bg-purple-100 dark:bg-purple-900/30',
       label: 'Encashment'
+    },
+    AdhocPayment: {
+      icon: Wallet,
+      color: 'text-indigo-600 dark:text-indigo-400',
+      bg: 'bg-indigo-100 dark:bg-indigo-900/30',
+      label: 'Ad-hoc Payment'
     }
   }
   return configs[type]

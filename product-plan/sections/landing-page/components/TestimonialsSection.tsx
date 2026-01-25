@@ -1,4 +1,4 @@
-import type { Testimonial } from '@/../product/sections/landing-page/types'
+import type { Testimonial } from '../types'
 import { Quote, Star } from 'lucide-react'
 
 interface TestimonialsSectionProps {

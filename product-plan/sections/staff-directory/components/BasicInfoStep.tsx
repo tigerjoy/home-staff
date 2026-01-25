@@ -1,16 +1,17 @@
 import { useState } from 'react'
-import { Camera, Plus, Trash2, Phone, MapPin } from 'lucide-react'
-import type { Employee, PhoneNumber, Address } from '@/../product/sections/staff-directory/types'
+import { Camera, Plus, Trash2, Phone, MapPin, Globe } from 'lucide-react'
+import type { Employee, PhoneNumber, Address } from '../types'
 
 interface BasicInfoStepProps {
   data: Omit<Employee, 'id'>
   onChange: (updates: Partial<Omit<Employee, 'id'>>) => void
+  isLinkingExisting?: boolean
 }
 
 const PHONE_LABELS = ['Mobile', 'Home', 'Work', 'Emergency', 'Other']
 const ADDRESS_LABELS = ['Current', 'Permanent', 'Office', 'Other']
 
-export function BasicInfoStep({ data, onChange }: BasicInfoStepProps) {
+export function BasicInfoStep({ data, onChange, isLinkingExisting }: BasicInfoStepProps) {
   const [photoPreview, setPhotoPreview] = useState<string | null>(data.photo)
 
   // Generate initials for avatar preview
@@ -73,14 +74,40 @@ export function BasicInfoStep({ data, onChange }: BasicInfoStepProps) {
   return (
     <div className="space-y-8">
       {/* Section Header */}
-      <div>
-        <h2 className="text-xl font-semibold text-stone-900 dark:text-stone-100">
-          Basic Information
-        </h2>
-        <p className="mt-1 text-sm text-stone-500 dark:text-stone-400">
-          Enter the staff member's personal details and contact information
-        </p>
+      <div className="flex items-start justify-between">
+        <div>
+          <div className="flex items-center gap-3">
+            <h2 className="text-xl font-semibold text-stone-900 dark:text-stone-100">
+              Basic Information
+            </h2>
+            {isLinkingExisting && (
+              <span className="px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
+                Global Profile
+              </span>
+            )}
+          </div>
+          <p className="mt-1 text-sm text-stone-500 dark:text-stone-400">
+            {isLinkingExisting
+              ? "Verify the employee's core profile information (shared across households)"
+              : "Enter the staff member's personal details and contact information"}
+          </p>
+        </div>
       </div>
+
+      {isLinkingExisting && (
+        <div className="p-4 rounded-xl bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 flex gap-3 items-start">
+          <div className="mt-0.5">
+            <Globe className="w-5 h-5 text-blue-500" />
+          </div>
+          <div>
+            <p className="text-sm font-medium text-blue-800 dark:text-blue-300">Shared Profile Data</p>
+            <p className="text-sm text-blue-700 dark:text-blue-400 mt-1">
+              You are linking <strong>{data.name || 'this employee'}</strong> from another household.
+              Any changes made to the name, photo, or contact details here will be updated in <strong>all households</strong> where this employee works.
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Photo & Name Section */}
       <div className="flex flex-col sm:flex-row gap-6 items-start">

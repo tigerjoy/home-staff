@@ -1,25 +1,6 @@
 import { useState } from 'react'
-import {
-  ArrowLeft,
-  Pencil,
-  Archive,
-  Phone,
-  MapPin,
-  Briefcase,
-  Calendar,
-  Wallet,
-  FileText,
-  Plus,
-  Trash2,
-  ExternalLink,
-  Clock,
-  Tag,
-  StickyNote,
-  X,
-  Upload,
-  Palmtree
-} from 'lucide-react'
-import type { EmployeeDetailProps, CustomProperty, Document as DocType } from '@/../product/sections/staff-directory/types'
+import { ArrowLeft, Pencil, Archive, Phone, MapPin, Briefcase, Calendar, Wallet, FileText, Plus, Trash2, ExternalLink, Clock, Tag, StickyNote, X, Upload, Palmtree } from 'lucide-react'
+import type { EmployeeDetailProps, Document as DocType } from '../types'
 
 export function EmployeeDetail({
   employee,
@@ -43,9 +24,9 @@ export function EmployeeDetail({
   const [showArchiveConfirm, setShowArchiveConfirm] = useState(false)
 
   // Get current role
-  const currentRole = employee.employmentHistory.find(e => e.endDate === null)
+  const currentRole = (employee.employmentHistory || []).find(e => e.endDate === null)
   // Get current salary
-  const currentSalary = employee.salaryHistory[0]
+  const currentSalary = (employee.salaryHistory || [])[0]
 
   // Generate initials
   const initials = employee.name
@@ -280,7 +261,7 @@ export function EmployeeDetail({
                 <div className="absolute left-4 top-0 bottom-0 w-0.5 bg-stone-200 dark:bg-stone-700" />
 
                 <div className="space-y-4">
-                  {employee.employmentHistory.map((record, idx) => (
+                  {(employee.employmentHistory || []).map((record, idx) => (
                     <div key={idx} className="relative flex gap-4">
                       {/* Timeline dot */}
                       <div
@@ -344,7 +325,7 @@ export function EmployeeDetail({
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-stone-100 dark:divide-stone-800">
-                    {employee.salaryHistory.map((record, idx) => (
+                    {(employee.salaryHistory || []).map((record, idx) => (
                       <tr key={idx}>
                         <td className="py-3 text-sm text-stone-600 dark:text-stone-400">
                           {formatDate(record.effectiveDate)}

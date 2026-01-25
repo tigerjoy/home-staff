@@ -1,28 +1,65 @@
 {
   "_meta": {
     "models": {
-      "staffProfile": "A read-only view of the employee's personal and employment details.",
-      "entitlements": "Current holiday balance and attendance summary for the staff member.",
-      "financials": "Summary of recent payments and any outstanding advances.",
-      "activityFeed": "A combined timeline of attendance events and financial transactions for transparency."
+      "employee": "The staff member's core identity (name, phone number) used to log in and identify themselves.",
+      "employments": "The list of households where this employee works, with employment type and summary data for each.",
+      "selectedEmployment": "The currently selected household's employment details including role, start date, and relevant metrics.",
+      "attendanceSummary": "Attendance metrics for Monthly employments — absences this month/year and holiday balance.",
+      "paymentSummary": "Financial summary including last payment and outstanding advances.",
+      "activityFeed": "A timeline of recent events (attendance and payments) for the selected household."
     },
     "relationships": [
-      "The Portal displays data for a single authenticated Employee",
-      "Activity Feed items are sourced from both Attendance and Payroll records",
-      "Holiday Balance is synced with the main Staff Directory record"
+      "The Portal authenticates an Employee by phone number",
+      "An Employee can have multiple Employments (one per household)",
+      "Each Employment shows different data based on type: Monthly vs Ad-hoc",
+      "Monthly employments show attendance summary and holiday balance",
+      "Ad-hoc employments show only payment history",
+      "Activity Feed is filtered to the selected household's employment"
     ]
   },
-  "staff": {
+  "employee": {
     "id": "emp-001",
     "name": "Lakshmi Devi",
-    "role": "Housekeeper",
-    "phoneNumber": "+91 98765 43210",
-    "joinDate": "2019-03-15",
-    "householdName": "Morgan Residence"
+    "phoneNumber": "+91 98765 43210"
   },
-  "summary": {
-    "holidayBalance": 6,
-    "totalAbsencesYear": 2,
+  "employments": [
+    {
+      "id": "employment-001",
+      "householdId": "hh-001",
+      "householdName": "Morgan Residence",
+      "employmentType": "monthly",
+      "role": "Housekeeper",
+      "startDate": "2019-03-15",
+      "holidayBalance": 8,
+      "lastPaymentAmount": 18500,
+      "lastPaymentDate": "2023-12-31"
+    },
+    {
+      "id": "employment-002",
+      "householdId": "hh-002",
+      "householdName": "Springfield Vacation Home",
+      "employmentType": "monthly",
+      "role": "Housekeeper",
+      "startDate": "2021-05-01",
+      "holidayBalance": 4,
+      "lastPaymentAmount": 12000,
+      "lastPaymentDate": "2024-01-05"
+    }
+  ],
+  "selectedEmploymentId": "employment-001",
+  "selectedEmploymentDetails": {
+    "id": "employment-001",
+    "householdName": "Morgan Residence",
+    "employmentType": "monthly",
+    "role": "Housekeeper",
+    "startDate": "2019-03-15"
+  },
+  "attendanceSummary": {
+    "holidayBalance": 8,
+    "absencesThisMonth": 2,
+    "absencesThisYear": 6
+  },
+  "paymentSummary": {
     "lastPaymentAmount": 18500,
     "lastPaymentDate": "2023-12-31",
     "outstandingAdvance": 0
@@ -68,5 +105,65 @@
       "description": "November 2023 Payroll",
       "amount": 18000
     }
-  ]
+  ],
+  "adhocEmployeeSample": {
+    "_comment": "Sample data showing what an Ad-hoc employee would see (different employee)",
+    "employee": {
+      "id": "emp-007",
+      "name": "Mohan Lal",
+      "phoneNumber": "+91 99123 45678"
+    },
+    "employments": [
+      {
+        "id": "employment-007",
+        "householdId": "hh-001",
+        "householdName": "Morgan Residence",
+        "employmentType": "adhoc",
+        "role": "Plumber",
+        "startDate": "2023-05-10",
+        "holidayBalance": null,
+        "lastPaymentAmount": 2000,
+        "lastPaymentDate": "2024-01-15"
+      }
+    ],
+    "selectedEmploymentDetails": {
+      "id": "employment-007",
+      "householdName": "Morgan Residence",
+      "employmentType": "adhoc",
+      "role": "Plumber",
+      "startDate": "2023-05-10"
+    },
+    "paymentSummary": {
+      "totalPayments": 4,
+      "totalAmount": 5300,
+      "lastPaymentAmount": 2000,
+      "lastPaymentDate": "2024-01-15"
+    },
+    "activity": [
+      {
+        "id": "act-adhoc-1",
+        "type": "payment",
+        "date": "2024-01-15",
+        "title": "Payment Received",
+        "description": "Repaired bathroom water heater connection",
+        "amount": 2000
+      },
+      {
+        "id": "act-adhoc-2",
+        "type": "payment",
+        "date": "2024-01-08",
+        "title": "Payment Received",
+        "description": "Fixed kitchen sink plumbing issue",
+        "amount": 1500
+      },
+      {
+        "id": "act-adhoc-3",
+        "type": "payment",
+        "date": "2023-08-20",
+        "title": "Payment Received",
+        "description": "Fixed leaky tap in guest bathroom",
+        "amount": 800
+      }
+    ]
+  }
 }

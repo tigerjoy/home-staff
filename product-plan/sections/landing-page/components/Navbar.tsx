@@ -1,4 +1,4 @@
-import type { Navigation } from '@/../product/sections/landing-page/types'
+import type { Navigation } from '../types'
 import { Home } from 'lucide-react'
 
 interface NavbarProps {

@@ -3,7 +3,7 @@ import {
   X,
   Upload,
   FileText,
-  Image as ImageIcon,
+  ImageIcon,
   Trash2,
   Download,
   ChevronLeft,
@@ -12,7 +12,7 @@ import {
   ZoomOut,
   ExternalLink
 } from 'lucide-react'
-import type { PaymentReceipt } from '@/../product/sections/payroll-and-finance/types'
+import type { PaymentReceipt } from '../types'
 
 // =============================================================================
 // Receipt Upload Button

@@ -11,200 +11,81 @@
 - Finished UI designs (React components with full styling)
 - Data model definitions (TypeScript types and sample data)
 - UI/UX specifications (user flows, requirements, screenshots)
-- Design system tokens (colors, typography, spacing)
-- Test-writing instructions for each section (for TDD approach)
+- Test-writing instructions (see `product-plan/sections/staff-directory/tests.md`)
 
 **What you need to build:**
-- Backend API endpoints and database schema
-- Authentication and authorization
-- Data fetching and state management
-- Business logic and validation
-- Integration of the provided UI components with real data
+- API endpoints for Employee and Employment management
+- Logic for "Linking" existing employees across households
+- Search and filtering logic for staff records
+- Document upload and storage integration
+- Custom fields persistence
 
 **Important guidelines:**
 - **DO NOT** redesign or restyle the provided components — use them as-is
 - **DO** wire up the callback props to your routing and API calls
 - **DO** replace sample data with real data from your backend
-- **DO** implement proper error handling and loading states
-- **DO** implement empty states when no records exist (first-time users, after deletions)
+- **DO** implement empty states when no staff records exist
 - **DO** use test-driven development — write tests first using `tests.md` instructions
-- The components are props-based and ready to integrate — focus on the backend and data layer
 
 ---
 
 ## Goal
-
-Implement the Staff Directory — a centralized hub for managing household staff profiles with a multi-step wizard for adding employees.
+Establish the central hub for managing household staff, supporting both new hires and cross-household employee linking.
 
 ## Overview
+A comprehensive directory of household staff with toggleable card and table views. It features a multi-step onboarding wizard for new staff and a specialized "Link Existing" flow to pull in employees already registered in other households managed by the user.
 
-A centralized hub for managing household staff profiles. Users can add, edit, and archive employee records with a multi-step wizard. The directory displays staff in both card grid and table views, with full profile details on dedicated pages. Supports custom properties and notes for flexible record-keeping.
-
-**Key Functionality:**
-- View all staff in card grid or table view (toggle between views)
-- Search and filter staff by name, role, or status
-- Add new staff member via multi-step wizard
-- View staff member's full profile with holiday balance
-- Edit staff details
-- Archive staff member (soft delete)
-- Upload and manage documents
-- Add custom properties and notes
-- Export staff list to CSV or PDF
+**Key Capabilities:**
+- Toggleable Card and Table views
+- Dashboard summary cards (staff count, role breakdown)
+- Multi-step "Add Staff" wizard (Basic Info, Role, Documents, Salary, Custom Fields)
+- "Link Existing" flow to share core employee profiles across households
+- Document management and custom property support
+- Soft-archive functionality for employment records
 
 ## Recommended Approach: Test-Driven Development
-
-Before implementing this section, **write tests first** based on the test specifications provided.
-
-See `product-plan/sections/staff-directory/tests.md` for detailed test-writing instructions including:
-- Key user flows to test (success and failure paths)
-- Specific UI elements, button labels, and interactions to verify
-- Expected behaviors and assertions
+Follow the TDD instructions in `product-plan/sections/staff-directory/tests.md`. Focus on testing the view toggle, the search functionality, and the multi-step form validation.
 
 ## What to Implement
 
 ### Components
-
-Copy the section components from `product-plan/sections/staff-directory/components/`:
-
-- `StaffDirectory.tsx` — Main directory page
-- `SummaryCards.tsx` — Dashboard summary statistics
-- `EmployeeCard.tsx` — Card view for employee
-- `EmployeeTable.tsx` — Table view for employees
-- `EmployeeDetail.tsx` — Full profile page
-- `EmployeeForm.tsx` — Multi-step wizard
-- `BasicInfoStep.tsx` — Step 1: Basic info
-- `RoleStep.tsx` — Step 2: Role and department
-- `DocumentsStep.tsx` — Step 3: Document uploads
-- `SalaryStep.tsx` — Step 4: Salary configuration
-- `CustomFieldsStep.tsx` — Step 5: Custom properties
+Copy these from `product-plan/sections/staff-directory/components/`:
+- `StaffDirectory.tsx` — Main dashboard container
+- `SummaryCards.tsx` — Top-level metrics
+- `EmployeeCard.tsx` / `EmployeeTable.tsx` — Data display components
+- `EmployeeForm.tsx` — The multi-step wizard container
+- `BasicInfoStep.tsx`, `RoleStep.tsx`, `DocumentsStep.tsx`, `SalaryStep.tsx`, `CustomFieldsStep.tsx` — Individual wizard steps
+- `EmployeeDetail.tsx` — Full profile view
 
 ### Data Layer
-
-The components expect these data shapes:
-
-```typescript
-interface StaffDirectoryProps {
-  summary: Summary
-  employees: Employee[]
-  onView?: (id: string) => void
-  onEdit?: (id: string) => void
-  onArchive?: (id: string) => void
-  onRestore?: (id: string) => void
-  onCreate?: () => void
-  onExport?: (format: 'csv' | 'pdf') => void
-  onSearch?: (query: string) => void
-  onFilterStatus?: (status: 'all' | 'active' | 'archived') => void
-  onFilterRole?: (role: string | null) => void
-}
-
-interface Employee {
-  id: string
-  name: string
-  photo: string | null
-  status: 'active' | 'archived'
-  phoneNumbers: PhoneNumber[]
-  addresses: Address[]
-  employmentHistory: EmploymentRecord[]
-  salaryHistory: SalaryRecord[]
-  documents: Document[]
-  customProperties: CustomProperty[]
-  notes: Note[]
-  holidayBalance: number
-}
-```
-
-You'll need to:
-- Create Employee API endpoints (CRUD)
-- Handle file uploads for photos and documents
-- Implement search and filtering
-- Generate export files
+- **Core Profile vs. Employment:** Store name, photo, and phone in a shared `Employee` record. Store role, salary, and start date in a household-specific `Employment` record.
+- **Filtering:** Implement server-side or client-side filtering by name, role, and employment type (Monthly vs Ad-hoc).
 
 ### Callbacks
-
-Wire up these user actions:
-
-| Callback | Description |
-|----------|-------------|
-| `onView` | Navigate to employee detail page |
-| `onEdit` | Open employee form in edit mode |
-| `onArchive` | Soft-delete employee (with confirmation) |
-| `onRestore` | Restore archived employee |
-| `onCreate` | Open employee form for new employee |
-| `onExport` | Generate and download CSV or PDF |
-| `onSearch` | Filter employees by search query |
-| `onFilterStatus` | Filter by active/archived status |
-| `onFilterRole` | Filter by role |
+- `onAddStaff`: Trigger the "Add New" or "Link Existing" flow.
+- `onSaveEmployee`: Persist the employee and employment data.
+- `onArchiveEmployee`: Set the employment status to `archived`.
+- `onViewDetail`: Route to `/staff/:id`.
+- `onUploadDocument`: Handle file uploads to your storage provider.
 
 ### Empty States
-
-Implement empty state UI for when no records exist:
-
-- **No employees yet:** Show helpful message with "Add Your First Staff Member" CTA
-- **No search results:** Show "No employees match your search" with option to clear filters
-- **No documents:** In employee detail, show "No documents uploaded yet" with upload button
+Implement a "No Staff Found" state with a prominent "Add Your First Employee" button when the directory is empty.
 
 ## Files to Reference
-
-- `product-plan/sections/staff-directory/README.md` — Feature overview and design intent
-- `product-plan/sections/staff-directory/tests.md` — Test-writing instructions (use for TDD)
-- `product-plan/sections/staff-directory/components/` — React components
-- `product-plan/sections/staff-directory/types.ts` — TypeScript interfaces
-- `product-plan/sections/staff-directory/sample-data.json` — Test data
-- `product-plan/sections/staff-directory/screenshot.png` — Visual reference
+- `product-plan/sections/staff-directory/spec.md` — UI requirements
+- `product-plan/sections/staff-directory/sample-data.json` — Sample employee records
+- `product-plan/sections/staff-directory/types.ts` — Prop definitions
 
 ## Expected User Flows
-
-### Flow 1: Add New Staff Member
-
-1. User clicks "Add Staff" button
-2. User fills out Basic Info step (name, photo, phone, address)
-3. User clicks "Next" and fills Role step (role, department, start date)
-4. User clicks "Next" and uploads documents (optional)
-5. User clicks "Next" and sets salary info
-6. User clicks "Next" and adds custom properties (optional)
-7. User clicks "Create Employee"
-8. **Outcome:** Employee appears in directory, success message shown
-
-### Flow 2: View and Edit Staff Profile
-
-1. User clicks on an employee card or row
-2. User sees full profile with all details
-3. User clicks "Edit" button
-4. User modifies details in the form wizard
-5. User clicks "Save Changes"
-6. **Outcome:** Profile updated, changes reflected immediately
-
-### Flow 3: Archive Staff Member
-
-1. User clicks archive/delete icon on employee
-2. Confirmation dialog appears
-3. User confirms the action
-4. **Outcome:** Employee moved to archived, removed from active list
-
-### Flow 4: Search and Filter
-
-1. User types in search box
-2. List filters in real-time
-3. User selects role filter dropdown
-4. List filters by role
-5. **Outcome:** Only matching employees displayed
+1. **The New Hire Flow:** User clicks "Add New" → Completes all 5 wizard steps → New employee appears in the directory.
+2. **The Linking Flow:** User clicks "Link Existing" → Selects an employee from another household → Configures their role and salary for *this* household → Employment is created.
+3. **The Search Flow:** User types a name in the search bar → The list filters in real-time to match the query.
 
 ## Done When
-
-- [ ] Tests written for key user flows (success and failure paths)
-- [ ] All tests pass
-- [ ] Directory displays employees in card and table views
-- [ ] View toggle works between card and table
-- [ ] Summary cards show correct statistics
-- [ ] Search filters employees in real-time
-- [ ] Role and status filters work
-- [ ] Multi-step form wizard works for adding employees
-- [ ] Employee detail page shows all information
-- [ ] Edit flow works with pre-populated form
-- [ ] Archive confirmation dialog appears
-- [ ] Document upload and preview works
-- [ ] Custom properties can be added and removed
-- [ ] Notes can be added with timestamps
-- [ ] Empty states display properly
-- [ ] Responsive on mobile
-- [ ] Dark mode support
+- [ ] Staff directory displays all active employments for the current household
+- [ ] Toggle between Card and Table views works correctly
+- [ ] "Add Staff" wizard correctly saves both core and employment data
+- [ ] "Link Existing" flow correctly reuses existing employee profiles
+- [ ] Employee detail page shows all relevant info and documents
+- [ ] Search and filtering are functional
+- [ ] All tests in `tests.md` pass

@@ -4,35 +4,60 @@
 
 HomeStaff uses a sidebar navigation pattern optimized for household workforce management. The persistent left sidebar provides quick access to all main sections, while the user menu at the bottom keeps account actions easily accessible.
 
-## Components Provided
-
-- `AppShell.tsx` — Main layout wrapper with mobile and desktop sidebar
-- `MainNav.tsx` — Navigation component with active state styling
-- `UserMenu.tsx` — User menu with avatar, household name, and dropdown
-
 ## Navigation Structure
 
-| Label | Route | Icon |
-|-------|-------|------|
-| Staff Directory | `/staff` | Users |
-| Attendance & Holidays | `/attendance` | Calendar |
-| Payroll & Finance | `/payroll` | Wallet |
-| Settings & Access | `/settings` | Settings |
+| Route | Section | Access |
+|-------|---------|--------|
+| `/staff` | Staff Directory | Authenticated (default) |
+| `/attendance` | Attendance & Holidays | Authenticated |
+| `/payroll` | Payroll & Finance | Authenticated |
+| `/settings` | Settings & Access | Authenticated |
 
-## Separate Flows (Not in Main Nav)
+### Separate Flows (Not in Main Nav)
 
 - **Landing Page** — Public marketing page at `/`
-- **User Authentication** — Login/register flows at `/login` and `/register`
-- **Onboarding & Setup** — Displayed for new users after first login
+- **User Authentication** — Registration and login at `/login` and `/register`
+- **Onboarding & Setup** — For new users after first login
 - **Employee Portal** — Public-facing page at `/portal`
 
 ## User Menu
 
-Located at the bottom of the sidebar, displays:
+Located at the bottom of the sidebar, the user menu displays:
 - User avatar (with initials fallback)
 - User name
 - Current household name
 - Dropdown with: Switch Household, Account Settings, Logout
+
+## Components
+
+### AppShell.tsx
+Main layout wrapper that provides the sidebar structure and content area.
+
+**Props:**
+- `children` — Content to render in the main area
+- `currentPath` — Current route path for active nav highlighting
+- `user` — User object with name, avatar, household info
+- `onNavigate` — Navigation callback
+- `onLogout` — Logout callback
+
+### MainNav.tsx
+Navigation component with nav items and icons.
+
+**Nav Items:**
+- Staff Directory (Users icon)
+- Attendance & Holidays (Calendar icon)
+- Payroll & Finance (Wallet icon)
+- Settings & Access (Settings icon)
+
+### UserMenu.tsx
+User menu with avatar and dropdown actions.
+
+**Props:**
+- `user` — User object
+- `households` — List of user's households
+- `onSwitchHousehold` — Household switch callback
+- `onSettings` — Settings navigation callback
+- `onLogout` — Logout callback
 
 ## Layout Pattern
 
@@ -53,52 +78,9 @@ Located at the bottom of the sidebar, displays:
 - **Neutral (stone):** Sidebar background, borders, text
 - **Typography:** Nunito Sans for nav labels and UI text
 
-## Props Interface
+## Design Notes
 
-```typescript
-interface AppShellProps {
-  children: React.ReactNode
-  navigationItems: NavigationItem[]
-  user?: { name: string; avatarUrl?: string }
-  household?: { name: string }
-  onNavigate?: (href: string) => void
-  onLogout?: () => void
-  onSwitchHousehold?: () => void
-  onAccountSettings?: () => void
-}
-
-interface NavigationItem {
-  label: string
-  href: string
-  icon: LucideIcon
-  isActive?: boolean
-}
-```
-
-## Usage Example
-
-```tsx
-import { AppShell } from './components'
-import { Users, Calendar, Wallet, Settings } from 'lucide-react'
-
-const navigationItems = [
-  { label: 'Staff Directory', href: '/staff', icon: Users, isActive: true },
-  { label: 'Attendance & Holidays', href: '/attendance', icon: Calendar },
-  { label: 'Payroll & Finance', href: '/payroll', icon: Wallet },
-  { label: 'Settings & Access', href: '/settings', icon: Settings },
-]
-
-function App() {
-  return (
-    <AppShell
-      navigationItems={navigationItems}
-      user={{ name: 'Alex Morgan' }}
-      household={{ name: 'Morgan Residence' }}
-      onNavigate={(href) => router.push(href)}
-      onLogout={() => signOut()}
-    >
-      <YourPageContent />
-    </AppShell>
-  )
-}
-```
+- Navigation icons accompany each nav item for visual recognition
+- Active nav item has amber-500 left border accent and amber-50 background
+- Sidebar has subtle border-right separator
+- Dark mode: Sidebar uses stone-900 background, text adapts accordingly

@@ -11,7 +11,7 @@ import {
   ChevronDown,
   Sparkles
 } from 'lucide-react'
-import type { SettlementItem } from '@/../product/sections/payroll-and-finance/types'
+import type { SettlementItem } from '../types'
 
 // =============================================================================
 // Types
@@ -19,8 +19,8 @@ import type { SettlementItem } from '@/../product/sections/payroll-and-finance/t
 
 interface SettlementWorkspaceProps {
   items: SettlementItem[]
-  onSettleAbsence?: (employeeId: string, decision: 'penalize' | 'carry_forward') => void
-  onSettleUnusedLeave?: (employeeId: string, decision: 'encash' | 'carry_forward' | 'lapse') => void
+  onSettleAbsence?: (employmentId: string, decision: 'penalize' | 'carry_forward') => void
+  onSettleUnusedLeave?: (employmentId: string, decision: 'encash' | 'carry_forward' | 'lapse') => void
   onClose?: () => void
 }
 
@@ -414,9 +414,9 @@ export function SettlementWorkspace({
             <div className="space-y-4">
               {excessAbsences.map(item => (
                 <ExcessAbsenceCard
-                  key={item.employeeId}
+                  key={item.employmentId}
                   item={item}
-                  onSettle={(decision) => onSettleAbsence?.(item.employeeId, decision)}
+                  onSettle={(decision) => onSettleAbsence?.(item.employmentId, decision)}
                 />
               ))}
             </div>
@@ -433,9 +433,9 @@ export function SettlementWorkspace({
             <div className="space-y-4">
               {unusedLeaves.map(item => (
                 <UnusedLeaveCard
-                  key={item.employeeId}
+                  key={item.employmentId}
                   item={item}
-                  onSettle={(decision) => onSettleUnusedLeave?.(item.employeeId, decision)}
+                  onSettle={(decision) => onSettleUnusedLeave?.(item.employmentId, decision)}
                 />
               ))}
             </div>

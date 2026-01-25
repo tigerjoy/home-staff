@@ -1,216 +1,93 @@
 # Test Instructions: Payroll & Finance
 
-These test-writing instructions are **framework-agnostic**. Adapt them to your testing setup.
-
-## Overview
-
-Test payroll calculations, settlement decisions, advances, and payment tracking.
+These test-writing instructions are **framework-agnostic**. Adapt them to your testing setup (Jest, Vitest, Playwright, Cypress, React Testing Library, etc.).
 
 ---
 
 ## User Flow Tests
 
-### Flow 1: View Payroll Dashboard
+### Flow 1: Processing Monthly Salary
 
-**Scenario:** User views current month payroll
-
-**Setup:**
-- Provide summary and payroll records
+**Scenario:** Employer finalizes the monthly payment for a housekeeper
 
 **Steps:**
-1. Navigate to `/payroll`
+1. Navigate to Payroll Dashboard.
+2. Select a Monthly employee with "Pending" status.
+3. Review the Calculation Breakdown.
+4. Click "Mark as Paid".
+5. Upload a mock receipt file.
+6. Verify status changes to "Paid".
 
 **Expected Results:**
-- [ ] Summary cards display: Total Payroll, Outstanding Advances, Pending Settlements
-- [ ] Payroll list shows each employee with: Name, Base Salary, Net Payable, Status
-- [ ] Employees with pending settlements are highlighted
+- [ ] Calculation correctly sums base salary and bonuses.
+- [ ] `onFinalizePayment` is called with the total amount.
+- [ ] Receipt thumbnail appears after upload.
+
+### Flow 2: Leave Settlement
+
+**Scenario:** User decides to pay out (encash) unused leave
+
+**Steps:**
+1. Open Settlement Workspace for an employee with a positive holiday balance.
+2. Select "Encashment" option for the remaining days.
+3. Verify the "Encashment Bonus" appears in the Calculation Breakdown.
+4. Click "Apply Settlement".
+
+**Expected Results:**
+- [ ] The bonus amount is calculated as (Daily Rate × Unused Days).
+- [ ] The employee's holiday balance for the next month resets or updates based on the decision.
 
 ---
 
-### Flow 2: View Calculation Breakdown
+## Component Interaction Tests
 
-**Scenario:** User views detailed salary calculation
+### PaymentLedgerTable
+- [ ] Shows columns: Date, Description, Type, Amount, Status, Receipts.
+- [ ] Filter by "Monthly" or "Ad-hoc" correctly updates the list.
+- [ ] Clicking a receipt icon opens the ReceiptGallery.
 
-**Setup:**
-- Mock `onViewCalculation` callback
-
-**Steps:**
-1. Click "View Calculation" on an employee
-
-**Expected Results:**
-- [ ] Modal opens with breakdown:
-  - Base Salary
-  - + Bonuses
-  - + Encashments
-  - - Penalties
-  - - Advance Repayment
-  - = Net Payable
-- [ ] Each line item is explained
+### AdHocPaymentForm
+- [ ] Validation prevents submission without an amount or description.
+- [ ] Successfully triggers `onRecordAdHoc` on submission.
 
 ---
 
-### Flow 3: Settle Excess Absence (Penalize)
+## Edge Cases
 
-**Scenario:** Employee exceeded holiday entitlement
-
-**Setup:**
-- Provide settlement item with type "excess_absence"
-- Mock `onSettleAbsence` callback
-
-**Steps:**
-1. Find employee in settlement workspace
-2. Click "Apply Penalty" option
-
-**Expected Results:**
-- [ ] `onSettleAbsence` is called with:
-  - employeeId
-  - decision: "penalize"
-- [ ] Penalty amount is calculated (dailyRate × excessDays)
-- [ ] Employee payroll updates to reflect penalty
-
----
-
-### Flow 4: Settle Excess Absence (Carry Forward)
-
-**Scenario:** User chooses to carry forward excess instead of penalizing
-
-**Steps:**
-1. Click "Carry Forward" option
-
-**Expected Results:**
-- [ ] `onSettleAbsence` is called with decision: "carry_forward"
-- [ ] No penalty applied
-- [ ] Balance will show negative next month
-
----
-
-### Flow 5: Settle Unused Leave (Encash)
-
-**Scenario:** Employee has unused leave to encash
-
-**Setup:**
-- Provide settlement item with type "unused_leave"
-- Mock `onSettleUnusedLeave` callback
-
-**Steps:**
-1. Click "Encash" option
-
-**Expected Results:**
-- [ ] `onSettleUnusedLeave` is called with decision: "encash"
-- [ ] Encashment amount added to salary (dailyRate × unusedDays)
-- [ ] Holiday balance resets
-
----
-
-### Flow 6: Record Advance
-
-**Scenario:** User records a salary advance
-
-**Setup:**
-- Mock `onRecordAdvance` callback
-
-**Steps:**
-1. Click "Record Advance" button
-2. Select employee
-3. Enter amount "5000"
-4. Add notes "Emergency"
-5. Click "Save"
-
-**Expected Results:**
-- [ ] `onRecordAdvance` is called with employeeId, amount: 5000, notes
-- [ ] Advance appears in advances list
-- [ ] Outstanding Advances total updates
-
----
-
-### Flow 7: Finalize Payment with Receipt
-
-**Scenario:** User marks payment as complete
-
-**Setup:**
-- Mock `onFinalizePayment` and `onUploadReceipt` callbacks
-
-**Steps:**
-1. Click "Mark as Paid" on payroll record
-2. Click "Upload Receipt"
-3. Select image file
-4. Click "Confirm Payment"
-
-**Expected Results:**
-- [ ] `onUploadReceipt` is called with ledgerEntryId and file
-- [ ] `onFinalizePayment` is called with payroll ID
-- [ ] Status changes to "Paid"
-- [ ] Receipt thumbnail appears on transaction
-
----
-
-### Flow 8: View Receipt Gallery
-
-**Scenario:** User views all receipts for a transaction
-
-**Setup:**
-- Provide ledger entry with multiple receipts
-
-**Steps:**
-1. Click receipt thumbnail or "View Receipts"
-
-**Expected Results:**
-- [ ] Gallery modal opens
-- [ ] All receipts are displayed (images and PDF icons)
-- [ ] Can navigate between receipts
-- [ ] Can delete individual receipts
-
----
-
-## Empty State Tests
-
-### No Payroll Records
-
-**Scenario:** No payroll data for current month
-
-**Expected Results:**
-- [ ] Message: "No payroll data for this month"
-- [ ] Instructions on when payroll generates
-
-### No Advances
-
-**Scenario:** No outstanding advances
-
-**Expected Results:**
-- [ ] Advances section shows "No outstanding advances"
-
-### No Receipts
-
-**Scenario:** Transaction has no receipts
-
-**Expected Results:**
-- [ ] "No receipts attached" message
-- [ ] Upload button is visible
-
----
-
-## Payment Ledger Tests
-
-### Search Ledger
-
-**Steps:**
-1. Type employee name in search
-
-**Expected Results:**
-- [ ] `onSearchLedger` is called with query
-- [ ] Ledger filters to matching transactions
-
-### Ledger Columns
-
-**Expected Results:**
-- [ ] Table shows: Date, Employee, Type, Amount, Status, Reference
-- [ ] Receipt indicator if receipts attached
+- **Negative Balance Penalty:** Verify that if an employee has negative holiday balance, a "Penalty" deduction is automatically calculated in the breakdown.
+- **Advance Repayment:** If an advance is outstanding, verify it appears as a potential deduction in the payroll process.
+- **Large Files:** Test the ReceiptGallery's behavior with multiple large image uploads.
 
 ---
 
 ## Accessibility Checks
 
-- [ ] Modal dialogs are keyboard accessible
-- [ ] Receipt gallery has keyboard navigation
-- [ ] File upload has accessible label
-- [ ] Currency amounts are properly formatted
+- [ ] Interactive tables are navigable via keyboard.
+- [ ] Settlement radio buttons/options have clear labels.
+- [ ] Finalize button has a loading state that is announced to screen readers.
+
+---
+
+## Sample Test Data
+
+```typescript
+const mockPayrollRecord = {
+  employmentId: "emp-001",
+  baseSalary: 15000,
+  bonuses: [{ label: "Festival Bonus", amount: 1000 }],
+  penalties: [{ label: "Excess Absence (2 days)", amount: 1000 }],
+  leaveSettlement: {
+    days: 3,
+    decision: "encash",
+    amount: 1500
+  }
+};
+
+const mockAdHocPayment = {
+  id: "pay-002",
+  description: "Deep cleaning services",
+  amount: 2500,
+  date: "2024-01-20",
+  type: "adhoc"
+};
+```

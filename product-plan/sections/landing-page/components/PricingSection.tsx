@@ -1,4 +1,4 @@
-import type { Pricing } from '@/../product/sections/landing-page/types'
+import type { Pricing } from '../types'
 import { Sparkles, Check, ArrowRight } from 'lucide-react'
 
 interface PricingSectionProps {

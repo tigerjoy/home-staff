@@ -9,63 +9,50 @@
 ## Usage Examples
 
 ### Primary (Amber)
-
-```html
-<!-- Primary button -->
-<button class="bg-amber-600 hover:bg-amber-700 text-white">
-  Save Changes
-</button>
-
-<!-- Primary link -->
-<a class="text-amber-600 hover:text-amber-700 dark:text-amber-400">
-  Learn more
-</a>
-
-<!-- Active navigation item -->
-<div class="bg-amber-50 text-amber-900 border-l-2 border-amber-500 dark:bg-amber-400/20 dark:text-amber-300">
-  Staff Directory
-</div>
+```
+Primary button: bg-amber-500 hover:bg-amber-600 text-white
+Primary text: text-amber-600 dark:text-amber-400
+Primary border: border-amber-500
+Primary background: bg-amber-50 dark:bg-amber-950
 ```
 
 ### Secondary (Orange)
-
-```html
-<!-- Badge/tag -->
-<span class="bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200">
-  New
-</span>
-
-<!-- Hover accent -->
-<div class="hover:bg-orange-50 dark:hover:bg-orange-950">
-  Hover me
-</div>
+```
+Secondary badge: bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200
+Secondary accent: text-orange-500
+Gradient: bg-gradient-to-r from-amber-500 to-orange-500
 ```
 
 ### Neutral (Stone)
-
-```html
-<!-- Page background -->
-<div class="bg-stone-50 dark:bg-stone-950">
-
-<!-- Card background -->
-<div class="bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800">
-
-<!-- Text colors -->
-<h1 class="text-stone-900 dark:text-stone-100">Heading</h1>
-<p class="text-stone-600 dark:text-stone-400">Body text</p>
-<span class="text-stone-500">Muted text</span>
-
-<!-- Borders -->
-<div class="border-stone-200 dark:border-stone-800">
+```
+Page background: bg-stone-50 dark:bg-stone-950
+Card background: bg-white dark:bg-stone-900
+Text primary: text-stone-900 dark:text-stone-100
+Text secondary: text-stone-600 dark:text-stone-400
+Text muted: text-stone-500 dark:text-stone-500
+Borders: border-stone-200 dark:border-stone-800
 ```
 
-## Dark Mode
+## Common Patterns
 
-All components use Tailwind's `dark:` variant for dark mode support. The design system uses:
+### Buttons
+```tsx
+// Primary
+className="bg-amber-500 hover:bg-amber-600 text-white font-medium rounded-xl px-4 py-2"
 
-- **Light mode:** Stone-50 backgrounds, stone-900 text
-- **Dark mode:** Stone-950 backgrounds, stone-100 text
+// Secondary
+className="bg-stone-100 hover:bg-stone-200 dark:bg-stone-800 dark:hover:bg-stone-700 text-stone-700 dark:text-stone-300"
 
-## Tailwind v4 Note
+// Ghost
+className="text-stone-600 hover:text-stone-900 dark:text-stone-400 dark:hover:text-stone-100"
+```
 
-This project uses Tailwind CSS v4. There is no `tailwind.config.js` file. Colors are used directly via Tailwind's built-in utility classes.
+### Cards
+```tsx
+className="bg-white dark:bg-stone-900 rounded-2xl border border-stone-200 dark:border-stone-800 p-6"
+```
+
+### Inputs
+```tsx
+className="w-full px-4 py-2.5 bg-stone-50 dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-xl text-stone-900 dark:text-stone-100 placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-amber-500"
+```

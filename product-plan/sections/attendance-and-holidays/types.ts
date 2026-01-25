@@ -2,59 +2,94 @@
 // Data Types
 // =============================================================================
 
-export type LeaveType = 'sick' | 'casual' | 'paid' | 'unpaid' | 'other'
-export type HolidayType = 'public' | 'festival' | 'other'
-
-export interface Employee {
-  id: string
-  name: string
-  role: string
-  avatar: string
-  status: 'active' | 'inactive'
-  joiningDate: string
-  /** Remaining holiday/leave days for the current period */
-  holidayBalance: number
-}
-
-export interface LeaveRecord {
-  id: string
-  employeeId: string
-  date: string
-  type: LeaveType
-  notes?: string
-}
-
-export interface Holiday {
-  id: string
-  date: string
-  name: string
-  type: HolidayType
-}
-
-export interface HolidayRule {
-  employeeId: string
-  dayOfWeek: number // 0 = Sunday, 1 = Monday, etc.
-  type: 'weekly_off'
-}
-
+export type EmploymentType = 'monthly' | 'adhoc'
+export type EmploymentStatus = 'active' | 'inactive'
 export type HolidayRuleType = 'fixed' | 'recurring'
 
-export interface HolidayRuleConfig {
-  type: HolidayRuleType
-  /** For fixed type: number of days per month */
-  monthlyAllowance?: number
-  /** For recurring type: days of week (0=Sunday, 6=Saturday) */
-  weeklyOffDays?: number[]
-  /** Auto-mark absence on scheduled off days */
-  autoMarkAbsence: boolean
+/**
+ * Reference to another household where the employee also works.
+ * Used for cross-household absence/inactivity prompts.
+ */
+export interface OtherHousehold {
+  id: string
+  name: string
 }
 
-export interface InactivityPeriod {
+/**
+ * A Monthly employment in the current household for attendance tracking.
+ * Ad-hoc employees are not included in attendance tracking.
+ */
+export interface AttendanceEmployment {
   id: string
   employeeId: string
+  name: string
+  role: string
+  avatar: string | null
+  employmentType: 'monthly'
+  status: EmploymentStatus
+  startDate: string
+  /** Running holiday balance for this household */
+  holidayBalance: number
+  /** Other households where this employee has Monthly employment */
+  otherHouseholds: OtherHousehold[]
+}
+
+/**
+ * Alias for AttendanceEmployment used in modal components.
+ * Represents an employee with their employment information.
+ */
+export type Employee = AttendanceEmployment
+
+/**
+ * Record of a specific date when an employee was absent.
+ * The system is "present by default" — if no absence record exists, employee was present.
+ */
+export interface AbsenceRecord {
+  id: string
+  employmentId: string
+  date: string
+  reason?: string
+  /** Whether this absence was also applied to other households */
+  appliedToOtherHouseholds: boolean
+}
+
+/**
+ * A period of extended inactivity (e.g., gone home for months).
+ * No attendance tracking occurs during inactivity periods.
+ */
+export interface InactivityPeriod {
+  id: string
+  employmentId: string
   startDate: string
   endDate?: string
   reason?: string
+  /** Whether this inactivity was also applied to other households */
+  appliedToOtherHouseholds: boolean
+}
+
+/**
+ * Holiday entitlement rules for an employment.
+ * Can be fixed (X days per month) or recurring (specific weekdays off).
+ */
+export interface HolidayRule {
+  id: string
+  employmentId: string
+  type: HolidayRuleType
+  /** For 'fixed' type: number of days credited per month */
+  monthlyAllowance: number | null
+  /** For 'recurring' type: days of week that are off (0=Sunday, 6=Saturday) */
+  weeklyOffDays: number[]
+  /** Automatically record absences on scheduled off-days when employee works */
+  autoMarkAbsence: boolean
+}
+
+/**
+ * A public holiday that applies to all employments in the household.
+ */
+export interface PublicHoliday {
+  id: string
+  date: string
+  name: string
 }
 
 // =============================================================================
@@ -62,49 +97,51 @@ export interface InactivityPeriod {
 // =============================================================================
 
 export interface AttendanceAndHolidaysProps {
-  /** List of active employees to track attendance for */
-  employees: Employee[]
-
-  /**
-   * List of leave exceptions.
-   * If a date is NOT in this list and NOT a holiday/off-day,
-   * the employee is assumed PRESENT.
-   */
-  leaveRecords: LeaveRecord[]
-
-  /** Public holidays applicable to everyone */
-  holidays: Holiday[]
-
-  /** Recurring weekly off rules (e.g. Sundays) */
+  /** List of Monthly employments to track attendance for */
+  employments: AttendanceEmployment[]
+  /** Absence records (exceptions to the "present by default" rule) */
+  absenceRecords: AbsenceRecord[]
+  /** Extended inactivity periods */
+  inactivityPeriods: InactivityPeriod[]
+  /** Holiday entitlement rules per employment */
   holidayRules: HolidayRule[]
-
-  /** Selected date for the daily view */
+  /** Public holidays for the household */
+  publicHolidays: PublicHoliday[]
+  /** Currently selected date for the daily view */
   selectedDate?: string
 
-  /** Called when user marks an employee as absent/leave for a specific date */
-  onAddLeaveRecord?: (record: Omit<LeaveRecord, 'id'>) => void
+  /** Called when user marks an employee as absent for a specific date */
+  onAddAbsence?: (
+    employmentId: string,
+    date: string,
+    reason?: string,
+    applyToOtherHouseholds?: boolean
+  ) => void
+  /** Called when user removes an absence record (marking as present) */
+  onRemoveAbsence?: (absenceId: string) => void
+  /** Called when user updates an existing absence record */
+  onUpdateAbsence?: (absenceId: string, updates: Partial<AbsenceRecord>) => void
 
-  /** Called when user updates an existing leave record (e.g. changing type) */
-  onUpdateLeaveRecord?: (id: string, updates: Partial<LeaveRecord>) => void
+  /** Called when user marks an employment as inactive */
+  onMarkInactive?: (
+    employmentId: string,
+    startDate: string,
+    reason?: string,
+    applyToOtherHouseholds?: boolean
+  ) => void
+  /** Called when user marks an inactive employment as active again */
+  onMarkActive?: (employmentId: string, endDate: string) => void
 
-  /** Called when user removes a leave record (marking them as Present again) */
-  onRemoveLeaveRecord?: (id: string) => void
-
-  /** Called when user adds a new public holiday */
-  onAddHoliday?: (holiday: Omit<Holiday, 'id'>) => void
-
+  /** Called when user adds a public holiday */
+  onAddPublicHoliday?: (date: string, name: string) => void
   /** Called when user removes a public holiday */
-  onRemoveHoliday?: (id: string) => void
+  onRemovePublicHoliday?: (holidayId: string) => void
 
-  /** Called when user navigates to a different month/day */
+  /** Called when user saves holiday rules for an employment */
+  onSaveHolidayRules?: (employmentId: string, rule: Omit<HolidayRule, 'id' | 'employmentId'>) => void
+
+  /** Called when user navigates to a different date */
   onDateChange?: (date: string) => void
-
-  /** Called when user saves holiday rules for an employee */
-  onSaveHolidayRules?: (employeeId: string, config: HolidayRuleConfig) => void
-
-  /** Called when user marks an employee as inactive */
-  onMarkInactive?: (employeeId: string, startDate: string, reason?: string) => void
-
-  /** Called when user marks an employee as active again */
-  onMarkActive?: (employeeId: string, endDate: string) => void
+  /** Called when user wants to view an employment's attendance history */
+  onViewHistory?: (employmentId: string) => void
 }

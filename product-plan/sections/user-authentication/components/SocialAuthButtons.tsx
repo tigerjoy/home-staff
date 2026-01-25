@@ -1,4 +1,4 @@
-import type { SocialProvider } from '@/../product/sections/user-authentication/types'
+import type { SocialProvider } from '../types'
 
 interface SocialAuthButtonsProps {
   providers: SocialProvider[]

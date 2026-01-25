@@ -1,4 +1,4 @@
-import type { RegisterForm } from '@/../product/sections/user-authentication/types'
+import type { RegisterForm } from '../types'
 import { useState } from 'react'
 import { Eye, EyeOff, Mail, Lock, User, ArrowRight, Loader2, Check, X } from 'lucide-react'
 

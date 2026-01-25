@@ -1,4 +1,4 @@
-import type { VerificationForm } from '@/../product/sections/user-authentication/types'
+import type { VerificationForm } from '../types'
 import { useState, useRef, useEffect } from 'react'
 import { Mail, ArrowLeft, Loader2, RefreshCw } from 'lucide-react'
 

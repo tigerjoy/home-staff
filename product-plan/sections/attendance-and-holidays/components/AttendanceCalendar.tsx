@@ -3,35 +3,26 @@ import {
   ChevronLeft,
   ChevronRight,
   Users,
-  User,
-  Calendar as CalendarIcon,
   Plus,
   Clock,
-  AlertCircle,
   CheckCircle2,
   Palmtree,
   Stethoscope
 } from 'lucide-react'
-import { cn } from '@/lib/utils'
+import { cn } from '../../../lib/utils'
 import type {
-  AttendanceAndHolidaysProps,
-  Employee,
-  LeaveRecord,
-  Holiday,
-  HolidayRule
-} from '@/../product/sections/attendance-and-holidays/types'
+  AttendanceAndHolidaysProps
+} from '../types'
 
 export function AttendanceCalendar({
-  employees,
-  leaveRecords,
-  holidays,
+  employments,
+  absenceRecords,
+  publicHolidays,
   holidayRules,
   selectedDate,
-  onAddLeaveRecord,
-  onUpdateLeaveRecord,
-  onRemoveLeaveRecord,
-  onAddHoliday,
-  onRemoveHoliday,
+  onAddAbsence,
+  onRemoveAbsence,
+  onAddPublicHoliday,
   onDateChange
 }: AttendanceAndHolidaysProps) {
   const [currentDate, setCurrentDate] = useState(new Date(selectedDate || '2024-03-01'))
@@ -86,22 +77,26 @@ export function AttendanceCalendar({
     const dayOfWeek = date.getDay()
 
     // Public Holiday
-    const holiday = holidays.find(h => h.date === dateStr)
+    const holiday = publicHolidays.find(h => h.date === dateStr)
     if (holiday) return { type: 'holiday', name: holiday.name }
 
     if (viewMode === 'all') {
-      const dayLeaves = leaveRecords.filter(r => r.date === dateStr)
+      const dayLeaves = absenceRecords.filter(r => r.date === dateStr)
       if (dayLeaves.length > 0) {
         return { type: 'mixed', count: dayLeaves.length }
       }
       return { type: 'present' }
     } else {
       // Individual view
-      const isOffDay = holidayRules.some(r => r.employeeId === viewMode && r.dayOfWeek === dayOfWeek)
+      const isOffDay = holidayRules.some(r => r.employmentId === viewMode && r.weeklyOffDays.includes(dayOfWeek))
       if (isOffDay) return { type: 'off-day' }
 
-      const leave = leaveRecords.find(r => r.employeeId === viewMode && r.date === dateStr)
-      if (leave) return { type: leave.type, id: leave.id }
+      const absence = absenceRecords.find(r => r.employmentId === viewMode && r.date === dateStr)
+      if (absence) {
+        // AbsenceRecord doesn't have a type field, so we'll infer from reason or default to 'casual'
+        const absenceType = absence.reason?.toLowerCase().includes('sick') ? 'sick' : 'casual'
+        return { type: absenceType, id: absence.id }
+      }
 
       return { type: 'present' }
     }
@@ -118,7 +113,7 @@ export function AttendanceCalendar({
           <p className="text-stone-500 dark:text-stone-400 mt-1">
             {viewMode === 'all'
               ? 'Overview for all household staff'
-              : `Viewing attendance for ${employees.find(e => e.id === viewMode)?.name}`}
+              : `Viewing attendance for ${employments.find(e => e.id === viewMode)?.name}`}
           </p>
         </div>
 
@@ -142,7 +137,7 @@ export function AttendanceCalendar({
             className="bg-transparent text-sm font-medium text-stone-600 dark:text-stone-400 outline-none pr-4"
           >
             <option value="">Switch Employee...</option>
-            {employees.map(emp => (
+            {employments.map(emp => (
               <option key={emp.id} value={emp.id}>{emp.name}</option>
             ))}
           </select>
@@ -172,7 +167,7 @@ export function AttendanceCalendar({
         </div>
 
         <button
-          onClick={() => onAddHoliday?.({ date: currentDate.toISOString().split('T')[0], name: 'New Holiday', type: 'other' })}
+          onClick={() => onAddPublicHoliday?.(currentDate.toISOString().split('T')[0], 'New Holiday')}
           className="flex items-center gap-2 px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-sm font-semibold transition-all shadow-lg shadow-amber-600/20 active:scale-95"
         >
           <Plus size={18} />
@@ -200,9 +195,9 @@ export function AttendanceCalendar({
               onClick={() => {
                 if (viewMode !== 'all') {
                   if (status.type === 'present') {
-                    onAddLeaveRecord?.({ employeeId: viewMode, date: dateStr, type: 'casual' })
+                    onAddAbsence?.(viewMode, dateStr, 'Casual leave')
                   } else if (status.id) {
-                    onRemoveLeaveRecord?.(status.id)
+                    onRemoveAbsence?.(status.id)
                   }
                 }
               }}
@@ -262,7 +257,7 @@ export function AttendanceCalendar({
                 {status.type === 'mixed' && (
                   <div className="flex items-center gap-1.5 mt-1">
                     <div className="flex -space-x-1.5">
-                      {[...Array(Math.min(status.count, 3))].map((_, idx) => (
+                      {[...Array(Math.min(status.count || 0, 3))].map((_, idx) => (
                         <div key={idx} className="w-2 h-2 rounded-full bg-orange-400 border border-white dark:border-stone-900" />
                       ))}
                     </div>

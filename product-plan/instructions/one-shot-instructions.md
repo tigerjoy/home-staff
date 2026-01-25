@@ -1,4 +1,8 @@
-# HomeStaff — Complete Implementation Instructions
+# HomeStaff — Full Implementation Instructions
+
+> **Provide alongside:** `product-overview.md`
+
+This document combines all milestones for a full implementation in one session.
 
 ---
 
@@ -9,7 +13,7 @@
 - Data model definitions (TypeScript types and sample data)
 - UI/UX specifications (user flows, requirements, screenshots)
 - Design system tokens (colors, typography, spacing)
-- Test-writing instructions for each section (for TDD approach)
+- Test-writing instructions for each section
 
 **What you need to build:**
 - Backend API endpoints and database schema
@@ -23,234 +27,237 @@
 - **DO** wire up the callback props to your routing and API calls
 - **DO** replace sample data with real data from your backend
 - **DO** implement proper error handling and loading states
-- **DO** implement empty states when no records exist (first-time users, after deletions)
+- **DO** implement empty states when no records exist
 - **DO** use test-driven development — write tests first using `tests.md` instructions
-- The components are props-based and ready to integrate — focus on the backend and data layer
-
----
-
-## Test-Driven Development
-
-Each section includes a `tests.md` file with detailed test-writing instructions. These are **framework-agnostic** — adapt them to your testing setup (Jest, Vitest, Playwright, Cypress, RSpec, Minitest, PHPUnit, etc.).
-
-**For each section:**
-1. Read `product-plan/sections/[section-id]/tests.md`
-2. Write failing tests for key user flows (success and failure paths)
-3. Implement the feature to make tests pass
-4. Refactor while keeping tests green
-
-The test instructions include:
-- Specific UI elements, button labels, and interactions to verify
-- Expected success and failure behaviors
-- Empty state handling (when no records exist yet)
-- Data assertions and state validations
-
----
-
-## Product Overview
-
-A digital household workforce management and payroll platform designed for employers to manage domestic staff. It simplifies tracking employee records, automates attendance with "present by default" logic, and maintains a transparent financial history of salaries, advances, and bonuses.
-
-### Planned Sections
-
-1. **Landing Page** — Marketing page showcasing product features, benefits, and call-to-action for new users.
-2. **User Authentication** — Registration and login flows supporting Social Auth (Google, Facebook) and email/password.
-3. **Staff Directory** — Manage employee profiles, roles, contact details, and documents.
-4. **Attendance & Holidays** — Track daily presence, manage absences, and configure recurring holiday rules.
-5. **Payroll & Finance** — Handle salary calculation, advances, bonuses, and payment history.
-6. **Settings & Access** — User registration, household management, and member invitations.
-7. **Onboarding & Setup** — Guide new users through the initial configuration of their household and staff.
-8. **Employee Portal** — Public-facing view for staff to check their own records via phone number.
-
-### Design System
-
-**Colors:**
-- Primary: `amber` — buttons, links, key accents
-- Secondary: `orange` — tags, highlights, secondary elements
-- Neutral: `stone` — backgrounds, text, borders
-
-**Typography:**
-- Heading: Nunito Sans
-- Body: Nunito Sans
-- Mono: Fira Code
 
 ---
 
 # Milestone 1: Foundation
 
 ## Goal
-
 Set up the foundational elements: design tokens, data model types, routing structure, and application shell.
 
 ## What to Implement
 
 ### 1. Design Tokens
+Configure your styling system with the tokens from:
+- `product-plan/design-system/tokens.css`
+- `product-plan/design-system/tailwind-colors.md`
+- `product-plan/design-system/fonts.md`
 
-Configure your styling system with these tokens:
-
-- See `product-plan/design-system/tokens.css` for CSS custom properties
-- See `product-plan/design-system/tailwind-colors.md` for Tailwind configuration
-- See `product-plan/design-system/fonts.md` for Google Fonts setup
+**Colors:** Primary: `amber`, Secondary: `orange`, Neutral: `stone`
+**Typography:** Heading & Body: Nunito Sans, Code/Mono: Fira Code
 
 ### 2. Data Model Types
-
-Create TypeScript interfaces for your core entities:
-
-- See `product-plan/data-model/types.ts` for interface definitions
-- See `product-plan/data-model/README.md` for entity relationships
+Create TypeScript interfaces from `product-plan/data-model/`:
+- User, Household, Member, Invitation
+- Employee, Employment (Monthly vs Ad-hoc)
+- AttendanceRecord, InactivityPeriod
+- HolidayRule, PayrollItem
 
 ### 3. Routing Structure
-
-| Route | Section | Shell |
-|-------|---------|-------|
-| `/` | Landing Page | No |
-| `/login` | User Authentication | No |
-| `/register` | User Authentication | No |
-| `/onboarding` | Onboarding & Setup | No |
-| `/portal` | Employee Portal | No |
-| `/staff` | Staff Directory | Yes (Default) |
-| `/attendance` | Attendance & Holidays | Yes |
-| `/payroll` | Payroll & Finance | Yes |
-| `/settings` | Settings & Access | Yes |
+| Route | Section | Access |
+|-------|---------|--------|
+| `/` | Landing Page | Public |
+| `/login`, `/register` | User Authentication | Public |
+| `/staff` | Staff Directory | Authenticated (default) |
+| `/attendance` | Attendance & Holidays | Authenticated |
+| `/payroll` | Payroll & Finance | Authenticated |
+| `/settings` | Settings & Access | Authenticated |
+| `/onboarding` | Onboarding & Setup | Authenticated (new users) |
+| `/portal` | Employee Portal | Public |
 
 ### 4. Application Shell
-
 Copy shell components from `product-plan/shell/components/`:
-- `AppShell.tsx` — Main layout wrapper
-- `MainNav.tsx` — Navigation component
-- `UserMenu.tsx` — User menu with dropdown
+- `AppShell.tsx`, `MainNav.tsx`, `UserMenu.tsx`
 
 ---
 
 # Milestone 2: Landing Page
 
 ## Goal
-
-Implement the Landing Page — a marketing page showcasing product features and call-to-action.
+Create a public-facing marketing presence that introduces the product and drives registration.
 
 ## Components
+Copy from `product-plan/sections/landing-page/components/`:
+- `LandingPage.tsx`, `Navbar.tsx`, `HeroSection.tsx`
+- `ProblemsSection.tsx`, `FeaturesSection.tsx`, `TestimonialsSection.tsx`
+- `PricingSection.tsx`, `FooterSection.tsx`, `StickyCtaBar.tsx`
 
-- `LandingPage.tsx`, `Navbar.tsx`, `HeroSection.tsx`, `ProblemsSection.tsx`
-- `FeaturesSection.tsx`, `TestimonialsSection.tsx`, `PricingSection.tsx`
-- `FooterSection.tsx`, `StickyCtaBar.tsx`
-
-See `product-plan/sections/landing-page/` for all files.
+## Callbacks
+- `onGetStarted`: Redirect to `/register`
+- `onLogin`: Redirect to `/login`
+- `onNavClick`: Implement smooth scroll to section IDs
 
 ---
 
 # Milestone 3: User Authentication
 
 ## Goal
-
-Implement User Authentication — registration and login with Social Auth and email/password.
+Create a secure, multi-method authentication system.
 
 ## Components
+Copy from `product-plan/sections/user-authentication/components/`:
+- `UserAuthentication.tsx`, `LoginFormComponent.tsx`, `RegisterFormComponent.tsx`
+- `SocialAuthButtons.tsx`, `VerificationFormComponent.tsx`, `ForgotPasswordComponent.tsx`
 
-- `UserAuthentication.tsx`, `SocialAuthButtons.tsx`, `LoginFormComponent.tsx`
-- `RegisterFormComponent.tsx`, `VerificationFormComponent.tsx`, `ForgotPasswordComponent.tsx`
-
-See `product-plan/sections/user-authentication/` for all files.
+## Callbacks
+- `onEmailLogin`, `onEmailRegister`: Handle email/password auth
+- `onSocialLogin`: Handle OAuth (Google, Apple)
+- `onSendVerification`, `onVerifyCode`: Handle email verification
+- `onForgotPassword`, `onResetPassword`: Handle password recovery
 
 ---
 
 # Milestone 4: Staff Directory
 
 ## Goal
-
-Implement the Staff Directory — manage employee profiles with a multi-step wizard.
+Establish the central hub for managing household staff.
 
 ## Components
-
-- `StaffDirectory.tsx`, `SummaryCards.tsx`, `EmployeeCard.tsx`, `EmployeeTable.tsx`
-- `EmployeeDetail.tsx`, `EmployeeForm.tsx`, `BasicInfoStep.tsx`, `RoleStep.tsx`
+Copy from `product-plan/sections/staff-directory/components/`:
+- `StaffDirectory.tsx`, `SummaryCards.tsx`
+- `EmployeeCard.tsx`, `EmployeeTable.tsx`, `EmployeeDetail.tsx`
+- `EmployeeForm.tsx`, `BasicInfoStep.tsx`, `RoleStep.tsx`
 - `DocumentsStep.tsx`, `SalaryStep.tsx`, `CustomFieldsStep.tsx`
 
-See `product-plan/sections/staff-directory/` for all files.
+## Key Features
+- Toggleable Card and Table views
+- Multi-step "Add Staff" wizard
+- "Link Existing" flow for cross-household employees
+- Search and filtering
+
+## Callbacks
+- `onAddStaff`, `onSaveEmployee`, `onArchiveEmployee`
+- `onViewDetail`, `onUploadDocument`
 
 ---
 
 # Milestone 5: Attendance & Holidays
 
 ## Goal
-
-Implement Attendance & Holidays — "present by default" tracking and holiday management.
+Manage staff attendance and holiday balances for Monthly employees.
 
 ## Components
-
+Copy from `product-plan/sections/attendance-and-holidays/components/`:
 - `AttendanceDashboard.tsx`, `AttendanceCalendar.tsx`
 - `HolidayRuleModal.tsx`, `InactivityModal.tsx`
 
-See `product-plan/sections/attendance-and-holidays/` for all files.
+## Key Features
+- "Present by default" tracking system
+- Holiday entitlement and balance management
+- Cross-household absence propagation
+- Inactivity period management
+
+## Callbacks
+- `onMarkAbsence`, `onMarkInactive`
+- `onSaveHolidayRule`, `onToggleAutoMark`
 
 ---
 
 # Milestone 6: Payroll & Finance
 
 ## Goal
-
-Implement Payroll & Finance — salary calculations, advances, and payment tracking.
+Automate monthly payroll and manage all staff financial transactions.
 
 ## Components
+Copy from `product-plan/sections/payroll-and-finance/components/`:
+- `PayrollDashboard.tsx`, `CalculationBreakdown.tsx`
+- `SettlementWorkspace.tsx`, `PaymentLedger.tsx`, `ReceiptComponents.tsx`
 
-- `PayrollDashboard.tsx`, `CalculationBreakdown.tsx`, `SettlementWorkspace.tsx`
-- `PaymentLedger.tsx`, `ReceiptComponents.tsx`
+## Key Features
+- Monthly salary calculation engine
+- Settlement workspace for holiday excess/unused
+- Advance management and repayment
+- Ad-hoc payment recording
+- Receipt upload support
 
-See `product-plan/sections/payroll-and-finance/` for all files.
+## Callbacks
+- `onProcessPayroll`, `onRecordAdvance`
+- `onRecordAdHocPayment`, `onSettleHolidays`, `onUploadReceipt`
 
 ---
 
 # Milestone 7: Settings & Access
 
 ## Goal
-
-Implement Settings & Access — account, household, and member management.
+Manage account settings, households, and user permissions.
 
 ## Components
+Copy from `product-plan/sections/settings-and-access/components/`:
+- `SettingsDashboard.tsx` and related modals
 
-- `SettingsDashboard.tsx`
+## Key Features
+- Multi-household management
+- Member invitations via email
+- Role-based permissions (Admin vs Member)
+- Profile settings
 
-See `product-plan/sections/settings-and-access/` for all files.
+## Callbacks
+- `onCreateHousehold`, `onSwitchHousehold`
+- `onInviteMember`, `onChangeRole`, `onRemoveMember`
+- `onUpdateProfile`
 
 ---
 
 # Milestone 8: Onboarding & Setup
 
 ## Goal
-
-Implement Onboarding & Setup — multi-step wizard for new users.
+Guide new users through initial household and employee setup.
 
 ## Components
+Copy from `product-plan/sections/onboarding-and-setup/components/`:
+- `OnboardingWizard.tsx` and step components
 
-- `OnboardingWizard.tsx`
+## Key Features
+- Full-screen, distraction-free wizard
+- Progress persistence
+- Mandatory household initialization
+- Optional first employee setup
 
-See `product-plan/sections/onboarding-and-setup/` for all files.
+## Callbacks
+- `onNext`, `onSkip`, `onFinish`, `onSaveStep`
 
 ---
 
 # Milestone 9: Employee Portal
 
 ## Goal
-
-Implement the Employee Portal — public-facing read-only portal for staff.
+Provide a transparent, mobile-accessible portal for staff to view their records.
 
 ## Components
+Copy from `product-plan/sections/employee-portal/components/`:
+- `EmployeePortal.tsx` and related components
 
-- `EmployeePortal.tsx`
+## Key Features
+- Phone-number based access
+- Multi-household dashboard
+- Monthly vs Ad-hoc conditional display
+- Activity feed
 
-See `product-plan/sections/employee-portal/` for all files.
+## Callbacks
+- `onLogin(phoneNumber)`, `onSelectHousehold`, `onSwitchHousehold`
 
 ---
 
-## Implementation Checklist
+## Implementation Order
 
-- [ ] **Foundation:** Design tokens, data model, routing, shell
-- [ ] **Landing Page:** Marketing page with all sections
-- [ ] **User Authentication:** Login, register, Social Auth, password reset
-- [ ] **Staff Directory:** Employee CRUD, multi-step wizard, documents
-- [ ] **Attendance & Holidays:** Present-by-default, holiday rules, inactivity
-- [ ] **Payroll & Finance:** Calculations, settlements, advances, receipts
-- [ ] **Settings & Access:** Households, members, invitations
-- [ ] **Onboarding & Setup:** New user wizard
-- [ ] **Employee Portal:** Phone number login, read-only dashboard
+For best results, implement in this order:
 
-For detailed instructions on each milestone, see the individual files in `product-plan/instructions/incremental/`.
+1. **Foundation** — Design tokens, types, routing, shell
+2. **Landing Page** — Public marketing page
+3. **User Authentication** — Login/register flow
+4. **Staff Directory** — Core employee management
+5. **Attendance & Holidays** — Time tracking
+6. **Payroll & Finance** — Financial management
+7. **Settings & Access** — Multi-tenancy and permissions
+8. **Onboarding & Setup** — New user experience
+9. **Employee Portal** — Staff-facing view
+
+## Files to Reference
+
+- `product-plan/product-overview.md` — Product summary
+- `product-plan/design-system/` — Design tokens
+- `product-plan/data-model/` — Type definitions
+- `product-plan/shell/` — Application shell
+- `product-plan/sections/[section]/` — Section components, types, and tests

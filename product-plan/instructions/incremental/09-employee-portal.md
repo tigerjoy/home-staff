@@ -1,7 +1,7 @@
 # Milestone 9: Employee Portal
 
 > **Provide alongside:** `product-overview.md`
-> **Prerequisites:** Milestones 1, 4, 5, and 6 complete (Foundation, Staff Directory, Attendance, Payroll)
+> **Prerequisites:** Milestone 4 (Staff Directory), Milestone 5 (Attendance & Holidays), and Milestone 6 (Payroll & Finance) complete
 
 ---
 
@@ -9,189 +9,78 @@
 
 **What you're receiving:**
 - Finished UI designs (React components with full styling)
-- Data model definitions (TypeScript types and sample data)
 - UI/UX specifications (user flows, requirements, screenshots)
 - Design system tokens (colors, typography, spacing)
-- Test-writing instructions for each section (for TDD approach)
+- Test-writing instructions (see `product-plan/sections/employee-portal/tests.md`)
 
 **What you need to build:**
-- Backend API endpoints and database schema
-- Authentication and authorization
-- Data fetching and state management
-- Business logic and validation
-- Integration of the provided UI components with real data
+- Phone-number based authentication (Read-only access)
+- Household selection logic for multi-employment staff
+- Data retrieval for attendance, holiday balance, and payment history
+- Mobile-optimized read-only dashboard
 
 **Important guidelines:**
 - **DO NOT** redesign or restyle the provided components — use them as-is
-- **DO** wire up the callback props to your routing and API calls
-- **DO** replace sample data with real data from your backend
-- **DO** implement proper error handling and loading states
-- **DO** implement empty states when no records exist (first-time users, after deletions)
+- **DO** wire up the callback props to your data fetching logic
+- **DO NOT** implement any edit functionality — the portal is strictly read-only
+- **DO** handle the different display requirements for Monthly vs Ad-hoc employees
 - **DO** use test-driven development — write tests first using `tests.md` instructions
-- The components are props-based and ready to integrate — focus on the backend and data layer
 
 ---
 
 ## Goal
-
-Implement the Employee Portal — a public-facing, read-only portal for staff to view their records.
+Provide a transparent, mobile-accessible portal for staff to view their own employment records across all households.
 
 ## Overview
+A public-facing, mobile-first portal where household staff can independently verify their attendance, holiday balance, and payment history. Access is granted via their registered phone number. The portal dynamically adjusts to show relevant data based on whether the employee is Monthly (full attendance/holidays) or Ad-hoc (payments only).
 
-A public-facing, read-only portal that provides domestic staff with transparent access to their employment records. It allows employees to independently verify their attendance, holiday balance, and payment history using only their registered phone number for access.
-
-**Key Functionality:**
-- Simple phone number login (no account needed)
-- View current holiday balance
-- View attendance summary
-- View payment history
-- View basic profile information
-- Mobile-first, read-only interface
+**Key Capabilities:**
+- Simple phone-number based entry (OTP or lookup)
+- Household selection and persistent switcher for staff working multiple jobs
+- Monthly view: Holiday balance, attendance exceptions, and payment history
+- Ad-hoc view: Payment history only (no attendance/holidays)
+- Activity feed of recent events (payments, absences)
+- Mobile-optimized, high-legibility interface
 
 ## Recommended Approach: Test-Driven Development
-
-Before implementing this section, **write tests first** based on the test specifications provided.
-
-See `product-plan/sections/employee-portal/tests.md` for detailed test-writing instructions including:
-- Key user flows to test (success and failure paths)
-- Specific UI elements, button labels, and interactions to verify
-- Expected behaviors and assertions
+Follow the TDD instructions in `product-plan/sections/employee-portal/tests.md`. Start by testing the phone number lookup logic and the conditional rendering of sections based on employment type.
 
 ## What to Implement
 
 ### Components
-
-Copy the section components from `product-plan/sections/employee-portal/components/`:
-
-- `EmployeePortal.tsx` — Full portal with login and dashboard
+Copy these from `product-plan/sections/employee-portal/components/`:
+- `EmployeePortal.tsx` — Main portal container with login and dashboard views
+- Household picker and switcher components
+- Dashboard cards for Monthly and Ad-hoc views
 
 ### Data Layer
-
-The components expect these data shapes:
-
-```typescript
-interface EmployeePortalProps {
-  staff?: StaffProfile
-  summary?: StaffSummary
-  activity: ActivityItem[]
-  isAuthenticating: boolean
-  loginError?: string
-  onLogin?: (phoneNumber: string) => void
-  onLogout?: () => void
-  onViewActivityDetail?: (id: string) => void
-}
-
-interface StaffProfile {
-  id: string
-  name: string
-  role: string
-  phoneNumber: string
-  joinDate: string
-  householdName: string
-}
-
-interface StaffSummary {
-  holidayBalance: number
-  totalAbsencesYear: number
-  lastPaymentAmount: number
-  lastPaymentDate: string
-  outstandingAdvance: number
-}
-
-interface ActivityItem {
-  id: string
-  type: 'absence' | 'payment' | 'entitlement' | 'advance'
-  date: string
-  title: string
-  description: string
-  impact?: string
-  amount?: number
-}
-```
-
-You'll need to:
-- Implement phone number lookup API
-- Aggregate attendance and payment data
-- Generate activity timeline
-- Ensure read-only access (no mutations)
+- **Staff Access:** Implement a lookup by phone number that returns all `Employment` records associated with that `Employee` across all households.
+- **Read-Only Data:** Fetch `AttendanceRecord`, `PayrollItem`, and `holidayBalance` specifically for the selected employee context.
 
 ### Callbacks
-
-Wire up these user actions:
-
-| Callback | Description |
-|----------|-------------|
-| `onLogin` | Look up employee by phone number |
-| `onLogout` | Clear session, return to login |
-| `onViewActivityDetail` | Show detail for activity item (optional) |
-
-### Security Considerations
-
-- **No authentication required** — Simple phone number lookup
-- **Read-only access** — No edit actions available
-- **Rate limiting** — Prevent brute force phone number guessing
-- **Data scoping** — Only show data for the specific employee
+- `onLogin(phoneNumber)`: Validate phone number and retrieve employee records.
+- `onSelectHousehold(householdId)`: Load data for the specific employment.
+- `onSwitchHousehold`: Toggle between different household contexts.
 
 ### Empty States
-
-Implement empty state UI for when no records exist:
-
-- **Phone not found:** Show "No employee found with this phone number"
-- **No activity:** Show "No recent activity to display"
-- **No payments:** Show "No payment history yet"
+Show a "No Records Found" message if a phone number is entered that doesn't match any active employment in the system.
 
 ## Files to Reference
-
-- `product-plan/sections/employee-portal/README.md` — Feature overview and design intent
-- `product-plan/sections/employee-portal/tests.md` — Test-writing instructions (use for TDD)
-- `product-plan/sections/employee-portal/components/` — React components
-- `product-plan/sections/employee-portal/types.ts` — TypeScript interfaces
-- `product-plan/sections/employee-portal/sample-data.json` — Test data
-- `product-plan/sections/employee-portal/screenshot.png` — Visual reference
+- `product-plan/sections/employee-portal/spec.md` — UI requirements
+- `product-plan/sections/employee-portal/types.ts` — Prop definitions
+- `product-plan/data-model/types.ts` — Employee, Employment, and Attendance entities
 
 ## Expected User Flows
-
-### Flow 1: Access Portal and View Records
-
-1. Staff member navigates to `/portal`
-2. Staff member enters their registered phone number
-3. Staff member clicks "View My Records"
-4. Dashboard displays with summary cards and activity feed
-5. **Outcome:** Staff can see holiday balance, last payment, activity
-
-### Flow 2: Phone Number Not Found
-
-1. Staff member enters unregistered phone number
-2. Staff member clicks "View My Records"
-3. Error message displays: "No employee found with this phone number"
-4. **Outcome:** Staff can try again with correct number
-
-### Flow 3: View Activity Details
-
-1. Staff member is logged in and viewing dashboard
-2. Staff member taps on an activity item
-3. Detail view shows more information
-4. **Outcome:** Staff sees full details of the event
-
-### Flow 4: Logout
-
-1. Staff member clicks "Logout" or "Exit"
-2. **Outcome:** Returns to phone number login screen
+1. **The Monthly Staff Access:** Staff enters phone number → Selects "Main Residence" (Monthly) → Views they have "4 Days Holiday Left" and "1 Absence this Month" → Reviews last salary payment.
+2. **The Ad-hoc Staff Access:** Staff enters phone number → Selects "Beach House" (Ad-hoc) → Views a list of 5 recent payments for car washing and garden work → No holiday or attendance sections are visible.
+3. **The Multi-Job Switcher:** Staff is viewing Main Residence records → Clicks household switcher in header → Selects Beach House → Dashboard updates immediately to show Ad-hoc records.
 
 ## Done When
-
-- [ ] Tests written for key user flows (success and failure paths)
-- [ ] All tests pass
-- [ ] Portal accessible at `/portal` (no auth required)
-- [ ] Phone number login works
-- [ ] Invalid phone number shows error
-- [ ] Dashboard displays staff profile
-- [ ] Summary cards show holiday balance, last payment, etc.
-- [ ] Activity feed shows chronological events
-- [ ] Activity items show correct icons and colors
-- [ ] Logout returns to login screen
-- [ ] Mobile-first responsive design
-- [ ] High legibility on small screens
-- [ ] Read-only (no edit actions)
-- [ ] Empty states display properly
-- [ ] Dark mode support
+- [ ] Portal is accessible via phone number lookup
+- [ ] Household picker correctly identifies all employments for a staff member
+- [ ] Dashboard correctly shows/hides sections based on Monthly vs Ad-hoc status
+- [ ] Holiday balance and attendance history are accurate for Monthly staff
+- [ ] Payment history is visible for all employment types
+- [ ] Household switcher allows seamless transitions
+- [ ] Interface is fully responsive and legible on mobile devices
+- [ ] All tests in `tests.md` pass

@@ -1,201 +1,89 @@
 # Test Instructions: Attendance & Holidays
 
-These test-writing instructions are **framework-agnostic**. Adapt them to your testing setup.
-
-## Overview
-
-Test the "present by default" attendance system including marking absences, holiday rules, and inactivity periods.
+These test-writing instructions are **framework-agnostic**. Adapt them to your testing setup (Jest, Vitest, Playwright, Cypress, React Testing Library, etc.).
 
 ---
 
 ## User Flow Tests
 
-### Flow 1: View Daily Attendance
+### Flow 1: Daily Absence Marking
 
-**Scenario:** User views today's attendance
-
-**Setup:**
-- Provide list of employees with no absences for today
+**Scenario:** Employer marks a monthly staff member as absent
 
 **Steps:**
-1. Navigate to `/attendance`
+1. Load Attendance Dashboard.
+2. Find a Monthly employee (e.g., "Lakshmi Devi").
+3. Click the status button (defaults to "Present").
+4. Select "Absence" from the options.
+5. Verify the holiday balance decreases or an absence record is created.
 
 **Expected Results:**
-- [ ] All employees are displayed
-- [ ] All employees show as "Present" (default status)
-- [ ] Holiday balance is visible for each employee
-- [ ] Date selector shows current date
+- [ ] UI reflects "Absence" status immediately.
+- [ ] `onMarkAbsence` callback is triggered with correct data.
+- [ ] If cross-household: Modal appears asking to apply to other households.
+
+### Flow 2: Setting Holiday Rules
+
+**Scenario:** Configuring a weekly off-day
+
+**Steps:**
+1. Open Holiday Rule Modal for an employee.
+2. Select "Recurrence Rule".
+3. Select "Every Sunday".
+4. Enable "Auto-mark Absence".
+5. Click "Save Rules".
+
+**Expected Results:**
+- [ ] Modal correctly handles switching between "Fixed" and "Recurrence".
+- [ ] Data sent to `onUpdateHolidayRule` includes the recurrence pattern.
 
 ---
 
-### Flow 2: Mark Employee Absent
+## Component Interaction Tests
 
-**Scenario:** User marks an employee as absent
+### AttendanceDashboard
+- [ ] Correctly filters out Ad-hoc employees (list should only show Monthly).
+- [ ] Displays the running `holidayBalance` for each row.
+- [ ] Shows "Inactive" badge for employees currently in an inactivity period.
 
-**Setup:**
-- Mock `onAddLeaveRecord` callback
-
-**Steps:**
-1. Click on an employee to mark absence
-2. Select leave type "Sick"
-3. Optionally add notes "Fever"
-4. Click "Save" or "Confirm"
-
-**Expected Results:**
-- [ ] `onAddLeaveRecord` is called with:
-  - employeeId
-  - date (today)
-  - type: "sick"
-  - notes: "Fever"
-- [ ] Employee now shows as "Absent" with red indicator
-- [ ] Holiday balance decrements by 1
+### InactivityModal
+- [ ] Date picker allows selecting past dates (back-dating).
+- [ ] Validation prevents end date from being before start date.
 
 ---
 
-### Flow 3: Remove Absence (Mark Present)
+## Edge Cases
 
-**Scenario:** User removes an incorrectly marked absence
-
-**Setup:**
-- Provide employee with existing absence
-- Mock `onRemoveLeaveRecord` callback
-
-**Steps:**
-1. Click on absent employee
-2. Click "Mark Present" or "Remove Absence"
-
-**Expected Results:**
-- [ ] `onRemoveLeaveRecord` is called with leave record ID
-- [ ] Employee returns to "Present" status
-- [ ] Holiday balance increments back
-
----
-
-### Flow 4: Configure Holiday Rules (Fixed Days)
-
-**Scenario:** User sets 4 days per month entitlement
-
-**Setup:**
-- Mock `onSaveHolidayRules` callback
-
-**Steps:**
-1. Click "Holiday Rules" button for an employee
-2. Select "Fixed days per month"
-3. Enter "4" days
-4. Leave "Auto-mark absence" unchecked
-5. Click "Save"
-
-**Expected Results:**
-- [ ] Modal displays with rule options
-- [ ] `onSaveHolidayRules` is called with:
-  - employeeId
-  - type: "fixed"
-  - monthlyAllowance: 4
-  - autoMarkAbsence: false
-
----
-
-### Flow 5: Configure Holiday Rules (Recurring)
-
-**Scenario:** User sets Sundays as weekly off
-
-**Setup:**
-- Mock `onSaveHolidayRules` callback
-
-**Steps:**
-1. Click "Holiday Rules" for employee
-2. Select "Recurring weekly off"
-3. Check "Sunday"
-4. Enable "Auto-mark absence"
-5. Click "Save"
-
-**Expected Results:**
-- [ ] `onSaveHolidayRules` is called with:
-  - type: "recurring"
-  - weeklyOffDays: [0] (Sunday)
-  - autoMarkAbsence: true
-
----
-
-### Flow 6: Mark Employee Inactive
-
-**Scenario:** Employee is going on extended leave
-
-**Setup:**
-- Mock `onMarkInactive` callback
-
-**Steps:**
-1. Click "Mark Inactive" for employee
-2. Select start date (can be past date)
-3. Enter reason "Gone home for 2 months"
-4. Click "Confirm"
-
-**Expected Results:**
-- [ ] `onMarkInactive` is called with employeeId, startDate, reason
-- [ ] Employee shows amber "Inactive" status
-- [ ] No attendance is tracked during inactivity
-
----
-
-### Flow 7: Mark Employee Active
-
-**Scenario:** Employee returns from extended leave
-
-**Setup:**
-- Provide employee with active inactivity period
-- Mock `onMarkActive` callback
-
-**Steps:**
-1. Click "Mark Active" for inactive employee
-2. Select end date
-3. Click "Confirm"
-
-**Expected Results:**
-- [ ] `onMarkActive` is called with employeeId, endDate
-- [ ] Employee returns to active status
-- [ ] Attendance tracking resumes
-
----
-
-## Empty State Tests
-
-### No Employees
-
-**Scenario:** Household has no employees
-
-**Expected Results:**
-- [ ] Message: "Add employees in Staff Directory first"
-- [ ] Link or button to go to Staff Directory
-
-### All Present
-
-**Scenario:** All employees are present today
-
-**Expected Results:**
-- [ ] All employees show green "Present" status
-- [ ] No absences in the list
-
----
-
-## Calendar View Tests
-
-### View Month Calendar
-
-**Steps:**
-1. Switch to calendar view
-2. View current month
-
-**Expected Results:**
-- [ ] Calendar shows full month
-- [ ] Days with absences show red indicator
-- [ ] Days with holidays show gray indicator
-- [ ] Inactive periods show amber shading
+- **Carry Forward:** Verify that when a month changes, the holiday balance persists from the previous state.
+- **Zero Balance:** Test marking an absence when the employee has 0 holiday balance (should result in a negative balance or flag for penalty).
+- **Multiple Households:** Verify the prompt only appears for employees known to work in other households for the current user.
 
 ---
 
 ## Accessibility Checks
 
-- [ ] Date picker is keyboard accessible
-- [ ] Status indicators have text labels (not just color)
-- [ ] Modal can be closed with Escape key
-- [ ] Form fields in modals have proper labels
+- [ ] Status toggles are focusable and operable via keyboard.
+- [ ] Calendar grid uses proper table semantics or ARIA grids.
+- [ ] Color-coded statuses have text equivalents (e.g., "Absence (Red)").
+
+---
+
+## Sample Test Data
+
+```typescript
+const mockMonthlyEmployment = {
+  id: "emp-001",
+  name: "Lakshmi Devi",
+  type: "monthly",
+  holidayBalance: 5.5,
+  status: "active",
+  households: ["Household A", "Household B"] // Works in 2 households
+};
+
+const mockAdHocEmployment = {
+  id: "emp-002",
+  name: "Raju Sharma",
+  type: "adhoc",
+  status: "active"
+};
+```

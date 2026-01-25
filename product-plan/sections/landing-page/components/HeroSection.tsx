@@ -1,4 +1,4 @@
-import type { Hero } from '@/../product/sections/landing-page/types'
+import type { Hero } from '../types'
 import { ArrowRight, Sparkles } from 'lucide-react'
 
 interface HeroSectionProps {

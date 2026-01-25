@@ -1,11 +1,10 @@
 import { useState } from 'react'
 import type {
   SettingsAndAccessProps,
-  UserProfile,
   Household,
   Member,
   Invitation,
-} from '@/../product/sections/settings-and-access/types'
+} from '../types'
 import {
   Home,
   Users,

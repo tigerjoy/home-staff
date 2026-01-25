@@ -46,83 +46,72 @@ Configure your styling system with these tokens:
 - See `product-plan/design-system/tailwind-colors.md` for Tailwind configuration
 - See `product-plan/design-system/fonts.md` for Google Fonts setup
 
-**Color Palette:**
-- Primary: `amber` — buttons, links, key accents
-- Secondary: `orange` — tags, highlights, secondary elements
-- Neutral: `stone` — backgrounds, text, borders
+**Colors:**
+- Primary: `amber` — Buttons, links, key accents
+- Secondary: `orange` — Tags, highlights, gradients
+- Neutral: `stone` — Backgrounds, text, borders
 
 **Typography:**
-- Heading: Nunito Sans
-- Body: Nunito Sans
-- Mono: Fira Code
+- Heading & Body: Nunito Sans
+- Code/Mono: Fira Code
 
 ### 2. Data Model Types
 
 Create TypeScript interfaces for your core entities:
 
-- See `product-plan/data-model/types.ts` for interface definitions
 - See `product-plan/data-model/README.md` for entity relationships
+- See `product-plan/data-model/types.ts` for interface definitions
 
-**Core Entities:**
-- User
-- Household
-- Member
-- Invitation
-- Employee
-- Attendance Record (Absence)
-- Inactivity Period
-- Holiday Rule
-- Payroll Item
+**Core entities to define:**
+- User, Household, Member, Invitation
+- Employee, Employment (Monthly vs Ad-hoc)
+- AttendanceRecord, InactivityPeriod
+- HolidayRule, PayrollItem
 
 ### 3. Routing Structure
 
-Create routes for each section:
+Create placeholder routes for each section:
 
-| Route | Section | Shell |
-|-------|---------|-------|
-| `/` | Landing Page | No |
-| `/login` | User Authentication | No |
-| `/register` | User Authentication | No |
-| `/onboarding` | Onboarding & Setup | No |
-| `/portal` | Employee Portal | No |
-| `/staff` | Staff Directory | Yes (Default) |
-| `/attendance` | Attendance & Holidays | Yes |
-| `/payroll` | Payroll & Finance | Yes |
-| `/settings` | Settings & Access | Yes |
+| Route | Section | Access |
+|-------|---------|--------|
+| `/` | Landing Page | Public |
+| `/login`, `/register` | User Authentication | Public |
+| `/staff` | Staff Directory | Authenticated (default) |
+| `/attendance` | Attendance & Holidays | Authenticated |
+| `/payroll` | Payroll & Finance | Authenticated |
+| `/settings` | Settings & Access | Authenticated |
+| `/onboarding` | Onboarding & Setup | Authenticated (new users) |
+| `/portal` | Employee Portal | Public |
 
 ### 4. Application Shell
 
 Copy the shell components from `product-plan/shell/components/` to your project:
 
-- `AppShell.tsx` — Main layout wrapper with sidebar navigation
-- `MainNav.tsx` — Navigation component with active state styling
+- `AppShell.tsx` — Main layout wrapper with sidebar
+- `MainNav.tsx` — Navigation component with nav items
 - `UserMenu.tsx` — User menu with avatar and dropdown
 
 **Wire Up Navigation:**
 
 Connect navigation to your routing:
-
-| Label | Route | Icon |
-|-------|-------|------|
-| Staff Directory | `/staff` | Users |
-| Attendance & Holidays | `/attendance` | Calendar |
-| Payroll & Finance | `/payroll` | Wallet |
-| Settings & Access | `/settings` | Settings |
+- Staff Directory → `/staff`
+- Attendance & Holidays → `/attendance`
+- Payroll & Finance → `/payroll`
+- Settings & Access → `/settings`
 
 **User Menu:**
 
 The user menu expects:
 - User name
-- Avatar URL (optional, shows initials fallback)
+- User avatar URL (optional, falls back to initials)
 - Current household name
 - Logout callback
-- Switch Household callback
-- Account Settings callback
+- Switch household callback
 
 **Responsive Behavior:**
-- Desktop (≥1024px): Full sidebar always visible, no header
-- Tablet (768px–1023px): Sidebar collapses to icons only, expands on hover
-- Mobile (<768px): Sidebar hidden, hamburger menu in sticky header, sidebar slides in as overlay
+- Desktop (≥1024px): Full sidebar always visible
+- Tablet (768px–1023px): Sidebar collapses to icons only
+- Mobile (<768px): Sidebar hidden, hamburger menu in header
 
 ## Files to Reference
 
@@ -133,14 +122,11 @@ The user menu expects:
 
 ## Done When
 
-- [ ] Design tokens are configured (colors, typography)
-- [ ] Google Fonts are imported (Nunito Sans, Fira Code)
+- [ ] Design tokens are configured (colors, fonts loaded)
 - [ ] Data model types are defined
 - [ ] Routes exist for all sections (can be placeholder pages)
-- [ ] Shell renders with navigation
+- [ ] Shell renders with navigation sidebar
 - [ ] Navigation links to correct routes
-- [ ] Active navigation state is highlighted
-- [ ] User menu shows user info and household name
-- [ ] User menu dropdown works (Switch Household, Account Settings, Logout)
-- [ ] Responsive on mobile (hamburger menu, slide-out sidebar)
-- [ ] Dark mode support works
+- [ ] User menu shows user info
+- [ ] Active nav item is highlighted
+- [ ] Responsive layout works on mobile/tablet/desktop

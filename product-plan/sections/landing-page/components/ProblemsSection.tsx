@@ -1,4 +1,4 @@
-import type { Problem } from '@/../product/sections/landing-page/types'
+import type { Problem } from '../types'
 import { AlertCircle, CheckCircle2, ArrowRight } from 'lucide-react'
 
 interface ProblemsSectionProps {

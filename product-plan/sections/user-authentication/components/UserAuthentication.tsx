@@ -1,4 +1,4 @@
-import type { UserAuthenticationProps, AuthView } from '@/../product/sections/user-authentication/types'
+import type { UserAuthenticationProps, AuthView } from '../types'
 import { useState } from 'react'
 import { Home } from 'lucide-react'
 import { SocialAuthButtons } from './SocialAuthButtons'
@@ -14,7 +14,6 @@ export function UserAuthentication({
   registerForm,
   verificationForm,
   forgotPasswordForm,
-  errorMessages,
   currentView: initialView = 'login',
   verificationEmail = '',
   isLoading = false,

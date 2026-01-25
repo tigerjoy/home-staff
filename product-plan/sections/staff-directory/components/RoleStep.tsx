@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Plus, Trash2, Briefcase, Building2, Calendar } from 'lucide-react'
-import type { Employee, EmploymentRecord } from '@/../product/sections/staff-directory/types'
+import type { Employee, EmploymentRecord } from '../types'
 
 interface RoleStepProps {
   data: Omit<Employee, 'id'>
@@ -29,10 +29,12 @@ const DEPARTMENTS = [
 ]
 
 export function RoleStep({ data, onChange }: RoleStepProps) {
+  const employmentHistory = data.employmentHistory || [{ role: '', department: '', startDate: '', endDate: null }]
+
   // Track which records are using custom (other) values
   const [customRoleIndexes, setCustomRoleIndexes] = useState<Set<number>>(() => {
     const indexes = new Set<number>()
-    data.employmentHistory.forEach((record, idx) => {
+    employmentHistory.forEach((record, idx) => {
       if (record.role && !COMMON_ROLES.includes(record.role)) {
         indexes.add(idx)
       }
@@ -42,7 +44,7 @@ export function RoleStep({ data, onChange }: RoleStepProps) {
 
   const [customDeptIndexes, setCustomDeptIndexes] = useState<Set<number>>(() => {
     const indexes = new Set<number>()
-    data.employmentHistory.forEach((record, idx) => {
+    employmentHistory.forEach((record, idx) => {
       if (record.department && !DEPARTMENTS.includes(record.department)) {
         indexes.add(idx)
       }
@@ -50,23 +52,35 @@ export function RoleStep({ data, onChange }: RoleStepProps) {
     return indexes
   })
   const updateEmploymentRecord = (index: number, updates: Partial<EmploymentRecord>) => {
-    const newHistory = [...data.employmentHistory]
+    const newHistory = [...employmentHistory]
     newHistory[index] = { ...newHistory[index], ...updates }
-    onChange({ employmentHistory: newHistory })
+
+    const changes: Partial<Omit<Employee, 'id'>> = { employmentHistory: newHistory }
+
+    // Sync with employment object if it's the current role
+    if (index === 0) {
+      changes.employment = {
+        ...data.employment,
+        role: newHistory[0].role,
+        startDate: newHistory[0].startDate
+      }
+    }
+
+    onChange(changes)
   }
 
   const addEmploymentRecord = () => {
     onChange({
       employmentHistory: [
         { role: '', department: '', startDate: '', endDate: null },
-        ...data.employmentHistory,
+        ...employmentHistory,
       ],
     })
   }
 
   const removeEmploymentRecord = (index: number) => {
-    if (data.employmentHistory.length > 1) {
-      onChange({ employmentHistory: data.employmentHistory.filter((_, i) => i !== index) })
+    if (employmentHistory.length > 1) {
+      onChange({ employmentHistory: employmentHistory.filter((_, i) => i !== index) })
     }
   }
 
@@ -75,8 +89,8 @@ export function RoleStep({ data, onChange }: RoleStepProps) {
     return dateStr.slice(0, 10) // YYYY-MM-DD format
   }
 
-  const currentRole = data.employmentHistory[0]
-  const pastRoles = data.employmentHistory.slice(1)
+  const currentRole = employmentHistory[0]
+  const pastRoles = employmentHistory.slice(1)
 
   return (
     <div className="space-y-8">
@@ -100,6 +114,60 @@ export function RoleStep({ data, onChange }: RoleStepProps) {
         </div>
 
         <div className="grid sm:grid-cols-2 gap-4">
+          {/* Employment Type */}
+          <div className="sm:col-span-2">
+            <label className="block text-sm font-medium text-stone-700 dark:text-stone-300 mb-2">
+              Employment Type
+            </label>
+            <div className="flex gap-4">
+              {(['monthly', 'adhoc'] as const).map((type) => (
+                <button
+                  key={type}
+                  type="button"
+                  onClick={() => {
+                    onChange({
+                      employment: {
+                        ...data.employment,
+                        employmentType: type,
+                        // Reset salary/holiday balance if switching to adhoc
+                        currentSalary: type === 'adhoc' ? null : data.employment.currentSalary,
+                        holidayBalance: type === 'adhoc' ? null : data.employment.holidayBalance,
+                      }
+                    })
+                  }}
+                  className={`
+                    flex-1 flex items-center justify-center gap-3 px-4 py-3 rounded-xl border-2 transition-all
+                    ${data.employment.employmentType === type
+                      ? 'bg-amber-50 border-amber-500 text-amber-700 dark:bg-amber-950/30 dark:border-amber-500 dark:text-amber-300'
+                      : 'bg-white border-stone-200 text-stone-600 dark:bg-stone-800 dark:border-stone-700 dark:text-stone-400 hover:border-stone-300 dark:hover:border-stone-600'
+                    }
+                  `}
+                >
+                  <div className={`
+                    w-4 h-4 rounded-full border-2 flex items-center justify-center
+                    ${data.employment.employmentType === type ? 'border-amber-500' : 'border-stone-300 dark:border-stone-600'}
+                  `}>
+                    {data.employment.employmentType === type && (
+                      <div className="w-2 h-2 rounded-full bg-amber-500" />
+                    )}
+                  </div>
+                  <div className="text-left">
+                    <p className="font-semibold capitalize">{type}</p>
+                    <p className="text-xs opacity-70">
+                      {type === 'monthly' ? 'Regular salaried staff' : 'Irregular work / No tracking'}
+                    </p>
+                  </div>
+                </button>
+              ))}
+            </div>
+            {data.employment.employmentType === 'adhoc' && (
+              <p className="mt-2 text-xs text-amber-600 dark:text-amber-400 flex items-center gap-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+                Ad-hoc employees do not have attendance or holiday tracking.
+              </p>
+            )}
+          </div>
+
           {/* Role */}
           <div>
             <label className="block text-sm font-medium text-stone-700 dark:text-stone-300 mb-2">
@@ -369,7 +437,7 @@ export function RoleStep({ data, onChange }: RoleStepProps) {
       </div>
 
       {/* Validation Hint */}
-      {!data.employmentHistory.some(e => e.role.trim() !== '') && (
+      {!employmentHistory.some(e => e.role.trim() !== '') && (
         <div className="p-4 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900">
           <p className="text-sm text-amber-700 dark:text-amber-300">
             Please select or enter a role for the current position to continue.

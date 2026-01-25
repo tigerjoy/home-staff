@@ -1,4 +1,4 @@
-import type { Footer } from '@/../product/sections/landing-page/types'
+import type { Footer } from '../types'
 import type { LucideIcon } from 'lucide-react'
 import { Home, Twitter, Facebook, Linkedin } from 'lucide-react'
 
