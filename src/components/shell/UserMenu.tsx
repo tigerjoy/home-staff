@@ -12,6 +12,7 @@ export interface UserMenuProps {
   onLogout?: () => void
   onSwitchHousehold?: () => void
   onAccountSettings?: () => void
+  collapsed?: boolean
 }
 
 export function UserMenu({
@@ -20,6 +21,7 @@ export function UserMenu({
   onLogout,
   onSwitchHousehold,
   onAccountSettings,
+  collapsed = false,
 }: UserMenuProps) {
   const [isOpen, setIsOpen] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
@@ -48,44 +50,54 @@ export function UserMenu({
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className="w-full flex items-center gap-3 px-4 py-3 hover:bg-stone-100 dark:hover:bg-stone-800 transition-colors"
+        title={collapsed ? user.name : undefined}
+        aria-label={collapsed ? `User menu: ${user.name}` : undefined}
+        className={`
+          w-full flex items-center hover:bg-stone-100 dark:hover:bg-stone-800 transition-colors
+          ${collapsed ? 'justify-center gap-0 px-2 py-3' : 'gap-3 px-4 py-3'}
+        `}
       >
-        {/* Avatar */}
         {user.avatarUrl ? (
           <img
             src={user.avatarUrl}
             alt={user.name}
-            className="h-9 w-9 rounded-full object-cover"
+            className="h-9 w-9 rounded-full object-cover shrink-0"
           />
         ) : (
-          <div className="h-9 w-9 rounded-full bg-amber-100 dark:bg-amber-900 flex items-center justify-center">
+          <div className="h-9 w-9 rounded-full bg-amber-100 dark:bg-amber-900 flex items-center justify-center shrink-0">
             <span className="text-sm font-medium text-amber-700 dark:text-amber-300" style={{ fontFamily: 'Nunito Sans, sans-serif' }}>
               {initials}
             </span>
           </div>
         )}
 
-        {/* User Info */}
-        <div className="flex-1 text-left min-w-0">
-          <p className="text-sm font-medium text-stone-900 dark:text-stone-100 truncate" style={{ fontFamily: 'Nunito Sans, sans-serif' }}>
-            {user.name}
-          </p>
-          {household && (
-            <p className="text-xs text-stone-500 dark:text-stone-400 truncate" style={{ fontFamily: 'Nunito Sans, sans-serif' }}>
-              {household.name}
+        {!collapsed && (
+          <div className="flex-1 text-left min-w-0">
+            <p className="text-sm font-medium text-stone-900 dark:text-stone-100 truncate" style={{ fontFamily: 'Nunito Sans, sans-serif' }}>
+              {user.name}
             </p>
-          )}
-        </div>
+            {household && (
+              <p className="text-xs text-stone-500 dark:text-stone-400 truncate" style={{ fontFamily: 'Nunito Sans, sans-serif' }}>
+                {household.name}
+              </p>
+            )}
+          </div>
+        )}
 
-        {/* Chevron */}
         <ChevronUp
-          className={`h-4 w-4 text-stone-400 transition-transform ${isOpen ? 'rotate-180' : ''}`}
+          className={`h-4 w-4 text-stone-400 transition-transform shrink-0 ${isOpen ? 'rotate-180' : ''} ${collapsed ? 'hidden' : ''}`}
         />
       </button>
 
       {/* Dropdown Menu */}
       {isOpen && (
-        <div className="absolute bottom-full left-0 right-0 mb-1 mx-3 bg-white dark:bg-stone-800 rounded-lg shadow-lg border border-stone-200 dark:border-stone-700 overflow-hidden">
+        <div
+          className={
+            collapsed
+              ? 'absolute bottom-full left-0 mb-1 min-w-48 bg-white dark:bg-stone-800 rounded-lg shadow-lg border border-stone-200 dark:border-stone-700 overflow-hidden'
+              : 'absolute bottom-full left-0 right-0 mb-1 mx-3 bg-white dark:bg-stone-800 rounded-lg shadow-lg border border-stone-200 dark:border-stone-700 overflow-hidden'
+          }
+        >
           {onSwitchHousehold && (
             <button
               type="button"
