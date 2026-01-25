@@ -1,0 +1,61 @@
+{
+  "_meta": {
+    "models": {
+      "onboardingConfig": "Defines the structure and requirements of the onboarding wizard.",
+      "steps": "The individual tasks a user must complete to set up their household.",
+      "defaultPresets": "Suggested settings for holiday rules and attendance that users can select to save time."
+    },
+    "relationships": [
+      "The Onboarding Config tracks the user's progress through the Steps",
+      "Steps can be marked as required or optional",
+      "Default Presets are used during the 'Set Global Defaults' step"
+    ]
+  },
+  "config": {
+    "currentStepIndex": 0,
+    "totalSteps": 4,
+    "isCompleted": false,
+    "lastSavedAt": "2024-01-17T12:00:00Z"
+  },
+  "steps": [
+    {
+      "id": "step-household",
+      "title": "Name Your Household",
+      "description": "Establish the primary container for your staff and management records.",
+      "isRequired": true,
+      "status": "in_progress"
+    },
+    {
+      "id": "step-defaults",
+      "title": "Set Global Defaults",
+      "description": "Configure common holiday and attendance rules for your household.",
+      "isRequired": false,
+      "status": "pending"
+    },
+    {
+      "id": "step-employee",
+      "title": "Add Your First Employee",
+      "description": "Start building your staff directory by adding one profile now.",
+      "isRequired": false,
+      "status": "pending"
+    },
+    {
+      "id": "step-welcome",
+      "title": "You're All Set!",
+      "description": "Your household is ready. Welcome to HomeStaff.",
+      "isRequired": true,
+      "status": "pending"
+    }
+  ],
+  "presets": {
+    "holidayRules": [
+      { "id": "p1", "label": "4 Days per Month", "description": "Standard flexible entitlement." },
+      { "id": "p2", "label": "Every Sunday Off", "description": "Weekly recurring holiday." },
+      { "id": "p3", "label": "Custom", "description": "Set your own rules later." }
+    ],
+    "attendance": [
+      { "id": "a1", "label": "Present by Default", "description": "Only mark absences (Recommended)." },
+      { "id": "a2", "label": "Manual Entry", "description": "Mark attendance for every person daily." }
+    ]
+  }
+}

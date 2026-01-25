@@ -1,0 +1,435 @@
+{
+  "_meta": {
+    "models": {
+      "employees": "Each employee represents a domestic staff member working in your household, with their complete history of roles, salaries, and documents.",
+      "phoneNumbers": "Contact numbers for an employee, supporting multiple phones like mobile, home, or emergency contacts.",
+      "addresses": "Physical addresses for an employee, such as current residence or permanent address.",
+      "employmentHistory": "A record of an employee's role changes over time, tracking promotions and department changes.",
+      "salaryHistory": "A timeline of salary changes including amount and payment method, with the most recent being the current salary.",
+      "documents": "Files attached to an employee profile like ID proofs, contracts, or certificates, stored as links.",
+      "customProperties": "User-defined fields to capture any additional information not covered by standard fields.",
+      "notes": "Timestamped observations or reminders about an employee."
+    },
+    "relationships": [
+      "Each Employee has multiple Phone Numbers (mobile, home, emergency)",
+      "Each Employee has multiple Addresses (current, permanent)",
+      "Each Employee has an Employment History tracking role changes over time",
+      "Each Employee has a Salary History tracking compensation changes",
+      "Each Employee can have multiple Documents (ID proofs, contracts, certificates)",
+      "Each Employee can have Custom Properties for flexible data",
+      "Each Employee can have Notes for observations and reminders"
+    ]
+  },
+  "summary": {
+    "totalStaff": 6,
+    "activeStaff": 5,
+    "archivedStaff": 1,
+    "roleBreakdown": {
+      "Housekeeper": 2,
+      "Cook": 1,
+      "Driver": 1,
+      "Gardener": 1,
+      "Nanny": 1
+    }
+  },
+  "employees": [
+    {
+      "id": "emp-001",
+      "name": "Lakshmi Devi",
+      "photo": null,
+      "status": "active",
+      "holidayBalance": 8,
+      "phoneNumbers": [
+        { "number": "+91 98765 43210", "label": "Mobile" },
+        { "number": "+91 11 2345 6789", "label": "Home" }
+      ],
+      "addresses": [
+        { "address": "42 Nehru Nagar, Sector 5, New Delhi 110001", "label": "Current" },
+        { "address": "Village Rampur, District Alwar, Rajasthan 301001", "label": "Permanent" }
+      ],
+      "employmentHistory": [
+        {
+          "role": "Housekeeper",
+          "department": "Household",
+          "startDate": "2019-03-15",
+          "endDate": null
+        },
+        {
+          "role": "Part-time Cleaner",
+          "department": "Household",
+          "startDate": "2018-01-10",
+          "endDate": "2019-03-14"
+        }
+      ],
+      "salaryHistory": [
+        {
+          "amount": 18000,
+          "paymentMethod": "Bank Transfer",
+          "effectiveDate": "2024-01-01"
+        },
+        {
+          "amount": 15000,
+          "paymentMethod": "Bank Transfer",
+          "effectiveDate": "2022-04-01"
+        },
+        {
+          "amount": 12000,
+          "paymentMethod": "Cash",
+          "effectiveDate": "2019-03-15"
+        }
+      ],
+      "documents": [
+        {
+          "name": "Aadhaar Card",
+          "url": "https://docs.example.com/emp-001/aadhaar.pdf",
+          "category": "ID",
+          "uploadedAt": "2019-03-15"
+        },
+        {
+          "name": "Employment Contract 2024",
+          "url": "https://docs.example.com/emp-001/contract-2024.pdf",
+          "category": "Contract",
+          "uploadedAt": "2024-01-01"
+        }
+      ],
+      "customProperties": [
+        { "name": "Blood Group", "value": "B+" },
+        { "name": "Emergency Contact", "value": "Husband - Ramesh (98765 11111)" }
+      ],
+      "notes": [
+        {
+          "content": "Excellent at organizing. Promoted to full-time housekeeper after one year.",
+          "createdAt": "2019-03-15T10:30:00Z"
+        },
+        {
+          "content": "Requested advance of ₹5000 for daughter's school fees. Approved.",
+          "createdAt": "2023-06-20T14:15:00Z"
+        }
+      ]
+    },
+    {
+      "id": "emp-002",
+      "name": "Raju Sharma",
+      "photo": null,
+      "status": "active",
+      "holidayBalance": 12,
+      "phoneNumbers": [
+        { "number": "+91 87654 32109", "label": "Mobile" }
+      ],
+      "addresses": [
+        { "address": "15 Lajpat Nagar, New Delhi 110024", "label": "Current" }
+      ],
+      "employmentHistory": [
+        {
+          "role": "Driver",
+          "department": "Transport",
+          "startDate": "2020-06-01",
+          "endDate": null
+        }
+      ],
+      "salaryHistory": [
+        {
+          "amount": 22000,
+          "paymentMethod": "Bank Transfer",
+          "effectiveDate": "2023-07-01"
+        },
+        {
+          "amount": 18000,
+          "paymentMethod": "Bank Transfer",
+          "effectiveDate": "2020-06-01"
+        }
+      ],
+      "documents": [
+        {
+          "name": "Driving License",
+          "url": "https://docs.example.com/emp-002/driving-license.pdf",
+          "category": "ID",
+          "uploadedAt": "2020-06-01"
+        },
+        {
+          "name": "Aadhaar Card",
+          "url": "https://docs.example.com/emp-002/aadhaar.pdf",
+          "category": "ID",
+          "uploadedAt": "2020-06-01"
+        },
+        {
+          "name": "Police Verification",
+          "url": "https://docs.example.com/emp-002/police-verification.pdf",
+          "category": "Certificate",
+          "uploadedAt": "2020-06-15"
+        }
+      ],
+      "customProperties": [
+        { "name": "Vehicle Assigned", "value": "Honda City (DL 01 AB 1234)" },
+        { "name": "License Expiry", "value": "2028-05-15" }
+      ],
+      "notes": [
+        {
+          "content": "Very punctual and reliable. Knows all routes in South Delhi well.",
+          "createdAt": "2020-08-10T09:00:00Z"
+        }
+      ]
+    },
+    {
+      "id": "emp-003",
+      "name": "Meena Kumari",
+      "photo": null,
+      "status": "active",
+      "holidayBalance": 5,
+      "phoneNumbers": [
+        { "number": "+91 99887 76655", "label": "Mobile" },
+        { "number": "+91 98111 22233", "label": "Emergency" }
+      ],
+      "addresses": [
+        { "address": "78 Vasant Kunj, B Block, New Delhi 110070", "label": "Current" },
+        { "address": "23 MG Road, Jaipur, Rajasthan 302001", "label": "Permanent" }
+      ],
+      "employmentHistory": [
+        {
+          "role": "Cook",
+          "department": "Kitchen",
+          "startDate": "2021-01-15",
+          "endDate": null
+        },
+        {
+          "role": "Kitchen Helper",
+          "department": "Kitchen",
+          "startDate": "2020-03-01",
+          "endDate": "2021-01-14"
+        }
+      ],
+      "salaryHistory": [
+        {
+          "amount": 20000,
+          "paymentMethod": "UPI",
+          "effectiveDate": "2024-01-01"
+        },
+        {
+          "amount": 17000,
+          "paymentMethod": "UPI",
+          "effectiveDate": "2022-01-01"
+        },
+        {
+          "amount": 14000,
+          "paymentMethod": "Cash",
+          "effectiveDate": "2021-01-15"
+        },
+        {
+          "amount": 10000,
+          "paymentMethod": "Cash",
+          "effectiveDate": "2020-03-01"
+        }
+      ],
+      "documents": [
+        {
+          "name": "Aadhaar Card",
+          "url": "https://docs.example.com/emp-003/aadhaar.pdf",
+          "category": "ID",
+          "uploadedAt": "2020-03-01"
+        },
+        {
+          "name": "Food Safety Certificate",
+          "url": "https://docs.example.com/emp-003/food-safety.pdf",
+          "category": "Certificate",
+          "uploadedAt": "2021-02-10"
+        }
+      ],
+      "customProperties": [
+        { "name": "Speciality", "value": "North Indian, Chinese, Continental" },
+        { "name": "Dietary Restrictions Knowledge", "value": "Jain, Vegan, Gluten-free" }
+      ],
+      "notes": [
+        {
+          "content": "Promoted from kitchen helper to main cook. Excellent skills in North Indian cuisine.",
+          "createdAt": "2021-01-15T11:00:00Z"
+        },
+        {
+          "content": "Completed food safety certification course. Very hygienic practices.",
+          "createdAt": "2021-02-10T16:30:00Z"
+        },
+        {
+          "content": "Will be on leave Dec 25-31 for family wedding in Jaipur.",
+          "createdAt": "2024-12-01T10:00:00Z"
+        }
+      ]
+    },
+    {
+      "id": "emp-004",
+      "name": "Suresh Kumar",
+      "photo": null,
+      "status": "active",
+      "holidayBalance": 10,
+      "phoneNumbers": [
+        { "number": "+91 88776 65544", "label": "Mobile" }
+      ],
+      "addresses": [
+        { "address": "Village Sohna, Gurugram, Haryana 122103", "label": "Current" }
+      ],
+      "employmentHistory": [
+        {
+          "role": "Gardener",
+          "department": "Maintenance",
+          "startDate": "2022-04-01",
+          "endDate": null
+        }
+      ],
+      "salaryHistory": [
+        {
+          "amount": 12000,
+          "paymentMethod": "Cash",
+          "effectiveDate": "2023-04-01"
+        },
+        {
+          "amount": 10000,
+          "paymentMethod": "Cash",
+          "effectiveDate": "2022-04-01"
+        }
+      ],
+      "documents": [
+        {
+          "name": "Aadhaar Card",
+          "url": "https://docs.example.com/emp-004/aadhaar.pdf",
+          "category": "ID",
+          "uploadedAt": "2022-04-01"
+        }
+      ],
+      "customProperties": [],
+      "notes": []
+    },
+    {
+      "id": "emp-005",
+      "name": "Priya Singh",
+      "photo": null,
+      "status": "active",
+      "holidayBalance": 6,
+      "phoneNumbers": [
+        { "number": "+91 77665 54433", "label": "Mobile" },
+        { "number": "+91 11 4567 8901", "label": "Home" },
+        { "number": "+91 99000 11122", "label": "Mother" }
+      ],
+      "addresses": [
+        { "address": "56 Green Park Extension, New Delhi 110016", "label": "Current" }
+      ],
+      "employmentHistory": [
+        {
+          "role": "Nanny",
+          "department": "Childcare",
+          "startDate": "2023-02-01",
+          "endDate": null
+        }
+      ],
+      "salaryHistory": [
+        {
+          "amount": 25000,
+          "paymentMethod": "Bank Transfer",
+          "effectiveDate": "2024-02-01"
+        },
+        {
+          "amount": 22000,
+          "paymentMethod": "Bank Transfer",
+          "effectiveDate": "2023-02-01"
+        }
+      ],
+      "documents": [
+        {
+          "name": "Aadhaar Card",
+          "url": "https://docs.example.com/emp-005/aadhaar.pdf",
+          "category": "ID",
+          "uploadedAt": "2023-02-01"
+        },
+        {
+          "name": "PAN Card",
+          "url": "https://docs.example.com/emp-005/pan.pdf",
+          "category": "ID",
+          "uploadedAt": "2023-02-01"
+        },
+        {
+          "name": "Childcare Training Certificate",
+          "url": "https://docs.example.com/emp-005/childcare-cert.pdf",
+          "category": "Certificate",
+          "uploadedAt": "2023-02-05"
+        },
+        {
+          "name": "First Aid Certificate",
+          "url": "https://docs.example.com/emp-005/first-aid.pdf",
+          "category": "Certificate",
+          "uploadedAt": "2023-02-05"
+        },
+        {
+          "name": "Employment Contract",
+          "url": "https://docs.example.com/emp-005/contract.pdf",
+          "category": "Contract",
+          "uploadedAt": "2023-02-01"
+        }
+      ],
+      "customProperties": [
+        { "name": "Children Assigned", "value": "Arjun (5 yrs), Ananya (3 yrs)" },
+        { "name": "Languages", "value": "Hindi, English, Punjabi" },
+        { "name": "First Aid Trained", "value": "Yes" }
+      ],
+      "notes": [
+        {
+          "content": "Excellent with children. Has prior experience as nanny for 3 years with Gupta family.",
+          "createdAt": "2023-02-01T09:00:00Z"
+        },
+        {
+          "content": "Kids love her. Very patient and creative with activities.",
+          "createdAt": "2023-05-15T18:30:00Z"
+        }
+      ]
+    },
+    {
+      "id": "emp-006",
+      "name": "Ramesh Yadav",
+      "photo": null,
+      "status": "archived",
+      "holidayBalance": 0,
+      "phoneNumbers": [
+        { "number": "+91 66554 43322", "label": "Mobile" }
+      ],
+      "addresses": [
+        { "address": "12 Dwarka Sector 7, New Delhi 110077", "label": "Last Known" }
+      ],
+      "employmentHistory": [
+        {
+          "role": "Housekeeper",
+          "department": "Household",
+          "startDate": "2017-08-01",
+          "endDate": "2022-12-31"
+        }
+      ],
+      "salaryHistory": [
+        {
+          "amount": 14000,
+          "paymentMethod": "Cash",
+          "effectiveDate": "2021-01-01"
+        },
+        {
+          "amount": 12000,
+          "paymentMethod": "Cash",
+          "effectiveDate": "2019-01-01"
+        },
+        {
+          "amount": 10000,
+          "paymentMethod": "Cash",
+          "effectiveDate": "2017-08-01"
+        }
+      ],
+      "documents": [
+        {
+          "name": "Aadhaar Card",
+          "url": "https://docs.example.com/emp-006/aadhaar.pdf",
+          "category": "ID",
+          "uploadedAt": "2017-08-01"
+        }
+      ],
+      "customProperties": [],
+      "notes": [
+        {
+          "content": "Left employment on good terms. Moved to hometown for family reasons.",
+          "createdAt": "2022-12-31T17:00:00Z"
+        }
+      ]
+    }
+  ]
+}
