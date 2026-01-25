@@ -1,9 +1,10 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { EmployeeForm } from '../components/staff-directory/EmployeeForm'
-import { createEmployee, linkExistingEmployee, fetchEmployee } from '../lib/api/employees'
+import { createEmployee, linkExistingEmployee, fetchEmployee, updateEmployee } from '../lib/api/employees'
+import { uploadPhoto, uploadDocument } from '../lib/storage/documents'
 import { useHousehold } from '../hooks/useHousehold'
-import type { UIEmployee } from '../types'
+import type { UIEmployee, Document } from '../types'
 
 export function AddEmployee() {
   const navigate = useNavigate()
@@ -15,6 +16,8 @@ export function AddEmployee() {
   const [error, setError] = useState<string | null>(null)
   const [existingEmployee, setExistingEmployee] = useState<UIEmployee | null>(null)
   const [loadingExisting, setLoadingExisting] = useState(false)
+  const pendingPhotoFile = useRef<File | null>(null)
+  const pendingDocumentFiles = useRef<Map<string, { file: File; category: Document['category'] }>>(new Map())
 
   // Load existing employee if linking
   useEffect(() => {
@@ -64,22 +67,22 @@ export function AddEmployee() {
 
       if (linkEmployeeId && existingEmployee) {
         // Linking existing employee - create new employment only
-        if (!currentSalary || !currentSalary.amount) {
-          throw new Error('Current salary is required')
+        // Extract employment type from form data (stored in employmentType property)
+        const employmentType = (employeeData as any).employmentType || 'monthly'
+        
+        // For monthly employees, salary is required
+        if (employmentType === 'monthly' && (!currentSalary || !currentSalary.amount)) {
+          throw new Error('Current salary is required for monthly employees')
         }
-
-        // Determine employment type from salary (if salary > 0, it's monthly, otherwise adhoc)
-        // This is a simplification - ideally the form would have employment type selection
-        const employmentType = currentSalary.amount > 0 ? 'monthly' : 'adhoc'
 
         const employmentData = {
           householdId: activeHouseholdId,
-          employmentType,
+          employmentType: employmentType as 'monthly' | 'adhoc',
           role: currentEmployment.role,
           startDate: currentEmployment.startDate,
           holidayBalance: employmentType === 'monthly' ? 0 : undefined,
-          currentSalary: employmentType === 'monthly' ? currentSalary.amount : undefined,
-          paymentMethod: currentSalary.paymentMethod,
+          currentSalary: employmentType === 'monthly' ? (currentSalary?.amount || 0) : undefined,
+          paymentMethod: currentSalary?.paymentMethod || 'Cash',
         }
 
         const linkedEmployee = await linkExistingEmployee(
@@ -92,17 +95,23 @@ export function AddEmployee() {
         navigate(`/staff/${linkedEmployee.id}`)
       } else {
         // Creating new employee
-        if (!currentSalary || !currentSalary.amount) {
-          throw new Error('Current salary is required')
+        // Extract employment type from form data (stored in employmentType property)
+        const employmentType = (employeeData as any).employmentType || 'monthly'
+        
+        // For monthly employees, salary is required
+        if (employmentType === 'monthly' && (!currentSalary || !currentSalary.amount)) {
+          throw new Error('Current salary is required for monthly employees')
         }
 
         // Create employee core data (without household-specific fields)
+        // Filter out documents with blob URLs - they'll be uploaded after employee creation
+        const documentsToSave = employeeData.documents.filter(doc => !doc.url.startsWith('blob:'))
         const employeeCoreData = {
           name: employeeData.name,
-          photo: employeeData.photo,
+          photo: employeeData.photo?.startsWith('blob:') ? null : employeeData.photo, // Don't save blob URLs
           phoneNumbers: employeeData.phoneNumbers,
           addresses: employeeData.addresses,
-          documents: employeeData.documents,
+          documents: documentsToSave,
           customProperties: employeeData.customProperties,
           notes: employeeData.notes,
         }
@@ -110,15 +119,60 @@ export function AddEmployee() {
         // Create employment data
         const employmentData = {
           householdId: activeHouseholdId,
-          employmentType: 'monthly' as const, // Default to monthly, can be made configurable later
+          employmentType: employmentType as 'monthly' | 'adhoc',
           role: currentEmployment.role,
           startDate: currentEmployment.startDate,
-          holidayBalance: 0, // Default holiday balance
-          currentSalary: currentSalary.amount,
-          paymentMethod: currentSalary.paymentMethod,
+          holidayBalance: employmentType === 'monthly' ? 0 : undefined, // Only for monthly
+          currentSalary: employmentType === 'monthly' ? (currentSalary?.amount || 0) : undefined, // Only for monthly
+          paymentMethod: currentSalary?.paymentMethod || 'Cash',
         }
 
         const createdEmployee = await createEmployee(employeeCoreData, employmentData)
+
+        // Upload pending photo if exists
+        if (pendingPhotoFile.current) {
+          try {
+            const photoUrl = await uploadPhoto(createdEmployee.id, pendingPhotoFile.current)
+            await updateEmployee(createdEmployee.id, { photo: photoUrl })
+          } catch (error) {
+            console.error('Error uploading photo:', error)
+            // Continue even if photo upload fails
+          }
+        }
+
+        // Upload pending documents if any
+        if (pendingDocumentFiles.current.size > 0) {
+          try {
+            const uploadedDocuments: Document[] = []
+            for (const [blobUrl, { file, category }] of pendingDocumentFiles.current.entries()) {
+              try {
+                const url = await uploadDocument(createdEmployee.id, file, category)
+                // Find the document in employeeData by blob URL
+                const doc = employeeData.documents.find(d => d.url === blobUrl)
+                if (doc) {
+                  uploadedDocuments.push({
+                    ...doc,
+                    url,
+                  })
+                }
+              } catch (error) {
+                console.error(`Error uploading document ${file.name}:`, error)
+                // Continue with other documents
+              }
+            }
+
+            // Update employee with uploaded document URLs
+            if (uploadedDocuments.length > 0) {
+              const existingDocs = createdEmployee.documents.filter(d => !d.url.startsWith('blob:'))
+              await updateEmployee(createdEmployee.id, {
+                documents: [...existingDocs, ...uploadedDocuments],
+              })
+            }
+          } catch (error) {
+            console.error('Error uploading documents:', error)
+            // Continue even if document upload fails
+          }
+        }
 
         // Navigate to the created employee's detail page
         navigate(`/staff/${createdEmployee.id}`)
@@ -184,6 +238,8 @@ export function AddEmployee() {
         onStepChange={setCurrentStep}
         onSubmit={handleSubmit}
         onCancel={handleCancel}
+        onPhotoFileChange={(file) => { pendingPhotoFile.current = file }}
+        onDocumentFilesChange={(files) => { pendingDocumentFiles.current = files }}
       />
     </div>
   )

@@ -1,10 +1,15 @@
 import { useState } from 'react'
-import { Upload, FileText, Trash2, Eye, X, File, FileCheck, FileBadge } from 'lucide-react'
+import { Upload, FileText, Trash2, Eye, X, File, FileCheck, FileBadge, Loader2, Edit2 } from 'lucide-react'
 import type { UIEmployee, Document } from '../../types'
+import { uploadDocument, getSignedDocumentUrl } from '../../lib/storage/documents'
 
 interface DocumentsStepProps {
   data: Omit<UIEmployee, 'id' | 'householdId' | 'status' | 'holidayBalance'>
   onChange: (updates: Partial<Omit<UIEmployee, 'id' | 'householdId' | 'status' | 'holidayBalance'>>) => void
+  employeeId?: string // Optional: if provided, upload immediately; otherwise store files for later upload
+  onFilesChange?: (files: Map<string, { file: File; category: Document['category'] }>) => void // Callback to store File objects for later upload
+  onDocumentUploaded?: (documents: Document[]) => Promise<void> // Callback to persist documents to database immediately
+  onRenameDocument?: (documentUrl: string, newName: string) => Promise<void> // Callback to rename document
 }
 
 const DOCUMENT_CATEGORIES: { value: Document['category']; label: string; icon: typeof FileText; color: string }[] = [
@@ -13,34 +18,170 @@ const DOCUMENT_CATEGORIES: { value: Document['category']; label: string; icon: t
   { value: 'Certificate', label: 'Certificate', icon: File, color: 'purple' },
 ]
 
-export function DocumentsStep({ data, onChange }: DocumentsStepProps) {
+export function DocumentsStep({ data, onChange, employeeId, onFilesChange, onDocumentUploaded, onRenameDocument }: DocumentsStepProps) {
   const [selectedCategory, setSelectedCategory] = useState<Document['category']>('ID')
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
+  const [uploading, setUploading] = useState(false)
+  const [uploadErrors, setUploadErrors] = useState<string[]>([])
+  const [pendingFiles, setPendingFiles] = useState<Map<string, { file: File; category: Document['category'] }>>(new Map())
+  const [previewLoading, setPreviewLoading] = useState(false)
+  const [previewError, setPreviewError] = useState<string | null>(null)
+  const [isDragging, setIsDragging] = useState(false)
+  const [renamingDoc, setRenamingDoc] = useState<{ url: string; currentName: string } | null>(null)
+  const [newDocName, setNewDocName] = useState('')
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files
+  const processFiles = async (files: FileList | File[]) => {
     if (!files?.length) return
 
-    const newDocuments: Document[] = []
+    setUploading(true)
+    setUploadErrors([])
     const today = new Date().toISOString().split('T')[0]
+    const newDocuments: Document[] = []
+    const errors: string[] = []
+    const newPendingFiles = new Map(pendingFiles)
 
-    Array.from(files).forEach(file => {
-      // In a real app, you'd upload to a server and get a URL
-      // For demo, we'll use a fake URL
-      newDocuments.push({
-        name: file.name,
-        url: URL.createObjectURL(file),
-        category: selectedCategory,
-        uploadedAt: today,
-      })
+    // Validate file types
+    const allowedExtensions = ['.pdf', '.jpg', '.jpeg', '.png', '.doc', '.docx']
+    const validFiles = Array.from(files).filter(file => {
+      const extension = '.' + file.name.split('.').pop()?.toLowerCase()
+      return allowedExtensions.includes(extension)
     })
 
-    onChange({ documents: [...data.documents, ...newDocuments] })
+    if (validFiles.length === 0) {
+      setUploadErrors(['Please upload files with valid extensions: PDF, JPG, PNG, DOC, DOCX'])
+      setUploading(false)
+      return
+    }
+
+    // If we have an employeeId, upload immediately to storage
+    // Otherwise, store files for later upload
+    if (employeeId) {
+      // Upload each file to Supabase Storage
+      for (const file of validFiles) {
+        try {
+          const url = await uploadDocument(employeeId, file, selectedCategory)
+          newDocuments.push({
+            name: file.name,
+            url,
+            category: selectedCategory,
+            uploadedAt: today,
+          })
+        } catch (error) {
+          console.error('Error uploading document:', error)
+          errors.push(`Failed to upload ${file.name}: ${error instanceof Error ? error.message : 'Unknown error'}`)
+        }
+      }
+
+      // Immediately persist to database if callback is provided
+      if (newDocuments.length > 0 && onDocumentUploaded) {
+        try {
+          await onDocumentUploaded(newDocuments)
+        } catch (error) {
+          console.error('Error persisting documents to database:', error)
+          errors.push('Failed to save documents to database')
+        }
+      }
+    } else {
+      // For new employees, create temporary blob URLs and store File objects
+      validFiles.forEach(file => {
+        const blobUrl = URL.createObjectURL(file)
+        newDocuments.push({
+          name: file.name,
+          url: blobUrl, // Temporary blob URL
+          category: selectedCategory,
+          uploadedAt: today,
+        })
+        // Store File object for later upload
+        newPendingFiles.set(blobUrl, { file, category: selectedCategory })
+      })
+      setPendingFiles(newPendingFiles)
+      // Notify parent component about pending files
+      onFilesChange?.(newPendingFiles)
+    }
+
+    if (newDocuments.length > 0) {
+      onChange({ documents: [...data.documents, ...newDocuments] })
+    }
+
+    if (errors.length > 0) {
+      setUploadErrors(errors)
+    }
+
+    setUploading(false)
+  }
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files
+    if (!files?.length) return
+    await processFiles(files)
     e.target.value = '' // Reset input
   }
 
+  const handleDrop = async (e: React.DragEvent) => {
+    e.preventDefault()
+    setIsDragging(false)
+    const files = e.dataTransfer.files
+    if (files?.length) {
+      await processFiles(files)
+    }
+  }
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault()
+    setIsDragging(true)
+  }
+
+  const handleDragEnter = (e: React.DragEvent) => {
+    e.preventDefault()
+    setIsDragging(true)
+  }
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault()
+    // Only set dragging to false if we're leaving the drop zone itself
+    // (not just moving to a child element)
+    const rect = e.currentTarget.getBoundingClientRect()
+    const x = e.clientX
+    const y = e.clientY
+    if (x < rect.left || x > rect.right || y < rect.top || y > rect.bottom) {
+      setIsDragging(false)
+    }
+  }
+
   const removeDocument = (index: number) => {
+    const doc = data.documents[index]
+    // If it's a blob URL, remove from pending files
+    if (doc.url.startsWith('blob:')) {
+      const newPendingFiles = new Map(pendingFiles)
+      newPendingFiles.delete(doc.url)
+      setPendingFiles(newPendingFiles)
+      onFilesChange?.(newPendingFiles)
+      // Revoke blob URL to free memory
+      URL.revokeObjectURL(doc.url)
+    }
     onChange({ documents: data.documents.filter((_, i) => i !== index) })
+  }
+
+  const handleRenameDocument = async () => {
+    if (!renamingDoc || !newDocName.trim()) return
+
+    try {
+      if (onRenameDocument) {
+        // For existing employees, call API to update database
+        await onRenameDocument(renamingDoc.url, newDocName.trim())
+      } else {
+        // For new employees, just update local state
+        const updatedDocuments = data.documents.map(doc =>
+          doc.url === renamingDoc.url ? { ...doc, name: newDocName.trim() } : doc
+        )
+        onChange({ documents: updatedDocuments })
+      }
+      setRenamingDoc(null)
+      setNewDocName('')
+    } catch (error) {
+      console.error('Error renaming document:', error)
+      // Error handling is done by the parent component
+    }
   }
 
   const getCategoryStyle = (category: Document['category']) => {
@@ -80,7 +221,11 @@ export function DocumentsStep({ data, onChange }: DocumentsStepProps) {
       </div>
 
       {/* Upload Area */}
-      <div className="p-6 rounded-2xl border-2 border-dashed border-stone-300 dark:border-stone-700 bg-stone-50 dark:bg-stone-800/30">
+      <div className={`p-6 rounded-2xl border-2 border-dashed transition-all ${
+        isDragging
+          ? 'border-amber-500 bg-amber-50 dark:bg-amber-900/20'
+          : 'border-stone-300 dark:border-stone-700 bg-stone-50 dark:bg-stone-800/30'
+      }`}>
         {/* Category Selection */}
         <div className="flex flex-wrap gap-2 mb-4 justify-center">
           {DOCUMENT_CATEGORIES.map(cat => {
@@ -107,21 +252,40 @@ export function DocumentsStep({ data, onChange }: DocumentsStepProps) {
         </div>
 
         {/* Drop Zone */}
-        <label className="block cursor-pointer group">
+        <label
+          className={`block cursor-pointer group ${uploading ? 'opacity-50 cursor-wait' : ''}`}
+          onDragOver={handleDragOver}
+          onDragEnter={handleDragEnter}
+          onDragLeave={handleDragLeave}
+          onDrop={handleDrop}
+        >
           <input
             type="file"
             accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
             multiple
             onChange={handleFileUpload}
+            disabled={uploading}
             className="hidden"
           />
           <div className="py-8 flex flex-col items-center gap-4">
-            <div className="w-16 h-16 rounded-2xl bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center group-hover:scale-110 transition-transform">
-              <Upload className="w-8 h-8 text-amber-600 dark:text-amber-400" />
+            <div className={`w-16 h-16 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-all ${
+              isDragging
+                ? 'bg-amber-200 dark:bg-amber-900/50 scale-110'
+                : 'bg-amber-100 dark:bg-amber-900/30'
+            }`}>
+              {uploading ? (
+                <Loader2 className="w-8 h-8 text-amber-600 dark:text-amber-400 animate-spin" />
+              ) : (
+                <Upload className={`w-8 h-8 ${
+                  isDragging
+                    ? 'text-amber-700 dark:text-amber-300'
+                    : 'text-amber-600 dark:text-amber-400'
+                }`} />
+              )}
             </div>
             <div className="text-center">
               <p className="text-sm font-medium text-stone-700 dark:text-stone-300">
-                Click to upload or drag and drop
+                {uploading ? 'Uploading...' : isDragging ? 'Drop to upload' : 'Click to upload or drag and drop'}
               </p>
               <p className="mt-1 text-xs text-stone-500 dark:text-stone-400">
                 PDF, JPG, PNG, DOC up to 10MB each
@@ -129,6 +293,15 @@ export function DocumentsStep({ data, onChange }: DocumentsStepProps) {
             </div>
           </div>
         </label>
+        
+        {/* Upload Errors */}
+        {uploadErrors.length > 0 && (
+          <div className="mt-4 p-3 rounded-xl bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900">
+            {uploadErrors.map((error, idx) => (
+              <p key={idx} className="text-sm text-red-600 dark:text-red-400">{error}</p>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Document List */}
@@ -184,11 +357,39 @@ export function DocumentsStep({ data, onChange }: DocumentsStepProps) {
                         <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                           <button
                             type="button"
-                            onClick={() => setPreviewUrl(doc.url)}
-                            className="p-2 rounded-lg text-stone-400 hover:text-amber-500 hover:bg-amber-50 dark:hover:bg-amber-950/50 transition-colors"
+                            onClick={async () => {
+                              setPreviewLoading(true)
+                              setPreviewError(null)
+                              try {
+                                const signedUrl = await getSignedDocumentUrl(doc.url)
+                                setPreviewUrl(signedUrl)
+                              } catch (error) {
+                                console.error('Error generating signed URL:', error)
+                                setPreviewError(error instanceof Error ? error.message : 'Failed to load document preview')
+                              } finally {
+                                setPreviewLoading(false)
+                              }
+                            }}
+                            disabled={previewLoading}
+                            className="p-2 rounded-lg text-stone-400 hover:text-amber-500 hover:bg-amber-50 dark:hover:bg-amber-950/50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                             title="Preview"
                           >
-                            <Eye className="w-4 h-4" />
+                            {previewLoading ? (
+                              <Loader2 className="w-4 h-4 animate-spin" />
+                            ) : (
+                              <Eye className="w-4 h-4" />
+                            )}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setRenamingDoc({ url: doc.url, currentName: doc.name })
+                              setNewDocName(doc.name)
+                            }}
+                            className="p-2 rounded-lg text-stone-400 hover:text-amber-500 hover:bg-amber-50 dark:hover:bg-amber-950/50 transition-colors"
+                            title="Rename"
+                          >
+                            <Edit2 className="w-4 h-4" />
                           </button>
                           <button
                             type="button"
@@ -229,29 +430,112 @@ export function DocumentsStep({ data, onChange }: DocumentsStepProps) {
               </h3>
               <button
                 type="button"
-                onClick={() => setPreviewUrl(null)}
+                onClick={() => {
+                  setPreviewUrl(null)
+                  setPreviewError(null)
+                }}
                 className="p-2 rounded-lg hover:bg-stone-100 dark:hover:bg-stone-800 transition-colors"
               >
                 <X className="w-5 h-5 text-stone-500" />
               </button>
             </div>
             <div className="p-4 max-h-[calc(90vh-80px)] overflow-auto">
-              {previewUrl.endsWith('.pdf') ? (
-                <iframe
-                  src={previewUrl}
-                  className="w-full h-[600px] rounded-lg"
-                  title="Document preview"
-                />
+              {previewError ? (
+                <div className="p-6 rounded-xl bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900 text-center">
+                  <p className="text-sm text-red-600 dark:text-red-400">{previewError}</p>
+                </div>
+              ) : previewUrl ? (
+                previewUrl.endsWith('.pdf') || previewUrl.includes('.pdf') ? (
+                  <iframe
+                    src={previewUrl}
+                    className="w-full h-[600px] rounded-lg"
+                    title="Document preview"
+                  />
+                ) : (
+                  <img
+                    src={previewUrl}
+                    alt="Document preview"
+                    className="max-w-full h-auto mx-auto rounded-lg"
+                    onError={() => setPreviewError('Failed to load document image')}
+                  />
+                )
               ) : (
-                <img
-                  src={previewUrl}
-                  alt="Document preview"
-                  className="max-w-full h-auto mx-auto rounded-lg"
-                />
+                <div className="flex items-center justify-center h-[600px]">
+                  <Loader2 className="w-8 h-8 text-stone-400 animate-spin" />
+                </div>
               )}
             </div>
           </div>
         </div>
+      )}
+
+      {/* Rename Document Modal */}
+      {renamingDoc && (
+        <>
+          {/* Backdrop */}
+          <div
+            className="fixed inset-0 z-40 bg-stone-900/50 backdrop-blur-sm"
+            onClick={() => {
+              setRenamingDoc(null)
+              setNewDocName('')
+            }}
+          />
+          
+          {/* Modal */}
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <div
+              className="bg-white dark:bg-stone-900 rounded-2xl shadow-2xl w-full max-w-md p-6"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <h3 className="text-lg font-semibold text-stone-900 dark:text-stone-100 mb-4">
+                Rename Document
+              </h3>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-stone-700 dark:text-stone-300 mb-1">
+                    Document Name
+                  </label>
+                  <input
+                    type="text"
+                    value={newDocName}
+                    onChange={(e) => setNewDocName(e.target.value)}
+                    placeholder="Enter document name"
+                    className="w-full px-4 py-2.5 bg-stone-50 dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-xl text-stone-900 dark:text-stone-100 placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-amber-500"
+                    autoFocus
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && newDocName.trim()) {
+                        handleRenameDocument()
+                      } else if (e.key === 'Escape') {
+                        setRenamingDoc(null)
+                        setNewDocName('')
+                      }
+                    }}
+                  />
+                </div>
+              </div>
+              <div className="flex justify-end gap-3 mt-6">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setRenamingDoc(null)
+                    setNewDocName('')
+                  }}
+                  className="px-4 py-2 text-stone-600 dark:text-stone-400 hover:bg-stone-100 dark:hover:bg-stone-800 rounded-xl transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleRenameDocument}
+                  disabled={!newDocName.trim()}
+                  className="px-4 py-2 bg-amber-500 hover:bg-amber-600 disabled:opacity-50 disabled:cursor-not-allowed text-white font-medium rounded-xl transition-colors"
+                >
+                  Rename
+                </button>
+              </div>
+            </div>
+          </div>
+        </>
       )}
 
       {/* Info Note */}

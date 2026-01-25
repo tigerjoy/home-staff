@@ -168,6 +168,22 @@ export interface EmployeeFormProps {
   onSubmit?: (employee: Omit<UIEmployee, 'id' | 'householdId' | 'status' | 'holidayBalance'>) => void
   /** Called when user cancels the form */
   onCancel?: () => void
+  /** Called when photo file changes (for new employees, to upload after creation) */
+  onPhotoFileChange?: (file: File | null) => void
+  /** Called when photo is uploaded (for existing employees, to persist immediately) */
+  onPhotoUploaded?: (photoUrl: string) => Promise<void>
+  /** Called when document files change (for new employees, to upload after creation) */
+  onDocumentFilesChange?: (files: Map<string, { file: File; category: Document['category'] }>) => void
+  /** Called when documents are uploaded (for existing employees, to persist immediately) */
+  onDocumentUploaded?: (documents: Document[]) => Promise<void>
+  /** Called when a document is renamed (for existing employees, to update database) */
+  onRenameDocument?: (documentUrl: string, newName: string) => Promise<void>
+  /** Called when a custom property is added (for existing employees, to persist immediately) */
+  onCustomPropertyAdded?: (property: CustomProperty) => Promise<void>
+  /** Called when a note is added (for existing employees, to persist immediately) */
+  onNoteAdded?: (note: Note) => Promise<void>
+  /** Called when user wants to save progress without closing the form (only used in edit mode) */
+  onSaveProgress?: (employee: Omit<UIEmployee, 'id' | 'householdId' | 'status' | 'holidayBalance'>) => void
 }
 
 /**
@@ -186,6 +202,8 @@ export interface EmployeeDetailProps {
   onUploadDocument?: (file: File, category: Document['category']) => void
   /** Called when user deletes a document */
   onDeleteDocument?: (documentName: string) => void
+  /** Called when user renames a document */
+  onRenameDocument?: (documentUrl: string, newName: string) => void
   /** Called when user adds a custom property */
   onAddCustomProperty?: (property: CustomProperty) => void
   /** Called when user removes a custom property */

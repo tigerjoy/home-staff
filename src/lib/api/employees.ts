@@ -441,6 +441,21 @@ export async function updateEmployee(
     }
   }
 
+  if (updates.documents !== undefined) {
+    await supabase.from('employee_documents').delete().eq('employee_id', id)
+    if (updates.documents.length > 0) {
+      await supabase.from('employee_documents').insert(
+        updates.documents.map((d) => ({
+          employee_id: id,
+          name: d.name,
+          url: d.url,
+          category: d.category,
+          uploaded_at: d.uploadedAt,
+        }))
+      )
+    }
+  }
+
   if (updates.customProperties !== undefined) {
     await supabase.from('employee_custom_properties').delete().eq('employee_id', id)
     if (updates.customProperties.length > 0) {
@@ -580,6 +595,25 @@ export async function restoreEmployee(id: string, householdId: string): Promise<
 
   if (error) {
     throw new Error(`Failed to restore employee: ${error.message}`)
+  }
+}
+
+/**
+ * Rename a document for an employee
+ */
+export async function renameDocument(
+  employeeId: string,
+  documentUrl: string,
+  newName: string
+): Promise<void> {
+  const { error } = await supabase
+    .from('employee_documents')
+    .update({ name: newName })
+    .eq('employee_id', employeeId)
+    .eq('url', documentUrl)
+
+  if (error) {
+    throw new Error(`Failed to rename document: ${error.message}`)
   }
 }
 

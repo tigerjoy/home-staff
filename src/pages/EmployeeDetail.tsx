@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { EmployeeDetail as EmployeeDetailComponent } from '../components/staff-directory/EmployeeDetail'
-import { fetchEmployee, updateEmployee, archiveEmployee, restoreEmployee } from '../lib/api/employees'
+import { fetchEmployee, updateEmployee, archiveEmployee, restoreEmployee, renameDocument } from '../lib/api/employees'
 import { uploadDocument as uploadDocumentFile, deleteDocument as deleteDocumentFile } from '../lib/storage/documents'
 import { useHousehold } from '../hooks/useHousehold'
 import type { UIEmployee, CustomProperty, Document } from '../types'
@@ -102,6 +102,18 @@ export function EmployeeDetail() {
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to delete document')
       console.error('Error deleting document:', err)
+    }
+  }
+
+  const handleRenameDocument = async (documentUrl: string, newName: string) => {
+    if (!id) return
+
+    try {
+      await renameDocument(id, documentUrl, newName)
+      await loadEmployee()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to rename document')
+      console.error('Error renaming document:', err)
     }
   }
 
@@ -228,6 +240,7 @@ export function EmployeeDetail() {
         onBack={handleBack}
         onUploadDocument={handleUploadDocument}
         onDeleteDocument={handleDeleteDocument}
+        onRenameDocument={handleRenameDocument}
         onAddCustomProperty={handleAddCustomProperty}
         onRemoveCustomProperty={handleRemoveCustomProperty}
         onAddNote={handleAddNote}

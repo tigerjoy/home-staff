@@ -14,6 +14,10 @@ const PAYMENT_METHODS: { value: SalaryRecord['paymentMethod']; label: string }[]
 ]
 
 export function SalaryStep({ data, onChange }: SalaryStepProps) {
+  // Get employment type from form data
+  const employmentType = (data as any).employmentType || 'monthly'
+  const isMonthly = employmentType === 'monthly'
+
   const updateSalaryRecord = (index: number, updates: Partial<SalaryRecord>) => {
     const newHistory = [...data.salaryHistory]
     newHistory[index] = { ...newHistory[index], ...updates }
@@ -61,12 +65,16 @@ export function SalaryStep({ data, onChange }: SalaryStepProps) {
           Salary & Compensation
         </h2>
         <p className="mt-1 text-sm text-stone-500 dark:text-stone-400">
-          Set current salary and track compensation history
+          {isMonthly
+            ? 'Set current salary and track compensation history'
+            : 'Ad-hoc employees are paid per job. No monthly salary is required.'}
         </p>
       </div>
 
-      {/* Current Salary Card */}
-      <div className="p-6 rounded-2xl bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-950/30 dark:to-orange-950/30 border border-amber-200 dark:border-amber-900">
+      {/* Current Salary Card - Only show for monthly employees */}
+      {isMonthly ? (
+        <div>
+        <div className="p-6 rounded-2xl bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-950/30 dark:to-orange-950/30 border border-amber-200 dark:border-amber-900">
         <div className="flex items-center gap-2 mb-4">
           <Wallet className="w-5 h-5 text-amber-600 dark:text-amber-400" />
           <h3 className="text-sm font-semibold text-amber-800 dark:text-amber-200">
@@ -157,127 +165,136 @@ export function SalaryStep({ data, onChange }: SalaryStepProps) {
             ))}
           </div>
         </div>
-      </div>
-
-      {/* Salary History */}
-      <div>
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-sm font-medium text-stone-700 dark:text-stone-300">
-            Salary History
-          </h3>
-          <button
-            type="button"
-            onClick={addSalaryRecord}
-            className="flex items-center gap-1 text-sm text-amber-600 dark:text-amber-400 hover:text-amber-700 dark:hover:text-amber-300 transition-colors"
-          >
-            <Plus className="w-4 h-4" />
-            Add Previous Salary
-          </button>
         </div>
 
-        {pastSalaries.length === 0 ? (
-          <div className="p-6 rounded-xl border border-dashed border-stone-300 dark:border-stone-700 text-center">
-            <p className="text-sm text-stone-500 dark:text-stone-400">
-              No previous salary records. Track salary changes to maintain a compensation history.
-            </p>
+        {/* Salary History */}
+        <div className="mt-8">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-sm font-medium text-stone-700 dark:text-stone-300">
+              Salary History
+            </h3>
+            <button
+              type="button"
+              onClick={addSalaryRecord}
+              className="flex items-center gap-1 text-sm text-amber-600 dark:text-amber-400 hover:text-amber-700 dark:hover:text-amber-300 transition-colors"
+            >
+              <Plus className="w-4 h-4" />
+              Add Previous Salary
+            </button>
           </div>
-        ) : (
-          <div className="space-y-3">
-            {pastSalaries.map((salary, idx) => {
-              const actualIndex = idx + 1
-              return (
-                <div
-                  key={actualIndex}
-                  className="flex flex-col sm:flex-row sm:items-center gap-3 p-4 rounded-xl bg-stone-50 dark:bg-stone-800/50 border border-stone-200 dark:border-stone-700"
-                >
-                  {/* Amount */}
-                  <div className="flex-1">
-                    <label className="block text-xs font-medium text-stone-500 dark:text-stone-400 mb-1 sm:hidden">
-                      Amount
-                    </label>
-                    <div className="relative">
-                      <IndianRupee className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-400" />
+
+          {pastSalaries.length === 0 ? (
+            <div className="p-6 rounded-xl border border-dashed border-stone-300 dark:border-stone-700 text-center">
+              <p className="text-sm text-stone-500 dark:text-stone-400">
+                No previous salary records. Track salary changes to maintain a compensation history.
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {pastSalaries.map((salary, idx) => {
+                const actualIndex = idx + 1
+                return (
+                  <div
+                    key={actualIndex}
+                    className="flex flex-col sm:flex-row sm:items-center gap-3 p-4 rounded-xl bg-stone-50 dark:bg-stone-800/50 border border-stone-200 dark:border-stone-700"
+                  >
+                    {/* Amount */}
+                    <div className="flex-1">
+                      <label className="block text-xs font-medium text-stone-500 dark:text-stone-400 mb-1 sm:hidden">
+                        Amount
+                      </label>
+                      <div className="relative">
+                        <IndianRupee className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-400" />
+                        <input
+                          type="number"
+                          value={salary.amount || ''}
+                          onChange={(e) => updateSalaryRecord(actualIndex, { amount: parseInt(e.target.value) || 0 })}
+                          placeholder="Amount"
+                          min="0"
+                          className="w-full pl-9 pr-3 py-2 rounded-lg border border-stone-300 dark:border-stone-600 bg-white dark:bg-stone-800 text-stone-900 dark:text-stone-100 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-all"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Payment Method */}
+                    <div className="flex-1">
+                      <label className="block text-xs font-medium text-stone-500 dark:text-stone-400 mb-1 sm:hidden">
+                        Payment Method
+                      </label>
+                      <select
+                        value={salary.paymentMethod}
+                        onChange={(e) => updateSalaryRecord(actualIndex, { paymentMethod: e.target.value as SalaryRecord['paymentMethod'] })}
+                        className="w-full px-3 py-2 rounded-lg border border-stone-300 dark:border-stone-600 bg-white dark:bg-stone-800 text-stone-900 dark:text-stone-100 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-all"
+                      >
+                        {PAYMENT_METHODS.map(method => (
+                          <option key={method.value} value={method.value}>{method.label}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {/* Date */}
+                    <div className="flex-1">
+                      <label className="block text-xs font-medium text-stone-500 dark:text-stone-400 mb-1 sm:hidden">
+                        Effective Date
+                      </label>
                       <input
-                        type="number"
-                        value={salary.amount || ''}
-                        onChange={(e) => updateSalaryRecord(actualIndex, { amount: parseInt(e.target.value) || 0 })}
-                        placeholder="Amount"
-                        min="0"
-                        className="w-full pl-9 pr-3 py-2 rounded-lg border border-stone-300 dark:border-stone-600 bg-white dark:bg-stone-800 text-stone-900 dark:text-stone-100 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-all"
+                        type="date"
+                        value={formatDateForInput(salary.effectiveDate)}
+                        onChange={(e) => updateSalaryRecord(actualIndex, { effectiveDate: e.target.value })}
+                        className="w-full px-3 py-2 rounded-lg border border-stone-300 dark:border-stone-600 bg-white dark:bg-stone-800 text-stone-900 dark:text-stone-100 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-all"
                       />
                     </div>
-                  </div>
 
-                  {/* Payment Method */}
-                  <div className="flex-1">
-                    <label className="block text-xs font-medium text-stone-500 dark:text-stone-400 mb-1 sm:hidden">
-                      Payment Method
-                    </label>
-                    <select
-                      value={salary.paymentMethod}
-                      onChange={(e) => updateSalaryRecord(actualIndex, { paymentMethod: e.target.value as SalaryRecord['paymentMethod'] })}
-                      className="w-full px-3 py-2 rounded-lg border border-stone-300 dark:border-stone-600 bg-white dark:bg-stone-800 text-stone-900 dark:text-stone-100 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-all"
+                    {/* Delete */}
+                    <button
+                      type="button"
+                      onClick={() => removeSalaryRecord(actualIndex)}
+                      className="p-2 rounded-lg text-stone-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/50 transition-colors self-end sm:self-center"
                     >
-                      {PAYMENT_METHODS.map(method => (
-                        <option key={method.value} value={method.value}>{method.label}</option>
-                      ))}
-                    </select>
+                      <Trash2 className="w-4 h-4" />
+                    </button>
                   </div>
+                )
+              })}
+            </div>
+          )}
+        </div>
 
-                  {/* Date */}
-                  <div className="flex-1">
-                    <label className="block text-xs font-medium text-stone-500 dark:text-stone-400 mb-1 sm:hidden">
-                      Effective Date
-                    </label>
-                    <input
-                      type="date"
-                      value={formatDateForInput(salary.effectiveDate)}
-                      onChange={(e) => updateSalaryRecord(actualIndex, { effectiveDate: e.target.value })}
-                      className="w-full px-3 py-2 rounded-lg border border-stone-300 dark:border-stone-600 bg-white dark:bg-stone-800 text-stone-900 dark:text-stone-100 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-all"
-                    />
-                  </div>
-
-                  {/* Delete */}
-                  <button
-                    type="button"
-                    onClick={() => removeSalaryRecord(actualIndex)}
-                    className="p-2 rounded-lg text-stone-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/50 transition-colors self-end sm:self-center"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                </div>
-              )
-            })}
+        {/* Summary Stats */}
+        {data.salaryHistory.length > 1 && (
+          <div className="mt-6 grid sm:grid-cols-3 gap-4">
+            <div className="p-4 rounded-xl bg-stone-100 dark:bg-stone-800/50 border border-stone-200 dark:border-stone-700">
+              <p className="text-xs text-stone-500 dark:text-stone-400 mb-1">Total Records</p>
+              <p className="text-lg font-semibold text-stone-900 dark:text-stone-100">
+                {data.salaryHistory.length}
+              </p>
+            </div>
+            <div className="p-4 rounded-xl bg-stone-100 dark:bg-stone-800/50 border border-stone-200 dark:border-stone-700">
+              <p className="text-xs text-stone-500 dark:text-stone-400 mb-1">Highest Salary</p>
+              <p className="text-lg font-semibold text-stone-900 dark:text-stone-100">
+                {formatCurrency(Math.max(...data.salaryHistory.map(s => s.amount)))}
+              </p>
+            </div>
+            <div className="p-4 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900">
+              <p className="text-xs text-amber-600 dark:text-amber-400 mb-1">Current Salary</p>
+              <p className="text-lg font-semibold text-amber-700 dark:text-amber-300">
+                {formatCurrency(currentSalary?.amount || 0)}
+              </p>
+            </div>
           </div>
         )}
-      </div>
-
-      {/* Summary Stats */}
-      {data.salaryHistory.length > 1 && (
-        <div className="grid sm:grid-cols-3 gap-4">
-          <div className="p-4 rounded-xl bg-stone-100 dark:bg-stone-800/50 border border-stone-200 dark:border-stone-700">
-            <p className="text-xs text-stone-500 dark:text-stone-400 mb-1">Total Records</p>
-            <p className="text-lg font-semibold text-stone-900 dark:text-stone-100">
-              {data.salaryHistory.length}
-            </p>
-          </div>
-          <div className="p-4 rounded-xl bg-stone-100 dark:bg-stone-800/50 border border-stone-200 dark:border-stone-700">
-            <p className="text-xs text-stone-500 dark:text-stone-400 mb-1">Highest Salary</p>
-            <p className="text-lg font-semibold text-stone-900 dark:text-stone-100">
-              {formatCurrency(Math.max(...data.salaryHistory.map(s => s.amount)))}
-            </p>
-          </div>
-          <div className="p-4 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900">
-            <p className="text-xs text-amber-600 dark:text-amber-400 mb-1">Current Salary</p>
-            <p className="text-lg font-semibold text-amber-700 dark:text-amber-300">
-              {formatCurrency(currentSalary?.amount || 0)}
-            </p>
-          </div>
+        </div>
+      ) : (
+        <div className="p-6 rounded-2xl bg-stone-50 dark:bg-stone-800/50 border border-stone-200 dark:border-stone-700 text-center">
+          <Wallet className="w-12 h-12 mx-auto text-stone-400 dark:text-stone-600 mb-3" />
+          <p className="text-sm text-stone-600 dark:text-stone-400">
+            Ad-hoc employees are paid per job. No monthly salary configuration is needed.
+          </p>
         </div>
       )}
 
-      {/* Validation Hint */}
-      {!data.salaryHistory.some(s => s.amount > 0) && (
+      {/* Validation Hint - Only for monthly employees */}
+      {isMonthly && !data.salaryHistory.some(s => s.amount > 0) && (
         <div className="p-4 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900">
           <p className="text-sm text-amber-700 dark:text-amber-300">
             Please enter a salary amount to continue.

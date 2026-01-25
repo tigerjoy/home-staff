@@ -1,18 +1,26 @@
-import { useState } from 'react'
-import { Camera, Plus, Trash2, Phone, MapPin } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { Camera, Plus, Trash2, Phone, MapPin, Loader2 } from 'lucide-react'
 import type { UIEmployee, PhoneNumber, Address } from '../../types'
+import { uploadPhoto, getSignedPhotoUrl } from '../../lib/storage/documents'
 
 interface BasicInfoStepProps {
   data: Omit<UIEmployee, 'id' | 'householdId' | 'status' | 'holidayBalance'>
   onChange: (updates: Partial<Omit<UIEmployee, 'id' | 'householdId' | 'status' | 'holidayBalance'>>) => void
   isLinkingExisting?: boolean
+  employeeId?: string // Optional: if provided, upload immediately; otherwise store file for later upload
+  onPhotoFileChange?: (file: File | null) => void // Callback to store File object for later upload
+  onPhotoUploaded?: (photoUrl: string) => Promise<void> // Callback to persist photo to database immediately
 }
 
 const PHONE_LABELS = ['Mobile', 'Home', 'Work', 'Emergency', 'Other']
 const ADDRESS_LABELS = ['Current', 'Permanent', 'Office', 'Other']
 
-export function BasicInfoStep({ data, onChange, isLinkingExisting = false }: BasicInfoStepProps) {
+export function BasicInfoStep({ data, onChange, isLinkingExisting = false, employeeId, onPhotoFileChange, onPhotoUploaded }: BasicInfoStepProps) {
   const [photoPreview, setPhotoPreview] = useState<string | null>(data.photo)
+  const [signedPhotoUrl, setSignedPhotoUrl] = useState<string | null>(null)
+  const [photoLoading, setPhotoLoading] = useState(false)
+  const [uploadingPhoto, setUploadingPhoto] = useState(false)
+  const [photoError, setPhotoError] = useState<string | null>(null)
 
   // Generate initials for avatar preview
   const initials = data.name
@@ -22,16 +30,77 @@ export function BasicInfoStep({ data, onChange, isLinkingExisting = false }: Bas
     .toUpperCase()
     .slice(0, 2) || '?'
 
-  const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (file) {
-      const reader = new FileReader()
-      reader.onloadend = () => {
-        const result = reader.result as string
-        setPhotoPreview(result)
-        onChange({ photo: result })
+  // Fetch signed URL for existing photos
+  useEffect(() => {
+    const fetchSignedUrl = async () => {
+      if (!data.photo || data.photo.startsWith('blob:')) {
+        setSignedPhotoUrl(data.photo)
+        return
       }
-      reader.readAsDataURL(file)
+
+      setPhotoLoading(true)
+      try {
+        const signedUrl = await getSignedPhotoUrl(data.photo)
+        setSignedPhotoUrl(signedUrl)
+      } catch (error) {
+        console.error('Error generating signed photo URL:', error)
+        // Fallback to original URL if signed URL generation fails
+        setSignedPhotoUrl(data.photo)
+      } finally {
+        setPhotoLoading(false)
+      }
+    }
+
+    fetchSignedUrl()
+  }, [data.photo])
+
+  const handlePhotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    setPhotoError(null)
+
+    // Show preview immediately
+    const reader = new FileReader()
+    reader.onloadend = () => {
+      const result = reader.result as string
+      setPhotoPreview(result)
+    }
+    reader.readAsDataURL(file)
+
+    // If we have an employeeId, upload immediately to storage
+    if (employeeId) {
+      setUploadingPhoto(true)
+      try {
+        const url = await uploadPhoto(employeeId, file)
+        onChange({ photo: url })
+        setPhotoPreview(url)
+        setSignedPhotoUrl(url) // Set signed URL immediately for preview
+        
+        // Immediately persist to database if callback is provided
+        if (onPhotoUploaded) {
+          try {
+            await onPhotoUploaded(url)
+          } catch (error) {
+            console.error('Error persisting photo to database:', error)
+            setPhotoError('Failed to save photo to database')
+          }
+        }
+      } catch (error) {
+        console.error('Error uploading photo:', error)
+        setPhotoError(error instanceof Error ? error.message : 'Failed to upload photo')
+        // Keep the preview but don't save the URL
+      } finally {
+        setUploadingPhoto(false)
+      }
+    } else {
+      // For new employees, store File object for later upload
+      // Use blob URL for preview
+      const blobUrl = URL.createObjectURL(file)
+      onChange({ photo: blobUrl })
+      setPhotoPreview(blobUrl)
+      setSignedPhotoUrl(blobUrl)
+      onPhotoFileChange?.(file)
     }
   }
 
@@ -99,9 +168,13 @@ export function BasicInfoStep({ data, onChange, isLinkingExisting = false }: Bas
               className="hidden"
             />
             <div className="relative">
-              {photoPreview ? (
+              {photoLoading ? (
+                <div className="w-28 h-28 rounded-2xl bg-stone-100 dark:bg-stone-800 flex items-center justify-center ring-4 ring-amber-100 dark:ring-amber-900/50">
+                  <Loader2 className="w-6 h-6 text-amber-500 animate-spin" />
+                </div>
+              ) : (signedPhotoUrl || photoPreview) ? (
                 <img
-                  src={photoPreview}
+                  src={(signedPhotoUrl || photoPreview) ?? ''}
                   alt="Staff photo"
                   className="w-28 h-28 rounded-2xl object-cover ring-4 ring-amber-100 dark:ring-amber-900/50 group-hover:ring-amber-200 dark:group-hover:ring-amber-800 transition-all"
                 />
@@ -111,7 +184,11 @@ export function BasicInfoStep({ data, onChange, isLinkingExisting = false }: Bas
                 </div>
               )}
               <div className="absolute -bottom-2 -right-2 w-10 h-10 rounded-xl bg-white dark:bg-stone-800 border-2 border-stone-200 dark:border-stone-700 flex items-center justify-center shadow-lg group-hover:border-amber-300 dark:group-hover:border-amber-700 transition-colors">
-                <Camera className="w-5 h-5 text-stone-500 dark:text-stone-400" />
+                {uploadingPhoto ? (
+                  <Loader2 className="w-5 h-5 text-amber-500 animate-spin" />
+                ) : (
+                  <Camera className="w-5 h-5 text-stone-500 dark:text-stone-400" />
+                )}
               </div>
             </div>
           </label>
@@ -247,6 +324,13 @@ export function BasicInfoStep({ data, onChange, isLinkingExisting = false }: Bas
           ))}
         </div>
       </div>
+
+      {/* Photo Upload Error */}
+      {photoError && (
+        <div className="p-4 rounded-xl bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900">
+          <p className="text-sm text-red-600 dark:text-red-400">{photoError}</p>
+        </div>
+      )}
 
       {/* Validation Hint */}
       {!data.name.trim() && (

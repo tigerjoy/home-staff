@@ -1,6 +1,6 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Plus, Trash2, Briefcase, Building2, Calendar } from 'lucide-react'
-import type { UIEmployee, EmploymentRecord } from '../../types'
+import type { UIEmployee, EmploymentRecord, EmploymentType } from '../../types'
 
 interface RoleStepProps {
   data: Omit<UIEmployee, 'id' | 'householdId' | 'status' | 'holidayBalance'>
@@ -29,6 +29,19 @@ const DEPARTMENTS = [
 ]
 
 export function RoleStep({ data, onChange }: RoleStepProps) {
+  // Track employment type - store in customProperties as a workaround since UIEmployee doesn't have employmentType
+  // We'll extract it in AddEmployee
+  const getEmploymentType = (): EmploymentType => {
+    const empTypeProp = (data as any).employmentType
+    if (empTypeProp === 'monthly' || empTypeProp === 'adhoc') {
+      return empTypeProp
+    }
+    // Default to monthly
+    return 'monthly'
+  }
+
+  const [employmentType, setEmploymentType] = useState<EmploymentType>(getEmploymentType())
+
   // Track which records are using custom (other) values
   const [customRoleIndexes, setCustomRoleIndexes] = useState<Set<number>>(() => {
     const indexes = new Set<number>()
@@ -49,6 +62,12 @@ export function RoleStep({ data, onChange }: RoleStepProps) {
     })
     return indexes
   })
+
+  // Update form data when employment type changes
+  useEffect(() => {
+    // Store employment type in the data object (we'll extract it in AddEmployee)
+    onChange({ employmentType } as any)
+  }, [employmentType, onChange])
   const updateEmploymentRecord = (index: number, updates: Partial<EmploymentRecord>) => {
     const newHistory = [...data.employmentHistory]
     newHistory[index] = { ...newHistory[index], ...updates }
@@ -182,10 +201,30 @@ export function RoleStep({ data, onChange }: RoleStepProps) {
             )}
           </div>
 
+          {/* Employment Type */}
+          <div>
+            <label className="block text-sm font-medium text-stone-700 dark:text-stone-300 mb-2">
+              Employment Type <span className="text-red-500">*</span>
+            </label>
+            <select
+              value={employmentType}
+              onChange={(e) => setEmploymentType(e.target.value as EmploymentType)}
+              className="w-full px-4 py-3 rounded-xl border border-stone-300 dark:border-stone-600 bg-white dark:bg-stone-800 text-stone-900 dark:text-stone-100 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-all"
+            >
+              <option value="monthly">Monthly (Regular Salary)</option>
+              <option value="adhoc">Ad-hoc (Per Job)</option>
+            </select>
+            <p className="mt-1 text-xs text-stone-500 dark:text-stone-400">
+              {employmentType === 'monthly'
+                ? 'Monthly employees have attendance tracking and holiday balance'
+                : 'Ad-hoc employees are paid per job with no attendance tracking'}
+            </p>
+          </div>
+
           {/* Start Date */}
           <div>
             <label className="block text-sm font-medium text-stone-700 dark:text-stone-300 mb-2">
-              Start Date
+              Start Date <span className="text-red-500">*</span>
             </label>
             <div className="relative">
               <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-stone-400" />
@@ -195,13 +234,6 @@ export function RoleStep({ data, onChange }: RoleStepProps) {
                 onChange={(e) => updateEmploymentRecord(0, { startDate: e.target.value })}
                 className="w-full pl-10 pr-4 py-3 rounded-xl border border-stone-300 dark:border-stone-600 bg-white dark:bg-stone-800 text-stone-900 dark:text-stone-100 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-all"
               />
-            </div>
-          </div>
-
-          {/* Status Indicator */}
-          <div className="flex items-end">
-            <div className="px-4 py-3 rounded-xl bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 text-sm font-medium">
-              Currently Active
             </div>
           </div>
         </div>
@@ -368,11 +400,13 @@ export function RoleStep({ data, onChange }: RoleStepProps) {
         )}
       </div>
 
-      {/* Validation Hint */}
-      {!data.employmentHistory.some(e => e.role.trim() !== '') && (
+      {/* Validation Hints */}
+      {(!data.employmentHistory.some(e => e.role.trim() !== '') || !currentRole?.startDate) && (
         <div className="p-4 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900">
           <p className="text-sm text-amber-700 dark:text-amber-300">
-            Please select or enter a role for the current position to continue.
+            {!data.employmentHistory.some(e => e.role.trim() !== '') && 'Please select or enter a role for the current position. '}
+            {!currentRole?.startDate && 'Please enter a start date. '}
+            All required fields must be filled to continue.
           </p>
         </div>
       )}

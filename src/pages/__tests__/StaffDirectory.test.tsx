@@ -67,6 +67,8 @@ const mockSummary: Summary = {
   totalStaff: 1,
   activeStaff: 1,
   archivedStaff: 0,
+  monthlyStaff: 1,
+  adhocStaff: 0,
   roleBreakdown: { Cook: 1 },
 }
 

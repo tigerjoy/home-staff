@@ -1,0 +1,1 @@
+Create a demo account with more than one household with fictional employee so that features of the app can be cleanly demonstrated.

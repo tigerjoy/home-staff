@@ -8,7 +8,8 @@ import {
   Filter,
   X,
   ChevronDown,
-  Link2
+  Link2,
+  User
 } from 'lucide-react'
 import type { StaffDirectoryProps, EmploymentType } from '../../types'
 import { SummaryCards } from './SummaryCards'
@@ -491,34 +492,51 @@ export function StaffDirectory({
               </p>
             </div>
             <div className="flex-1 overflow-y-auto p-4">
-              <div className="space-y-3">
-                {existingEmployeesFromOtherHouseholds.map((emp) => (
-                  <button
-                    key={emp.id}
-                    onClick={() => {
-                      setShowLinkModal(false)
-                      onLinkExisting?.(emp.id)
-                    }}
-                    className="w-full flex items-center gap-4 p-4 rounded-xl border border-stone-200 dark:border-stone-800 hover:border-amber-300 dark:hover:border-amber-700 hover:bg-amber-50/50 dark:hover:bg-amber-950/20 transition-colors text-left"
-                  >
-                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center">
-                      <span className="text-sm font-bold text-white">
-                        {emp.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
-                      </span>
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium text-stone-900 dark:text-stone-100">{emp.name}</p>
-                      <p className="text-sm text-stone-500 dark:text-stone-400">{emp.role}</p>
-                      <p className="text-xs text-stone-400 dark:text-stone-500 truncate">
-                        Currently at: {emp.householdName}
-                      </p>
-                    </div>
-                    <div className="text-xs text-stone-400 dark:text-stone-500">
-                      {emp.phoneNumber}
-                    </div>
-                  </button>
-                ))}
-              </div>
+              {existingEmployeesFromOtherHouseholds.length === 0 ? (
+                <div className="text-center py-12">
+                  <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-stone-100 dark:bg-stone-800 flex items-center justify-center">
+                    <User className="w-8 h-8 text-stone-400" />
+                  </div>
+                  <h3 className="text-lg font-medium text-stone-900 dark:text-stone-100 mb-1">
+                    No employees found
+                  </h3>
+                  <p className="text-sm text-stone-500 dark:text-stone-400">
+                    You don't have any employees in other households to link.
+                  </p>
+                  <p className="text-xs text-stone-400 dark:text-stone-500 mt-2">
+                    Create a new employee instead to get started.
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {existingEmployeesFromOtherHouseholds.map((emp) => (
+                    <button
+                      key={emp.id}
+                      onClick={() => {
+                        setShowLinkModal(false)
+                        onLinkExisting?.(emp.id)
+                      }}
+                      className="w-full flex items-center gap-4 p-4 rounded-xl border border-stone-200 dark:border-stone-800 hover:border-amber-300 dark:hover:border-amber-700 hover:bg-amber-50/50 dark:hover:bg-amber-950/20 transition-colors text-left"
+                    >
+                      <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center">
+                        <span className="text-sm font-bold text-white">
+                          {emp.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
+                        </span>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-stone-900 dark:text-stone-100">{emp.name}</p>
+                        <p className="text-sm text-stone-500 dark:text-stone-400">{emp.role}</p>
+                        <p className="text-xs text-stone-400 dark:text-stone-500 truncate">
+                          Currently at: {emp.householdName}
+                        </p>
+                      </div>
+                      <div className="text-xs text-stone-400 dark:text-stone-500">
+                        {emp.phoneNumber}
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         </>

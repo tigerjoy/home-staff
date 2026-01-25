@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Check, ChevronLeft, ChevronRight, User, Briefcase, FileText, Wallet, Settings2 } from 'lucide-react'
+import { Check, ChevronLeft, ChevronRight, User, Briefcase, FileText, Wallet, Settings2, X, Save } from 'lucide-react'
 import type { UIEmployee, EmployeeFormProps } from '../../types'
 import { BasicInfoStep } from './BasicInfoStep'
 import { RoleStep } from './RoleStep'
@@ -36,6 +36,14 @@ export function EmployeeForm({
   onStepChange,
   onSubmit,
   onCancel,
+  onPhotoFileChange,
+  onPhotoUploaded,
+  onDocumentFilesChange,
+  onDocumentUploaded,
+  onRenameDocument,
+  onCustomPropertyAdded,
+  onNoteAdded,
+  onSaveProgress,
 }: EmployeeFormProps) {
   const [formData, setFormData] = useState<Omit<UIEmployee, 'id' | 'householdId' | 'status' | 'holidayBalance'>>(() => {
     if (employee) {
@@ -77,18 +85,32 @@ export function EmployeeForm({
     onSubmit?.(formData)
   }
 
+  const handleSaveProgress = () => {
+    onSaveProgress?.(formData)
+  }
+
   const isStepComplete = (stepId: number): boolean => {
     switch (stepId) {
       case 0:
+        // Basic Info: Name is required
         return formData.name.trim() !== ''
       case 1:
-        return formData.employmentHistory.some(e => e.role.trim() !== '')
+        // Role: Role and start date are required
+        const currentRole = formData.employmentHistory[0]
+        return currentRole?.role.trim() !== '' && currentRole?.startDate.trim() !== ''
       case 2:
-        return true // Documents are optional
+        // Documents are optional
+        return true
       case 3:
+        // Salary: Required for monthly employees, optional for ad-hoc
+        const employmentType = (formData as any).employmentType || 'monthly'
+        if (employmentType === 'adhoc') {
+          return true // Ad-hoc employees don't need salary
+        }
         return formData.salaryHistory.some(s => s.amount > 0)
       case 4:
-        return true // Custom fields are optional
+        // Custom fields are optional
+        return true
       default:
         return false
     }
@@ -215,6 +237,9 @@ export function EmployeeForm({
                   data={formData}
                   onChange={updateFormData}
                   isLinkingExisting={isLinking}
+                  employeeId={employee?.id}
+                  onPhotoFileChange={onPhotoFileChange}
+                  onPhotoUploaded={onPhotoUploaded}
                 />
               )}
               {currentStep === 1 && (
@@ -227,6 +252,10 @@ export function EmployeeForm({
                 <DocumentsStep
                   data={formData}
                   onChange={updateFormData}
+                  employeeId={employee?.id}
+                  onFilesChange={onDocumentFilesChange}
+                  onDocumentUploaded={onDocumentUploaded}
+                  onRenameDocument={onRenameDocument}
                 />
               )}
               {currentStep === 3 && (
@@ -239,6 +268,9 @@ export function EmployeeForm({
                 <CustomFieldsStep
                   data={formData}
                   onChange={updateFormData}
+                  employeeId={employee?.id}
+                  onCustomPropertyAdded={onCustomPropertyAdded}
+                  onNoteAdded={onNoteAdded}
                 />
               )}
             </div>
@@ -266,6 +298,15 @@ export function EmployeeForm({
             </div>
 
             <div className="flex items-center gap-3">
+              {isEditing && (
+                <button
+                  onClick={handleSaveProgress}
+                  className="flex items-center gap-2 px-4 py-2 text-stone-700 dark:text-stone-300 bg-white dark:bg-stone-800 border border-stone-300 dark:border-stone-700 rounded-xl font-medium hover:bg-stone-50 dark:hover:bg-stone-700 transition-colors"
+                >
+                  <Save className="w-4 h-4" />
+                  Save Progress
+                </button>
+              )}
               {currentStep < STEPS.length - 1 ? (
                 <button
                   onClick={handleNext}

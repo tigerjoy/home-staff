@@ -1,6 +1,7 @@
 import { Eye, Pencil, Archive, MoreHorizontal, Palmtree } from 'lucide-react'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import type { UIEmployee } from '../../types'
+import { getSignedPhotoUrl } from '../../lib/storage/documents'
 
 interface EmployeeTableProps {
   employees: UIEmployee[]
@@ -10,23 +11,6 @@ interface EmployeeTableProps {
 }
 
 export function EmployeeTable({ employees, onView, onEdit, onArchive }: EmployeeTableProps) {
-  const [openMenuId, setOpenMenuId] = useState<string | null>(null)
-
-  const formatDate = (dateStr: string) => {
-    return new Date(dateStr).toLocaleDateString('en-IN', {
-      day: 'numeric',
-      month: 'short',
-      year: 'numeric'
-    })
-  }
-
-  const formatSalary = (amount: number) => {
-    return new Intl.NumberFormat('en-IN', {
-      style: 'currency',
-      currency: 'INR',
-      maximumFractionDigits: 0
-    }).format(amount)
-  }
 
   return (
     <div className="bg-white dark:bg-stone-900 rounded-2xl border border-stone-200 dark:border-stone-800 overflow-hidden">
@@ -65,40 +49,103 @@ export function EmployeeTable({ employees, onView, onEdit, onArchive }: Employee
           </thead>
           <tbody className="divide-y divide-stone-100 dark:divide-stone-800">
             {employees.map((employee) => {
-              const currentRole = employee.employmentHistory.find(e => e.endDate === null)
-              const primaryPhone = employee.phoneNumbers[0]
-              const currentSalary = employee.salaryHistory[0]
-              // Infer employment type from salary (if salary exists and > 0, it's monthly, otherwise adhoc)
-              const employmentType = currentSalary && currentSalary.amount > 0 ? 'monthly' : 'adhoc'
-              const initials = employee.name
-                .split(' ')
-                .map(n => n[0])
-                .join('')
-                .toUpperCase()
-                .slice(0, 2)
+              return <EmployeeTableRow key={employee.id} employee={employee} onView={onView} onEdit={onEdit} onArchive={onArchive} />
+            })}
+          </tbody>
+        </table>
+      </div>
 
-              return (
-                <tr
-                  key={employee.id}
-                  className={`
-                    group transition-colors hover:bg-amber-50/50 dark:hover:bg-amber-950/20
-                    ${employee.status === 'archived' ? 'opacity-60' : ''}
-                  `}
-                >
-                  {/* Employee */}
-                  <td className="px-5 py-4">
-                    <div className="flex items-center gap-3">
-                      {employee.photo ? (
-                        <img
-                          src={employee.photo}
-                          alt={employee.name}
-                          className="w-10 h-10 rounded-lg object-cover"
-                        />
-                      ) : (
-                        <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center">
-                          <span className="text-sm font-bold text-white">{initials}</span>
-                        </div>
-                      )}
+      {employees.length === 0 && (
+        <div className="py-12 text-center">
+          <p className="text-stone-500 dark:text-stone-400">No employees found</p>
+        </div>
+      )}
+    </div>
+  )
+}
+
+function EmployeeTableRow({ employee, onView, onEdit, onArchive }: { employee: UIEmployee; onView?: (id: string) => void; onEdit?: (id: string) => void; onArchive?: (id: string) => void }) {
+  const [signedPhotoUrl, setSignedPhotoUrl] = useState<string | null>(null)
+  const [photoLoading, setPhotoLoading] = useState(false)
+  const [openMenuId, setOpenMenuId] = useState<string | null>(null)
+
+  // Fetch signed URL for photo
+  useEffect(() => {
+    const fetchSignedUrl = async () => {
+      if (!employee.photo || employee.photo.startsWith('blob:')) {
+        setSignedPhotoUrl(employee.photo)
+        return
+      }
+
+      setPhotoLoading(true)
+      try {
+        const signedUrl = await getSignedPhotoUrl(employee.photo)
+        setSignedPhotoUrl(signedUrl)
+      } catch (error) {
+        console.error('Error generating signed photo URL:', error)
+        // Fallback to original URL if signed URL generation fails
+        setSignedPhotoUrl(employee.photo)
+      } finally {
+        setPhotoLoading(false)
+      }
+    }
+
+    fetchSignedUrl()
+  }, [employee.photo])
+
+  const currentRole = employee.employmentHistory.find(e => e.endDate === null)
+  const primaryPhone = employee.phoneNumbers[0]
+  const currentSalary = employee.salaryHistory[0]
+  // Infer employment type from salary (if salary exists and > 0, it's monthly, otherwise adhoc)
+  const employmentType = currentSalary && currentSalary.amount > 0 ? 'monthly' : 'adhoc'
+  const initials = employee.name
+    .split(' ')
+    .map(n => n[0])
+    .join('')
+    .toUpperCase()
+    .slice(0, 2)
+
+  const formatDate = (dateStr: string) => {
+    return new Date(dateStr).toLocaleDateString('en-IN', {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric'
+    })
+  }
+
+  const formatSalary = (amount: number) => {
+    return new Intl.NumberFormat('en-IN', {
+      style: 'currency',
+      currency: 'INR',
+      maximumFractionDigits: 0
+    }).format(amount)
+  }
+
+  return (
+    <tr
+      className={`
+        group transition-colors hover:bg-amber-50/50 dark:hover:bg-amber-950/20
+        ${employee.status === 'archived' ? 'opacity-60' : ''}
+      `}
+    >
+      {/* Employee */}
+      <td className="px-5 py-4">
+        <div className="flex items-center gap-3">
+          {photoLoading ? (
+            <div className="w-10 h-10 rounded-lg bg-stone-100 dark:bg-stone-800 flex items-center justify-center">
+              <div className="w-4 h-4 border-2 border-amber-500 border-t-transparent rounded-full animate-spin" />
+            </div>
+          ) : signedPhotoUrl ? (
+            <img
+              src={signedPhotoUrl}
+              alt={employee.name}
+              className="w-10 h-10 rounded-lg object-cover"
+            />
+          ) : (
+            <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center">
+              <span className="text-sm font-bold text-white">{initials}</span>
+            </div>
+          )}
                       <div>
                         <p className="font-medium text-stone-900 dark:text-stone-100">
                           {employee.name}
@@ -239,17 +286,5 @@ export function EmployeeTable({ employees, onView, onEdit, onArchive }: Employee
                     </div>
                   </td>
                 </tr>
-              )
-            })}
-          </tbody>
-        </table>
-      </div>
-
-      {employees.length === 0 && (
-        <div className="py-12 text-center">
-          <p className="text-stone-500 dark:text-stone-400">No employees found</p>
-        </div>
-      )}
-    </div>
   )
 }

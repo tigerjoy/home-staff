@@ -5,7 +5,7 @@ import { BrowserRouter } from 'react-router-dom'
 import { AddEmployee } from '../AddEmployee'
 import * as employeesApi from '../../lib/api/employees'
 import * as storageApi from '../../lib/storage/documents'
-import type { Employee } from '../../types'
+import type { UIEmployee } from '../../types'
 
 vi.mock('../../lib/api/employees')
 vi.mock('../../lib/storage/documents')
@@ -19,9 +19,9 @@ vi.mock('react-router-dom', async () => {
   }
 })
 
-const mockCreatedEmployee: Employee = {
+const mockCreatedEmployee: UIEmployee = {
   id: '1',
-  householdId: 1,
+  householdId: 'household-1',
   name: 'Priya Sharma',
   photo: null,
   status: 'active',
@@ -33,6 +33,8 @@ const mockCreatedEmployee: Employee = {
   documents: [],
   customProperties: [],
   notes: [],
+  createdAt: '2024-01-15T00:00:00Z',
+  updatedAt: '2024-01-15T00:00:00Z',
 }
 
 const renderWithRouter = (component: React.ReactElement) => {

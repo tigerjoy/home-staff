@@ -4,9 +4,9 @@
 
 Before using this prompt, replace these variables:
 
-- **SECTION_NAME** = "Onboarding And Setup"
-- **SECTION_ID** = "onboarding-and-setup"
-- **NN** = "08"
+- **SECTION_NAME** = "Staff Directory"
+- **SECTION_ID** = "staff-directory"
+- **NN** = "04"
 
 ---
 

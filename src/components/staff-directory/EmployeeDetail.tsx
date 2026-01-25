@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import {
   ArrowLeft,
   Pencil,
@@ -17,9 +17,12 @@ import {
   StickyNote,
   X,
   Upload,
-  Palmtree
+  Palmtree,
+  Loader2,
+  Edit2
 } from 'lucide-react'
 import type { EmployeeDetailProps, Document as DocType } from '../../types'
+import { getSignedDocumentUrl, downloadDocument, getSignedPhotoUrl } from '../../lib/storage/documents'
 
 export function EmployeeDetail({
   employee,
@@ -28,6 +31,7 @@ export function EmployeeDetail({
   onBack,
   onUploadDocument,
   onDeleteDocument,
+  onRenameDocument,
   onAddCustomProperty,
   onRemoveCustomProperty,
   onAddNote,
@@ -41,6 +45,35 @@ export function EmployeeDetail({
   const [showUploadDoc, setShowUploadDoc] = useState(false)
   const [uploadCategory, setUploadCategory] = useState<DocType['category']>('ID')
   const [showArchiveConfirm, setShowArchiveConfirm] = useState(false)
+  const [downloadingDocUrl, setDownloadingDocUrl] = useState<string | null>(null)
+  const [renamingDoc, setRenamingDoc] = useState<{ url: string; currentName: string } | null>(null)
+  const [newDocName, setNewDocName] = useState('')
+  const [signedPhotoUrl, setSignedPhotoUrl] = useState<string | null>(null)
+  const [photoLoading, setPhotoLoading] = useState(false)
+
+  // Fetch signed URL for photo
+  useEffect(() => {
+    const fetchSignedUrl = async () => {
+      if (!employee.photo || employee.photo.startsWith('blob:')) {
+        setSignedPhotoUrl(employee.photo)
+        return
+      }
+
+      setPhotoLoading(true)
+      try {
+        const signedUrl = await getSignedPhotoUrl(employee.photo)
+        setSignedPhotoUrl(signedUrl)
+      } catch (error) {
+        console.error('Error generating signed photo URL:', error)
+        // Fallback to original URL if signed URL generation fails
+        setSignedPhotoUrl(employee.photo)
+      } finally {
+        setPhotoLoading(false)
+      }
+    }
+
+    fetchSignedUrl()
+  }, [employee.photo])
 
   // Get current role
   const currentRole = employee.employmentHistory.find(e => e.endDate === null)
@@ -138,9 +171,13 @@ export function EmployeeDetail({
           <div className="px-6 pb-6">
             <div className="flex flex-col sm:flex-row sm:items-end gap-4 -mt-12 sm:-mt-16">
               {/* Avatar */}
-              {employee.photo ? (
+              {photoLoading ? (
+                <div className="w-24 h-24 sm:w-32 sm:h-32 rounded-2xl bg-stone-100 dark:bg-stone-800 flex items-center justify-center ring-4 ring-white dark:ring-stone-900 shadow-lg">
+                  <Loader2 className="w-8 h-8 text-amber-500 animate-spin" />
+                </div>
+              ) : signedPhotoUrl ? (
                 <img
-                  src={employee.photo}
+                  src={signedPhotoUrl}
                   alt={employee.name}
                   className="w-24 h-24 sm:w-32 sm:h-32 rounded-2xl object-cover ring-4 ring-white dark:ring-stone-900 shadow-lg"
                 />
@@ -409,17 +446,43 @@ export function EmployeeDetail({
                               </p>
                             </div>
                             <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                              <a
-                                href={doc.url}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="p-1.5 rounded-lg hover:bg-stone-200 dark:hover:bg-stone-700"
+                              <button
+                                onClick={async () => {
+                                  if (downloadingDocUrl === doc.url) return
+                                  setDownloadingDocUrl(doc.url)
+                                  try {
+                                    await downloadDocument(doc.url, doc.name)
+                                  } catch (error) {
+                                    console.error('Error downloading document:', error)
+                                    alert(error instanceof Error ? error.message : 'Failed to download document')
+                                  } finally {
+                                    setDownloadingDocUrl(null)
+                                  }
+                                }}
+                                disabled={downloadingDocUrl === doc.url}
+                                className="p-1.5 rounded-lg hover:bg-stone-200 dark:hover:bg-stone-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                                title="Download document"
                               >
-                                <ExternalLink className="w-4 h-4 text-stone-500" />
-                              </a>
+                                {downloadingDocUrl === doc.url ? (
+                                  <Loader2 className="w-4 h-4 text-stone-500 animate-spin" />
+                                ) : (
+                                  <ExternalLink className="w-4 h-4 text-stone-500" />
+                                )}
+                              </button>
+                              <button
+                                onClick={() => {
+                                  setRenamingDoc({ url: doc.url, currentName: doc.name })
+                                  setNewDocName(doc.name)
+                                }}
+                                className="p-1.5 rounded-lg hover:bg-amber-100 dark:hover:bg-amber-900"
+                                title="Rename document"
+                              >
+                                <Edit2 className="w-4 h-4 text-amber-500" />
+                              </button>
                               <button
                                 onClick={() => onDeleteDocument?.(doc.name)}
                                 className="p-1.5 rounded-lg hover:bg-red-100 dark:hover:bg-red-900"
+                                title="Delete document"
                               >
                                 <Trash2 className="w-4 h-4 text-red-500" />
                               </button>
@@ -710,6 +773,66 @@ export function EmployeeDetail({
                 `}
               >
                 {employee.status === 'archived' ? 'Restore' : 'Archive'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Rename Document Modal */}
+      {renamingDoc && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-stone-900/50">
+          <div className="bg-white dark:bg-stone-900 rounded-2xl shadow-2xl w-full max-w-md p-6">
+            <h3 className="text-lg font-semibold text-stone-900 dark:text-stone-100 mb-4">
+              Rename Document
+            </h3>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-stone-700 dark:text-stone-300 mb-1">
+                  Document Name
+                </label>
+                <input
+                  type="text"
+                  value={newDocName}
+                  onChange={(e) => setNewDocName(e.target.value)}
+                  placeholder="Enter document name"
+                  className="w-full px-4 py-2.5 bg-stone-50 dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-xl text-stone-900 dark:text-stone-100 placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-amber-500"
+                  autoFocus
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && newDocName.trim()) {
+                      onRenameDocument?.(renamingDoc.url, newDocName.trim())
+                      setRenamingDoc(null)
+                      setNewDocName('')
+                    } else if (e.key === 'Escape') {
+                      setRenamingDoc(null)
+                      setNewDocName('')
+                    }
+                  }}
+                />
+              </div>
+            </div>
+            <div className="flex justify-end gap-3 mt-6">
+              <button
+                onClick={() => {
+                  setRenamingDoc(null)
+                  setNewDocName('')
+                }}
+                className="px-4 py-2 text-stone-600 dark:text-stone-400 hover:bg-stone-100 dark:hover:bg-stone-800 rounded-xl transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  if (newDocName.trim()) {
+                    onRenameDocument?.(renamingDoc.url, newDocName.trim())
+                    setRenamingDoc(null)
+                    setNewDocName('')
+                  }
+                }}
+                disabled={!newDocName.trim()}
+                className="px-4 py-2 bg-amber-500 hover:bg-amber-600 disabled:opacity-50 disabled:cursor-not-allowed text-white font-medium rounded-xl transition-colors"
+              >
+                Rename
               </button>
             </div>
           </div>

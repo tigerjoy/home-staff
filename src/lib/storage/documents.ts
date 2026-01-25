@@ -61,7 +61,7 @@ export async function uploadPhoto(employeeId: string, file: File): Promise<strin
   const filename = generateFilename(file.name)
   const filePath = `${employeeId}/photos/${filename}`
 
-  const { data, error } = await supabase.storage.from(BUCKET_NAME).upload(filePath, file, {
+  const { error } = await supabase.storage.from(BUCKET_NAME).upload(filePath, file, {
     cacheControl: '3600',
     upsert: false,
   })
@@ -93,7 +93,7 @@ export async function uploadDocument(
   const filename = generateFilename(file.name)
   const filePath = `${employeeId}/documents/${category}/${filename}`
 
-  const { data, error } = await supabase.storage.from(BUCKET_NAME).upload(filePath, file, {
+  const { error } = await supabase.storage.from(BUCKET_NAME).upload(filePath, file, {
     cacheControl: '3600',
     upsert: false,
   })
@@ -157,4 +157,138 @@ export function getDocumentUrl(filePath: string): string {
     data: { publicUrl },
   } = supabase.storage.from(BUCKET_NAME).getPublicUrl(filePath)
   return publicUrl
+}
+
+/**
+ * Extract file path from a Supabase storage URL
+ */
+function extractFilePathFromUrl(url: string): string | null {
+  try {
+    // Handle blob URLs (for pending uploads) - return null to indicate it's not a storage URL
+    if (url.startsWith('blob:')) {
+      return null
+    }
+
+    // Handle public URL format: https://{project}.supabase.co/storage/v1/object/public/{bucket}/{path}
+    const publicMatch = url.match(/\/storage\/v1\/object\/public\/[^/]+\/(.+)$/)
+    if (publicMatch) {
+      return publicMatch[1]
+    }
+
+    // Handle signed URL format: https://{project}.supabase.co/storage/v1/object/sign/{bucket}/{path}?...
+    const signedMatch = url.match(/\/storage\/v1\/object\/sign\/[^/]+\/(.+?)(?:\?|$)/)
+    if (signedMatch) {
+      return signedMatch[1]
+    }
+
+    // Try parsing as URL and extracting path
+    const urlObj = new URL(url)
+    const pathParts = urlObj.pathname.split('/')
+    const bucketIndex = pathParts.findIndex(part => part === 'public' || part === 'sign')
+    if (bucketIndex !== -1 && bucketIndex < pathParts.length - 1) {
+      return pathParts.slice(bucketIndex + 2).join('/')
+    }
+
+    return null
+  } catch {
+    return null
+  }
+}
+
+/**
+ * Get signed URL for a document from a storage URL
+ * Returns the original URL if it's a blob URL or if path extraction fails
+ */
+export async function getSignedDocumentUrl(url: string, expireIn: number = 3600): Promise<string> {
+  // If it's a blob URL (pending upload), return it as-is
+  if (url.startsWith('blob:')) {
+    return url
+  }
+
+  // Extract file path from URL
+  const filePath = extractFilePathFromUrl(url)
+  if (!filePath) {
+    // If we can't extract the path, return the original URL
+    // This handles edge cases where the URL format is unexpected
+    console.warn('Could not extract file path from URL:', url)
+    return url
+  }
+
+  // Generate signed URL
+  const { data, error } = await supabase.storage
+    .from(BUCKET_NAME)
+    .createSignedUrl(filePath, expireIn)
+
+  if (error) {
+    console.error('Failed to create signed URL:', error)
+    throw new Error(`Failed to generate document URL: ${error.message}`)
+  }
+
+  if (!data?.signedUrl) {
+    throw new Error('Failed to generate document URL: No signed URL returned')
+  }
+
+  return data.signedUrl
+}
+
+/**
+ * Get signed URL for a photo from a storage URL
+ * Returns the original URL if it's a blob URL or if path extraction fails
+ */
+export async function getSignedPhotoUrl(url: string | null, expireIn: number = 3600): Promise<string | null> {
+  if (!url) {
+    return null
+  }
+
+  // If it's a blob URL (pending upload), return it as-is
+  if (url.startsWith('blob:')) {
+    return url
+  }
+
+  // Extract file path from URL
+  const filePath = extractFilePathFromUrl(url)
+  if (!filePath) {
+    // If we can't extract the path, return the original URL
+    // This handles edge cases where the URL format is unexpected
+    console.warn('Could not extract file path from URL:', url)
+    return url
+  }
+
+  // Generate signed URL
+  const { data, error } = await supabase.storage
+    .from(BUCKET_NAME)
+    .createSignedUrl(filePath, expireIn)
+
+  if (error) {
+    console.error('Failed to create signed URL:', error)
+    throw new Error(`Failed to generate photo URL: ${error.message}`)
+  }
+
+  if (!data?.signedUrl) {
+    throw new Error('Failed to generate photo URL: No signed URL returned')
+  }
+
+  return data.signedUrl
+}
+
+/**
+ * Download a document with a custom filename
+ */
+export async function downloadDocument(url: string, filename: string): Promise<void> {
+  const signedUrl = await getSignedDocumentUrl(url)
+  const response = await fetch(signedUrl)
+  
+  if (!response.ok) {
+    throw new Error(`Failed to download document: ${response.statusText}`)
+  }
+  
+  const blob = await response.blob()
+  const blobUrl = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = blobUrl
+  a.download = filename
+  document.body.appendChild(a)
+  a.click()
+  document.body.removeChild(a)
+  URL.revokeObjectURL(blobUrl)
 }

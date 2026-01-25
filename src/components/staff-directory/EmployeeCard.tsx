@@ -1,6 +1,7 @@
 import { Phone, MapPin, Calendar, MoreVertical, Eye, Pencil, Archive, Palmtree } from 'lucide-react'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import type { UIEmployee } from '../../types'
+import { getSignedPhotoUrl } from '../../lib/storage/documents'
 
 interface EmployeeCardProps {
   employee: UIEmployee
@@ -11,6 +12,32 @@ interface EmployeeCardProps {
 
 export function EmployeeCard({ employee, onView, onEdit, onArchive }: EmployeeCardProps) {
   const [menuOpen, setMenuOpen] = useState(false)
+  const [signedPhotoUrl, setSignedPhotoUrl] = useState<string | null>(null)
+  const [photoLoading, setPhotoLoading] = useState(false)
+
+  // Fetch signed URL for photo
+  useEffect(() => {
+    const fetchSignedUrl = async () => {
+      if (!employee.photo || employee.photo.startsWith('blob:')) {
+        setSignedPhotoUrl(employee.photo)
+        return
+      }
+
+      setPhotoLoading(true)
+      try {
+        const signedUrl = await getSignedPhotoUrl(employee.photo)
+        setSignedPhotoUrl(signedUrl)
+      } catch (error) {
+        console.error('Error generating signed photo URL:', error)
+        // Fallback to original URL if signed URL generation fails
+        setSignedPhotoUrl(employee.photo)
+      } finally {
+        setPhotoLoading(false)
+      }
+    }
+
+    fetchSignedUrl()
+  }, [employee.photo])
 
   // Get current role (first in employment history with no end date)
   const currentRole = employee.employmentHistory.find(e => e.endDate === null)
@@ -114,9 +141,13 @@ export function EmployeeCard({ employee, onView, onEdit, onArchive }: EmployeeCa
       >
         {/* Avatar & Name */}
         <div className="flex items-start gap-4 mb-4">
-          {employee.photo ? (
+          {photoLoading ? (
+            <div className="w-14 h-14 rounded-xl bg-stone-100 dark:bg-stone-800 flex items-center justify-center ring-2 ring-amber-100 dark:ring-amber-900">
+              <div className="w-6 h-6 border-2 border-amber-500 border-t-transparent rounded-full animate-spin" />
+            </div>
+          ) : signedPhotoUrl ? (
             <img
-              src={employee.photo}
+              src={signedPhotoUrl}
               alt={employee.name}
               className="w-14 h-14 rounded-xl object-cover ring-2 ring-amber-100 dark:ring-amber-900"
             />

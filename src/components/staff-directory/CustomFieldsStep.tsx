@@ -5,6 +5,9 @@ import type { UIEmployee, CustomProperty, Note } from '../../types'
 interface CustomFieldsStepProps {
   data: Omit<UIEmployee, 'id' | 'householdId' | 'status' | 'holidayBalance'>
   onChange: (updates: Partial<Omit<UIEmployee, 'id' | 'householdId' | 'status' | 'holidayBalance'>>) => void
+  employeeId?: string // Optional: if provided, save immediately; otherwise store for later save
+  onCustomPropertyAdded?: (property: CustomProperty) => Promise<void> // Callback to persist custom property to database immediately
+  onNoteAdded?: (note: Note) => Promise<void> // Callback to persist note to database immediately
 }
 
 const SUGGESTED_PROPERTIES = [
@@ -18,12 +21,14 @@ const SUGGESTED_PROPERTIES = [
   'Previous Employer',
 ]
 
-export function CustomFieldsStep({ data, onChange }: CustomFieldsStepProps) {
+export function CustomFieldsStep({ data, onChange, employeeId, onCustomPropertyAdded, onNoteAdded }: CustomFieldsStepProps) {
   const [newPropertyName, setNewPropertyName] = useState('')
   const [newPropertyValue, setNewPropertyValue] = useState('')
   const [newNote, setNewNote] = useState('')
+  const [propertyError, setPropertyError] = useState<string | null>(null)
+  const [noteError, setNoteError] = useState<string | null>(null)
 
-  const addCustomProperty = () => {
+  const addCustomProperty = async () => {
     if (!newPropertyName.trim() || !newPropertyValue.trim()) return
 
     const newProperty: CustomProperty = {
@@ -31,9 +36,22 @@ export function CustomFieldsStep({ data, onChange }: CustomFieldsStepProps) {
       value: newPropertyValue.trim(),
     }
 
+    // Update local state immediately for UI feedback
     onChange({ customProperties: [...data.customProperties, newProperty] })
     setNewPropertyName('')
     setNewPropertyValue('')
+    setPropertyError(null)
+
+    // If we have an employeeId, save immediately to database
+    if (employeeId && onCustomPropertyAdded) {
+      try {
+        await onCustomPropertyAdded(newProperty)
+      } catch (error) {
+        console.error('Error persisting custom property to database:', error)
+        setPropertyError(error instanceof Error ? error.message : 'Failed to save custom property to database')
+        // Keep the property in local state - user can retry or remove it
+      }
+    }
   }
 
   const addSuggestedProperty = (name: string) => {
@@ -45,7 +63,7 @@ export function CustomFieldsStep({ data, onChange }: CustomFieldsStepProps) {
     onChange({ customProperties: data.customProperties.filter((_, i) => i !== index) })
   }
 
-  const addNote = () => {
+  const addNote = async () => {
     if (!newNote.trim()) return
 
     const note: Note = {
@@ -53,8 +71,21 @@ export function CustomFieldsStep({ data, onChange }: CustomFieldsStepProps) {
       createdAt: new Date().toISOString(),
     }
 
+    // Update local state immediately for UI feedback
     onChange({ notes: [note, ...data.notes] })
     setNewNote('')
+    setNoteError(null)
+
+    // If we have an employeeId, save immediately to database
+    if (employeeId && onNoteAdded) {
+      try {
+        await onNoteAdded(note)
+      } catch (error) {
+        console.error('Error persisting note to database:', error)
+        setNoteError(error instanceof Error ? error.message : 'Failed to save note to database')
+        // Keep the note in local state - user can retry or remove it
+      }
+    }
   }
 
   const removeNote = (index: number) => {
@@ -144,6 +175,13 @@ export function CustomFieldsStep({ data, onChange }: CustomFieldsStepProps) {
           </button>
         </div>
 
+        {/* Property Error */}
+        {propertyError && (
+          <div className="mb-4 p-3 rounded-xl bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900">
+            <p className="text-sm text-red-600 dark:text-red-400">{propertyError}</p>
+          </div>
+        )}
+
         {/* Properties List */}
         {data.customProperties.length > 0 ? (
           <div className="space-y-2">
@@ -216,6 +254,13 @@ export function CustomFieldsStep({ data, onChange }: CustomFieldsStepProps) {
             </div>
           )}
         </div>
+
+        {/* Note Error */}
+        {noteError && (
+          <div className="mb-4 p-3 rounded-xl bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900">
+            <p className="text-sm text-red-600 dark:text-red-400">{noteError}</p>
+          </div>
+        )}
 
         {/* Notes List */}
         {data.notes.length > 0 ? (

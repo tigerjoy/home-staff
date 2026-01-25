@@ -5,7 +5,7 @@ import { BrowserRouter } from 'react-router-dom'
 import { EmployeeDetail } from '../EmployeeDetail'
 import * as employeesApi from '../../lib/api/employees'
 import * as storageApi from '../../lib/storage/documents'
-import type { Employee } from '../../types'
+import type { UIEmployee } from '../../types'
 
 vi.mock('../../lib/api/employees')
 vi.mock('../../lib/storage/documents')
@@ -20,28 +20,26 @@ vi.mock('react-router-dom', async () => {
   }
 })
 
-const mockEmployee: Employee = {
+const mockEmployee: UIEmployee = {
   id: '1',
-  householdId: 1,
+  householdId: 'household-1',
   name: 'Priya Sharma',
   photo: null,
   status: 'active',
   holidayBalance: 5,
   phoneNumbers: [
-    { id: 1, number: '+91 98765 12345', label: 'Mobile' },
-    { id: 2, number: '+91 98765 54321', label: 'Home' },
+    { number: '+91 98765 12345', label: 'Mobile' },
+    { number: '+91 98765 54321', label: 'Home' },
   ],
-  addresses: [{ id: 1, address: '123 Test Street, Delhi', label: 'Current' }],
+  addresses: [{ address: '123 Test Street, Delhi', label: 'Current' }],
   employmentHistory: [
     {
-      id: 1,
       role: 'Cook',
       department: 'Kitchen',
       startDate: '2024-01-15',
       endDate: null,
     },
     {
-      id: 2,
       role: 'Assistant Cook',
       department: 'Kitchen',
       startDate: '2023-06-01',
@@ -50,13 +48,11 @@ const mockEmployee: Employee = {
   ],
   salaryHistory: [
     {
-      id: 1,
       amount: 15000,
       paymentMethod: 'Bank Transfer',
       effectiveDate: '2024-01-15',
     },
     {
-      id: 2,
       amount: 12000,
       paymentMethod: 'Cash',
       effectiveDate: '2023-06-01',
@@ -64,15 +60,16 @@ const mockEmployee: Employee = {
   ],
   documents: [
     {
-      id: 1,
       name: 'Aadhar Card.pdf',
       url: 'https://example.com/doc1.pdf',
-      category: 'id',
+      category: 'ID',
       uploadedAt: '2024-01-15T00:00:00Z',
     },
   ],
   customProperties: [],
   notes: [],
+  createdAt: '2024-01-15T00:00:00Z',
+  updatedAt: '2024-01-15T00:00:00Z',
 }
 
 const renderWithRouter = (component: React.ReactElement) => {
