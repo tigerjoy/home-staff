@@ -16,6 +16,7 @@ globs:
 - **Client Initialization**: Create a single Supabase client instance and export it from `lib/supabase.ts` or `lib/supabase/client.ts`
 - **REST API via PostgREST**: Supabase automatically generates REST APIs from your PostgreSQL schema via PostgREST - no manual endpoint creation needed
 - **Query Builder Pattern**: Use Supabase's query builder methods (`.from()`, `.select()`, `.insert()`, `.update()`, `.delete()`) instead of raw SQL
+- **Multi-Table Writes**: When inserting or updating across multiple tables that must succeed or fail together, use **Supabase RPC** (a PostgreSQL function invoked via `supabase.rpc()`). Do not chain multiple client calls (e.g. `insert` → `insert` → `Promise.all`) — that leaves no transaction guarantee and can produce partial writes. Implement the logic in a single database function and call it via RPC so all changes run inside one transaction.
 - **Error Handling**: Always handle Supabase API errors - check the `error` property in responses and handle gracefully
 - **Type Safety**: Use generated TypeScript types from Supabase CLI (`supabase gen types typescript`) for type-safe database queries
 - **Edge Functions Endpoints**: Create custom API endpoints using Supabase Edge Functions when you need server-side logic or third-party integrations
