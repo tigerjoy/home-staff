@@ -33,8 +33,8 @@ export function AppShell({
 
   return (
     <div className="min-h-screen bg-stone-50 dark:bg-stone-950">
-      {/* Mobile Header */}
-      <header className="lg:hidden sticky top-0 z-40 flex h-14 items-center gap-4 border-b border-stone-200 bg-white px-4 dark:border-stone-800 dark:bg-stone-900">
+      {/* Mobile Header (< 768px) */}
+      <header className="md:hidden sticky top-0 z-40 flex h-14 items-center gap-4 border-b border-stone-200 bg-white px-4 dark:border-stone-800 dark:bg-stone-900">
         <button
           type="button"
           onClick={() => setMobileMenuOpen(true)}
@@ -48,9 +48,9 @@ export function AppShell({
         </span>
       </header>
 
-      {/* Mobile Sidebar Overlay */}
+      {/* Mobile Sidebar Overlay (< 768px) */}
       {mobileMenuOpen && (
-        <div className="lg:hidden fixed inset-0 z-50">
+        <div className="md:hidden fixed inset-0 z-50">
           {/* Backdrop */}
           <div
             className="fixed inset-0 bg-stone-900/50"
@@ -90,7 +90,39 @@ export function AppShell({
         </div>
       )}
 
-      {/* Desktop Layout */}
+      {/* Tablet Layout (768px–1023px): icons-only sidebar */}
+      <div className="hidden md:flex lg:hidden">
+        <aside className="fixed inset-y-0 left-0 z-30 w-16 border-r border-stone-200 bg-white dark:border-stone-800 dark:bg-stone-900">
+          <div className="flex h-14 items-center justify-center border-b border-stone-200 dark:border-stone-800">
+            <span className="sr-only">HomeStaff</span>
+            <span className="text-lg font-semibold text-amber-500 dark:text-amber-400" style={{ fontFamily: 'Nunito Sans, sans-serif' }} aria-hidden>
+              H
+            </span>
+          </div>
+          <div className="flex flex-col h-[calc(100%-3.5rem)]">
+            <MainNav
+              items={navigationItems}
+              onNavigate={onNavigate}
+              collapsed
+            />
+            {user && (
+              <UserMenu
+                user={user}
+                household={household}
+                onLogout={onLogout}
+                onSwitchHousehold={onSwitchHousehold}
+                onAccountSettings={onAccountSettings}
+                collapsed
+              />
+            )}
+          </div>
+        </aside>
+        <main className="flex-1 md:pl-16">
+          {children}
+        </main>
+      </div>
+
+      {/* Desktop Layout (≥ 1024px): full sidebar */}
       <div className="hidden lg:flex">
         {/* Desktop Sidebar */}
         <aside className="fixed inset-y-0 left-0 z-30 w-60 border-r border-stone-200 bg-white dark:border-stone-800 dark:bg-stone-900">
@@ -122,8 +154,8 @@ export function AppShell({
         </main>
       </div>
 
-      {/* Mobile Content */}
-      <main className="lg:hidden">
+      {/* Mobile Content (< 768px) */}
+      <main className="md:hidden">
         {children}
       </main>
     </div>
