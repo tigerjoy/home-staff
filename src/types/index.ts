@@ -27,6 +27,13 @@ export interface Member {
   householdId: string
   role: 'Admin' | 'Member'
   joinedAt: string
+  isPrimary?: boolean
+}
+
+export interface MemberWithProfile extends Member {
+  name: string
+  email: string
+  avatarUrl: string | null
 }
 
 export interface Invitation {
@@ -37,6 +44,27 @@ export interface Invitation {
   status: 'pending' | 'accepted' | 'expired'
   sentAt: string
   expiresAt: string
+}
+
+export interface InvitationCode {
+  id: string
+  householdId: string
+  code: string
+  createdBy: string
+  expiresAt: string | null
+  maxUses: number | null
+  currentUses: number
+  status: 'active' | 'expired' | 'revoked'
+  createdAt: string
+  updatedAt: string
+}
+
+export interface UserProfile {
+  id: string
+  name: string
+  email: string
+  avatarUrl: string | null
+  timezone: string
 }
 
 // =============================================================================

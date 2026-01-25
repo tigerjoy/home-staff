@@ -56,6 +56,15 @@ export async function createHousehold(name: string): Promise<Household> {
     throw new Error(`Failed to create household: ${householdError?.message || 'Unknown error'}`)
   }
 
+  // Check if this is user's first household
+  const { data: existingMembers } = await supabase
+    .from('members')
+    .select('id')
+    .eq('user_id', user.id)
+    .limit(1)
+
+  const isFirstHousehold = !existingMembers || existingMembers.length === 0
+
   // Add current user as admin member
   const { error: memberError } = await supabase
     .from('members')
@@ -63,6 +72,7 @@ export async function createHousehold(name: string): Promise<Household> {
       user_id: user.id,
       household_id: household.id,
       role: 'admin',
+      is_primary: isFirstHousehold, // Set as primary if first household
     })
 
   if (memberError) {
@@ -209,4 +219,236 @@ export async function getUserHouseholdRole(householdId: string): Promise<'Admin'
   }
 
   return member.role === 'admin' ? 'Admin' : 'Member'
+}
+
+export interface HouseholdWithRole extends Household {
+  role: 'Admin' | 'Member'
+  isPrimary: boolean
+}
+
+/**
+ * Get household with user's role and primary status
+ */
+export async function getHouseholdWithRole(householdId: string): Promise<HouseholdWithRole | null> {
+  const { data: { user }, error: userError } = await supabase.auth.getUser()
+  if (userError || !user) {
+    throw new Error('User not authenticated')
+  }
+
+  const { data: household, error: householdError } = await supabase
+    .from('households')
+    .select('*')
+    .eq('id', householdId)
+    .single()
+
+  if (householdError) {
+    if (householdError.code === 'PGRST116') {
+      return null
+    }
+    throw new Error(`Failed to fetch household: ${householdError.message}`)
+  }
+
+  const { data: member, error: memberError } = await supabase
+    .from('members')
+    .select('role, is_primary')
+    .eq('household_id', householdId)
+    .eq('user_id', user.id)
+    .single()
+
+  if (memberError || !member) {
+    throw new Error('You do not have access to this household')
+  }
+
+  return {
+    ...transformToHousehold(household),
+    role: member.role === 'admin' ? 'Admin' : 'Member',
+    isPrimary: member.is_primary || false,
+  }
+}
+
+/**
+ * Get all households for the current user with roles and primary status
+ */
+export async function getUserHouseholdsWithRoles(): Promise<HouseholdWithRole[]> {
+  const { data: { user }, error: userError } = await supabase.auth.getUser()
+  if (userError || !user) {
+    throw new Error('User not authenticated')
+  }
+
+  // Get households with member info
+  const { data: members, error: membersError } = await supabase
+    .from('members')
+    .select(`
+      household_id,
+      role,
+      is_primary,
+      households (*)
+    `)
+    .eq('user_id', user.id)
+    .order('joined_at', { ascending: false })
+
+  if (membersError) {
+    throw new Error(`Failed to fetch user households: ${membersError.message}`)
+  }
+
+  if (!members || members.length === 0) {
+    return []
+  }
+
+  return members.map((member: any) => {
+    const household = member.households
+    return {
+      ...transformToHousehold(household),
+      role: member.role === 'admin' ? 'Admin' : 'Member',
+      isPrimary: member.is_primary || false,
+    }
+  })
+}
+
+/**
+ * Set a household as primary
+ */
+export async function setPrimaryHousehold(householdId: string): Promise<void> {
+  const { data: { user }, error: userError } = await supabase.auth.getUser()
+  if (userError || !user) {
+    throw new Error('User not authenticated')
+  }
+
+  // Verify user has access to this household
+  const { data: member, error: memberError } = await supabase
+    .from('members')
+    .select('id')
+    .eq('household_id', householdId)
+    .eq('user_id', user.id)
+    .single()
+
+  if (memberError || !member) {
+    throw new Error('You do not have access to this household')
+  }
+
+  // Unset all other primary households for this user
+  const { error: unsetError } = await supabase
+    .from('members')
+    .update({ is_primary: false })
+    .eq('user_id', user.id)
+    .neq('household_id', householdId)
+
+  if (unsetError) {
+    throw new Error(`Failed to unset previous primary: ${unsetError.message}`)
+  }
+
+  // Set this household as primary
+  const { error: setError } = await supabase
+    .from('members')
+    .update({ is_primary: true })
+    .eq('id', member.id)
+
+  if (setError) {
+    throw new Error(`Failed to set primary household: ${setError.message}`)
+  }
+}
+
+/**
+ * Set last opened household in user's profile
+ */
+export async function setLastOpenedHousehold(householdId: string): Promise<void> {
+  const { data: { user }, error: userError } = await supabase.auth.getUser()
+  if (userError || !user) {
+    throw new Error('User not authenticated')
+  }
+
+  // Verify user has access to this household
+  const { data: member } = await supabase
+    .from('members')
+    .select('id')
+    .eq('household_id', householdId)
+    .eq('user_id', user.id)
+    .single()
+
+  if (!member) {
+    throw new Error('You do not have access to this household')
+  }
+
+  const { error } = await supabase
+    .from('profiles')
+    .update({ last_opened_household_id: householdId })
+    .eq('id', user.id)
+
+  if (error) {
+    throw new Error(`Failed to update last opened household: ${error.message}`)
+  }
+}
+
+/**
+ * Get last opened household ID from user's profile
+ */
+export async function getLastOpenedHousehold(): Promise<string | null> {
+  const { data: { user }, error: userError } = await supabase.auth.getUser()
+  if (userError || !user) {
+    return null
+  }
+
+  const { data: profile, error } = await supabase
+    .from('profiles')
+    .select('last_opened_household_id')
+    .eq('id', user.id)
+    .single()
+
+  if (error || !profile) {
+    return null
+  }
+
+  return profile.last_opened_household_id || null
+}
+
+/**
+ * Rename a household (admin only)
+ */
+export async function renameHousehold(id: string, newName: string): Promise<Household> {
+  if (!newName || newName.trim().length < 2) {
+    throw new Error('Household name must be at least 2 characters')
+  }
+
+  const { data: { user }, error: userError } = await supabase.auth.getUser()
+  if (userError || !user) {
+    throw new Error('User not authenticated')
+  }
+
+  // Check if user is admin
+  const { data: member, error: memberError } = await supabase
+    .from('members')
+    .select('role')
+    .eq('household_id', id)
+    .eq('user_id', user.id)
+    .single()
+
+  if (memberError || !member || member.role !== 'admin') {
+    throw new Error('Only admins can rename households')
+  }
+
+  return updateHousehold(id, { name: newName })
+}
+
+/**
+ * Archive a household (admin only, soft delete)
+ */
+export async function archiveHousehold(id: string): Promise<Household> {
+  const { data: { user }, error: userError } = await supabase.auth.getUser()
+  if (userError || !user) {
+    throw new Error('User not authenticated')
+  }
+
+  // Check if user is admin
+  const { data: member, error: memberError } = await supabase
+    .from('members')
+    .select('role')
+    .eq('household_id', id)
+    .eq('user_id', user.id)
+    .single()
+
+  if (memberError || !member || member.role !== 'admin') {
+    throw new Error('Only admins can archive households')
+  }
+
+  return updateHousehold(id, { status: 'archived' })
 }

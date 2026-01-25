@@ -78,10 +78,11 @@ CREATE TRIGGER update_profiles_updated_at
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER AS $$
 BEGIN
-  INSERT INTO public.profiles (id, name, avatar_url)
+  INSERT INTO public.profiles (id, name, email, avatar_url)
   VALUES (
     NEW.id,
     COALESCE(NEW.raw_user_meta_data->>'full_name', NEW.raw_user_meta_data->>'name', 'User'),
+    NEW.email,
     COALESCE(NEW.raw_user_meta_data->>'avatar_url', NULL)
   );
   RETURN NEW;

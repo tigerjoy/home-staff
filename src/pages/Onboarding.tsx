@@ -1,20 +1,25 @@
 import { useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { OnboardingWizard } from '../components/onboarding'
 import type { OnboardingStep, OnboardingConfig, OnboardingPresets } from '../components/onboarding/types'
 import * as onboardingApi from '../lib/api/onboarding'
 import * as householdsApi from '../lib/api/households'
 import * as householdDefaultsApi from '../lib/api/householdDefaults'
 import * as employeesApi from '../lib/api/employees'
+import * as invitationsApi from '../lib/api/invitations'
 import { getOnboardingPresets } from '../lib/constants/onboardingPresets'
 import { useSession } from '../context/SessionContext'
 import type { Employee } from '../types'
 
 export function Onboarding() {
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
   const { session } = useSession()
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [invitationCode, setInvitationCode] = useState<string | null>(
+    searchParams.get('code') || null
+  )
   const [config, setConfig] = useState<OnboardingConfig>({
     currentStepIndex: 0,
     totalSteps: 4,
@@ -54,9 +59,48 @@ export function Onboarding() {
   const [presets] = useState<OnboardingPresets>(getOnboardingPresets())
   const [householdId, setHouseholdId] = useState<string | null>(null)
 
-  // Load progress on mount
+  // Check for invitation code on mount
   useEffect(() => {
-    async function loadProgress() {
+    async function checkInvitationCode() {
+      if (invitationCode) {
+        try {
+          const result = await invitationsApi.acceptInvitationCode(invitationCode)
+          if (result.success && result.householdId) {
+            // User joined via invitation code - skip household creation
+            setHouseholdId(result.householdId)
+            // Mark household step as completed
+            await onboardingApi.saveOnboardingProgress(1, {
+              householdId: result.householdId,
+              joinedViaInvitation: true,
+            })
+            // Update steps to skip household creation
+            const updatedSteps = steps.map((step, index) => {
+              if (step.id === 'step-household') {
+                return { ...step, status: 'completed' as const }
+              } else if (index === 1) {
+                return { ...step, status: 'in_progress' as const }
+              }
+              return step
+            })
+            setSteps(updatedSteps)
+            setConfig({
+              currentStepIndex: 1,
+              totalSteps: 4,
+              isCompleted: false,
+              lastSavedAt: new Date().toISOString(),
+            })
+          } else {
+            setError(result.error || 'Invalid invitation code')
+          }
+        } catch (err: any) {
+          setError(err.message || 'Failed to accept invitation code')
+        } finally {
+          setLoading(false)
+        }
+        return
+      }
+
+      // No invitation code - proceed with normal onboarding
       try {
         const progress = await onboardingApi.getOnboardingProgress()
         if (progress) {
@@ -93,8 +137,8 @@ export function Onboarding() {
       }
     }
 
-    loadProgress()
-  }, [])
+    checkInvitationCode()
+  }, [invitationCode])
 
   const handleNextStep = async (currentStepId: string, data: any) => {
     try {
@@ -102,14 +146,16 @@ export function Onboarding() {
 
       switch (currentStepId) {
         case 'step-household': {
-          // Create household
-          const household = await householdsApi.createHousehold(data.householdName)
-          setHouseholdId(household.id)
-          // Save progress with household ID
-          await onboardingApi.saveOnboardingProgress(1, {
-            householdId: household.id,
-            householdName: data.householdName,
-          })
+          // Only create household if we don't already have one (from invitation)
+          if (!householdId) {
+            const household = await householdsApi.createHousehold(data.householdName)
+            setHouseholdId(household.id)
+            // Save progress with household ID
+            await onboardingApi.saveOnboardingProgress(1, {
+              householdId: household.id,
+              householdName: data.householdName,
+            })
+          }
           break
         }
 

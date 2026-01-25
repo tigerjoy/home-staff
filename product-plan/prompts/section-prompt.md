@@ -4,9 +4,9 @@
 
 Before using this prompt, replace these variables:
 
-- **SECTION_NAME** = "Staff Directory"
-- **SECTION_ID** = "staff-directory"
-- **NN** = "04"
+- **SECTION_NAME** = "Settings and Access"
+- **SECTION_ID** = "settings-and-access"
+- **NN** = "07"
 
 ---
 
