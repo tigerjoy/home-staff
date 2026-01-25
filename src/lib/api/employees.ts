@@ -302,7 +302,7 @@ export async function fetchEmployee(id: string, householdId: string): Promise<UI
 }
 
 /**
- * Create a new employee and their initial employment
+ * Create a new employee and their initial employment (via RPC, single transaction).
  */
 export async function createEmployee(
   employeeData: Omit<Employee, 'id' | 'createdAt' | 'updatedAt'>,
@@ -316,124 +316,45 @@ export async function createEmployee(
     paymentMethod: 'Cash' | 'Bank Transfer' | 'UPI' | 'Cheque'
   }
 ): Promise<UIEmployee> {
-  // Create employee
-  const { data: newEmployee, error: employeeError } = await supabase
-    .from('employees')
-    .insert({
+  const payload = {
+    p_employee: {
       name: employeeData.name,
-      photo: employeeData.photo,
-      status: 'active',
-    })
-    .select()
-    .single()
-
-  if (employeeError || !newEmployee) {
-    console.log('employeeError', employeeError);
-    throw new Error(`Failed to create employee: ${employeeError?.message}`)
-  }
-
-  const employeeId = newEmployee.id
-
-  // Create initial employment
-  const { data: newEmployment, error: employmentError } = await supabase
-    .from('employments')
-    .insert({
-      employee_id: employeeId,
+      photo: employeeData.photo ?? null,
+    },
+    p_employment: {
       household_id: employmentData.householdId,
       employment_type: employmentData.employmentType,
       role: employmentData.role,
       start_date: employmentData.startDate,
-      status: 'active',
-      holiday_balance: employmentData.holidayBalance ?? (employmentData.employmentType === 'monthly' ? 0 : null),
+      holiday_balance: employmentData.holidayBalance ?? null,
       current_salary: employmentData.currentSalary ?? null,
       payment_method: employmentData.paymentMethod,
-    })
-    .select()
-    .single()
-
-  if (employmentError || !newEmployment) {
-    // Clean up employee if employment creation fails
-    await supabase.from('employees').delete().eq('id', employeeId)
-    throw new Error(`Failed to create employment: ${employmentError?.message}`)
+    },
+    p_phone_numbers: employeeData.phoneNumbers,
+    p_addresses: employeeData.addresses,
+    p_documents: employeeData.documents.map((d) => ({
+      name: d.name,
+      url: d.url,
+      category: d.category,
+      uploaded_at: d.uploadedAt,
+    })),
+    p_custom_properties: employeeData.customProperties,
+    p_notes: employeeData.notes.map((n) => ({ content: n.content })),
   }
 
-  // Insert related data
-  const insertPromises: Promise<any>[] = []
+  const { data: employeeId, error } = await supabase.rpc(
+    'create_employee_with_employment',
+    payload
+  )
 
-  if (employeeData.phoneNumbers.length > 0) {
-    insertPromises.push(
-      supabase
-        .from('employee_phone_numbers')
-        .insert(
-          employeeData.phoneNumbers.map((p) => ({
-            employee_id: employeeId,
-            number: p.number,
-            label: p.label,
-          }))
-        )
-    )
+  if (error) {
+    throw new Error(`Failed to create employee: ${error.message}`)
   }
 
-  if (employeeData.addresses.length > 0) {
-    insertPromises.push(
-      supabase
-        .from('employee_addresses')
-        .insert(
-          employeeData.addresses.map((a) => ({
-            employee_id: employeeId,
-            address: a.address,
-            label: a.label,
-          }))
-        )
-    )
+  if (!employeeId) {
+    throw new Error('Failed to create employee: no ID returned')
   }
 
-  if (employeeData.documents.length > 0) {
-    insertPromises.push(
-      supabase
-        .from('employee_documents')
-        .insert(
-          employeeData.documents.map((d) => ({
-            employee_id: employeeId,
-            name: d.name,
-            url: d.url,
-            category: d.category,
-            uploaded_at: d.uploadedAt,
-          }))
-        )
-    )
-  }
-
-  if (employeeData.customProperties.length > 0) {
-    insertPromises.push(
-      supabase
-        .from('employee_custom_properties')
-        .insert(
-          employeeData.customProperties.map((p) => ({
-            employee_id: employeeId,
-            name: p.name,
-            value: p.value,
-          }))
-        )
-    )
-  }
-
-  if (employeeData.notes.length > 0) {
-    insertPromises.push(
-      supabase
-        .from('employee_notes')
-        .insert(
-          employeeData.notes.map((n) => ({
-            employee_id: employeeId,
-            content: n.content,
-          }))
-        )
-    )
-  }
-
-  await Promise.all(insertPromises)
-
-  // Fetch and return the complete employee
   const createdEmployee = await fetchEmployee(employeeId, employmentData.householdId)
   if (!createdEmployee) {
     throw new Error('Failed to fetch created employee')

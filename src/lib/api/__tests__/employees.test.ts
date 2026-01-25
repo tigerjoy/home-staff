@@ -235,7 +235,7 @@ describe('employees API', () => {
   })
 
   describe('createEmployee', () => {
-    it('should create employee and initial employment', async () => {
+    it('should create employee and initial employment via RPC', async () => {
       const employeeData: Omit<Employee, 'id' | 'createdAt' | 'updatedAt'> = {
         name: 'Test Employee',
         photo: null,
@@ -256,36 +256,14 @@ describe('employees API', () => {
         paymentMethod: 'Bank Transfer' as const,
       }
 
-      const mockCreatedEmployee = {
-        data: mockEmployee,
+      const rpcMock = vi.fn().mockResolvedValue({
+        data: mockEmployeeId,
         error: null,
-      }
+      })
+      ;(supabase as unknown as { rpc: typeof rpcMock }).rpc = rpcMock
 
-      const mockCreatedEmployment = {
-        data: mockEmployment,
-        error: null,
-      }
-
+      const mockCreatedEmployee = { data: mockEmployee, error: null }
       const fromMock = vi.fn()
-      // Employee insert
-      fromMock.mockReturnValueOnce({
-        insert: vi.fn().mockReturnValue({
-          select: vi.fn().mockReturnValue({
-            single: vi.fn().mockResolvedValue(mockCreatedEmployee),
-          }),
-        }),
-      })
-
-      // Employment insert
-      fromMock.mockReturnValueOnce({
-        insert: vi.fn().mockReturnValue({
-          select: vi.fn().mockReturnValue({
-            single: vi.fn().mockResolvedValue(mockCreatedEmployment),
-          }),
-        }),
-      })
-
-      // Mock fetchEmployee call (which will be called at the end)
       fromMock.mockReturnValueOnce({
         select: vi.fn().mockReturnValue({
           eq: vi.fn().mockReturnValue({
@@ -293,7 +271,6 @@ describe('employees API', () => {
           }),
         }),
       })
-
       fromMock.mockReturnValueOnce({
         select: vi.fn().mockReturnValue({
           eq: vi.fn().mockReturnValue({
@@ -301,8 +278,6 @@ describe('employees API', () => {
           }),
         }),
       })
-
-      // Mock related data (5 calls)
       for (let i = 0; i < 5; i++) {
         fromMock.mockReturnValueOnce({
           select: vi.fn().mockReturnValue({
@@ -310,16 +285,32 @@ describe('employees API', () => {
           }),
         })
       }
-
-      ;(supabase.from as any) = fromMock
+      ;(supabase.from as unknown) = fromMock
 
       const result = await createEmployee(employeeData, employmentData)
 
       expect(result).toBeDefined()
       expect(result.id).toBe(mockEmployeeId)
+      expect(rpcMock).toHaveBeenCalledWith('create_employee_with_employment', {
+        p_employee: { name: 'Test Employee', photo: null },
+        p_employment: {
+          household_id: mockHouseholdId,
+          employment_type: 'monthly',
+          role: 'Cook',
+          start_date: '2024-01-15',
+          holiday_balance: 0,
+          current_salary: 15000,
+          payment_method: 'Bank Transfer',
+        },
+        p_phone_numbers: [],
+        p_addresses: [],
+        p_documents: [],
+        p_custom_properties: [],
+        p_notes: [],
+      })
     })
 
-    it('should throw error if employee creation fails', async () => {
+    it('should throw error if RPC fails', async () => {
       const employeeData: Omit<Employee, 'id' | 'createdAt' | 'updatedAt'> = {
         name: 'Test Employee',
         photo: null,
@@ -340,19 +331,11 @@ describe('employees API', () => {
         paymentMethod: 'Bank Transfer' as const,
       }
 
-      const fromMock = vi.fn()
-      fromMock.mockReturnValueOnce({
-        insert: vi.fn().mockReturnValue({
-          select: vi.fn().mockReturnValue({
-            single: vi.fn().mockResolvedValue({
-              data: null,
-              error: { message: 'Creation failed' },
-            }),
-          }),
-        }),
+      const rpcMock = vi.fn().mockResolvedValue({
+        data: null,
+        error: { message: 'Creation failed' },
       })
-
-      ;(supabase.from as any) = fromMock
+      ;(supabase as unknown as { rpc: typeof rpcMock }).rpc = rpcMock
 
       await expect(createEmployee(employeeData, employmentData)).rejects.toThrow()
     })
