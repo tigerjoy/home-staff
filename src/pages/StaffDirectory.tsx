@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { StaffDirectory as StaffDirectoryComponent } from '../components/staff-directory/StaffDirectory'
-import { fetchEmployees, archiveEmployee, restoreEmployee } from '../lib/api/employees'
+import { fetchEmployees, archiveEmployee, restoreEmployee, fetchEmployeesFromOtherHouseholds } from '../lib/api/employees'
 import { fetchSummary } from '../lib/api/summary'
 import { exportToCSV, exportToPDF } from '../lib/utils/export'
 import { useHousehold } from '../hooks/useHousehold'
-import type { UIEmployee, Summary } from '../types'
+import type { UIEmployee, Summary, ExistingEmployeeFromOtherHousehold } from '../types'
 
 export function StaffDirectory() {
   const navigate = useNavigate()
@@ -15,8 +15,11 @@ export function StaffDirectory() {
     totalStaff: 0,
     activeStaff: 0,
     archivedStaff: 0,
+    monthlyStaff: 0,
+    adhocStaff: 0,
     roleBreakdown: {},
   })
+  const [existingEmployees, setExistingEmployees] = useState<ExistingEmployeeFromOtherHousehold[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [page, setPage] = useState(1)
@@ -35,13 +38,15 @@ export function StaffDirectory() {
       setLoading(true)
       setError(null)
 
-      const [employeesData, summaryData] = await Promise.all([
+      const [employeesData, summaryData, existingEmployeesData] = await Promise.all([
         fetchEmployees(activeHouseholdId, page, pageSize),
         fetchSummary(activeHouseholdId),
+        fetchEmployeesFromOtherHouseholds(activeHouseholdId).catch(() => []), // Don't fail if this errors
       ])
 
       setEmployees(employeesData.data)
       setSummary(summaryData)
+      setExistingEmployees(existingEmployeesData)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load staff directory')
       console.error('Error loading staff directory:', err)
@@ -77,6 +82,10 @@ export function StaffDirectory() {
 
   const handleCreate = () => {
     navigate('/staff/new')
+  }
+
+  const handleLinkExisting = (employeeId: string) => {
+    navigate(`/staff/new?link=${employeeId}`)
   }
 
   const handleExport = (format: 'csv' | 'pdf') => {
@@ -133,11 +142,13 @@ export function StaffDirectory() {
     <StaffDirectoryComponent
       summary={summary}
       employees={employees}
+      existingEmployeesFromOtherHouseholds={existingEmployees}
       onView={handleView}
       onEdit={handleEdit}
       onArchive={handleArchive}
       onRestore={handleArchive}
       onCreate={handleCreate}
+      onLinkExisting={handleLinkExisting}
       onExport={handleExport}
       onSearch={handleSearch}
       onFilterStatus={handleFilterStatus}

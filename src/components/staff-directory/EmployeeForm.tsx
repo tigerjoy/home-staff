@@ -32,6 +32,7 @@ const emptyEmployee: Omit<UIEmployee, 'id' | 'householdId' | 'status' | 'holiday
 export function EmployeeForm({
   employee,
   currentStep,
+  isLinkingExisting = false,
   onStepChange,
   onSubmit,
   onCancel,
@@ -45,6 +46,7 @@ export function EmployeeForm({
   })
 
   const isEditing = !!employee
+  const isLinking = isLinkingExisting && !!employee
 
   useEffect(() => {
     if (employee) {
@@ -65,7 +67,9 @@ export function EmployeeForm({
 
   const handleBack = () => {
     if (currentStep > 0) {
-      onStepChange?.(currentStep - 1)
+      // Don't allow going back to BasicInfo step when linking
+      const nextStep = isLinking && currentStep === 1 ? 1 : currentStep - 1
+      onStepChange?.(nextStep)
     }
   }
 
@@ -124,26 +128,38 @@ export function EmployeeForm({
               const isActive = step.id === currentStep
               const isComplete = step.id < currentStep || (step.id === currentStep && isStepComplete(step.id))
               const isPast = step.id < currentStep
+              // Skip BasicInfo step when linking
+              const isSkipped = isLinking && step.id === 0
 
               return (
                 <button
                   key={step.id}
-                  onClick={() => onStepChange?.(step.id)}
-                  className="relative flex flex-col items-center group z-10"
+                  onClick={() => {
+                    // Don't allow clicking on BasicInfo step when linking
+                    if (!isSkipped) {
+                      onStepChange?.(step.id)
+                    }
+                  }}
+                  disabled={isSkipped}
+                  className="relative flex flex-col items-center group z-10 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <div
                     className={`
                       w-12 h-12 rounded-full flex items-center justify-center transition-all duration-300
-                      ${isActive
-                        ? 'bg-gradient-to-br from-amber-400 to-orange-500 text-white shadow-lg shadow-amber-500/30 scale-110'
-                        : isPast
-                          ? 'bg-amber-500 text-white'
-                          : 'bg-white dark:bg-stone-800 text-stone-400 dark:text-stone-500 border-2 border-stone-200 dark:border-stone-700'
+                      ${isSkipped
+                        ? 'bg-stone-200 dark:bg-stone-700 text-stone-400 dark:text-stone-500 border-2 border-stone-200 dark:border-stone-700 opacity-50'
+                        : isActive
+                          ? 'bg-gradient-to-br from-amber-400 to-orange-500 text-white shadow-lg shadow-amber-500/30 scale-110'
+                          : isPast
+                            ? 'bg-amber-500 text-white'
+                            : 'bg-white dark:bg-stone-800 text-stone-400 dark:text-stone-500 border-2 border-stone-200 dark:border-stone-700'
                       }
-                      ${!isActive && 'group-hover:border-amber-300 dark:group-hover:border-amber-700'}
+                      ${!isActive && !isSkipped && 'group-hover:border-amber-300 dark:group-hover:border-amber-700'}
                     `}
                   >
-                    {isPast ? (
+                    {isSkipped ? (
+                      <X className="w-5 h-5" />
+                    ) : isPast ? (
                       <Check className="w-5 h-5" />
                     ) : (
                       <Icon className="w-5 h-5" />
@@ -152,7 +168,12 @@ export function EmployeeForm({
                   <span
                     className={`
                       mt-2 text-sm font-medium transition-colors
-                      ${isActive ? 'text-amber-600 dark:text-amber-400' : 'text-stone-500 dark:text-stone-400'}
+                      ${isSkipped
+                        ? 'text-stone-400 dark:text-stone-500 line-through'
+                        : isActive
+                          ? 'text-amber-600 dark:text-amber-400'
+                          : 'text-stone-500 dark:text-stone-400'
+                      }
                     `}
                   >
                     {step.title}
@@ -193,6 +214,7 @@ export function EmployeeForm({
                 <BasicInfoStep
                   data={formData}
                   onChange={updateFormData}
+                  isLinkingExisting={isLinking}
                 />
               )}
               {currentStep === 1 && (

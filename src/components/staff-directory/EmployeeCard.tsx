@@ -20,6 +20,8 @@ export function EmployeeCard({ employee, onView, onEdit, onArchive }: EmployeeCa
   const currentAddress = employee.addresses.find(a => a.label === 'Current') || employee.addresses[0]
   // Get current salary
   const currentSalary = employee.salaryHistory[0]
+  // Infer employment type from salary (if salary exists and > 0, it's monthly, otherwise adhoc)
+  const employmentType = currentSalary && currentSalary.amount > 0 ? 'monthly' : 'adhoc'
 
   // Generate initials for avatar
   const initials = employee.name
@@ -128,9 +130,22 @@ export function EmployeeCard({ employee, onView, onEdit, onArchive }: EmployeeCa
               {employee.name}
             </h3>
             {currentRole && (
-              <p className="text-sm text-amber-600 dark:text-amber-400 font-medium">
-                {currentRole.role}
-              </p>
+              <div className="flex items-center gap-2 flex-wrap">
+                <p className="text-sm text-amber-600 dark:text-amber-400 font-medium">
+                  {currentRole.role}
+                </p>
+                <span
+                  className={`
+                    inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium
+                    ${employmentType === 'monthly'
+                      ? 'bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-300'
+                      : 'bg-purple-50 text-purple-700 dark:bg-purple-950 dark:text-purple-300'
+                    }
+                  `}
+                >
+                  {employmentType === 'monthly' ? 'Monthly' : 'Ad-hoc'}
+                </span>
+              </div>
             )}
             {currentRole && (
               <p className="text-xs text-stone-500 dark:text-stone-400">
@@ -165,19 +180,29 @@ export function EmployeeCard({ employee, onView, onEdit, onArchive }: EmployeeCa
         {/* Footer - Holiday Balance & Salary */}
         <div className="mt-4 pt-4 border-t border-stone-100 dark:border-stone-800">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Palmtree className="w-4 h-4 text-amber-500" />
-              <span className="text-sm font-medium text-stone-900 dark:text-stone-100">
-                {employee.holidayBalance}
-                <span className="text-xs font-normal text-stone-500 ml-1">days left</span>
-              </span>
-            </div>
-            {currentSalary && (
+            {employmentType === 'monthly' ? (
+              <div className="flex items-center gap-2">
+                <Palmtree className="w-4 h-4 text-amber-500" />
+                <span className="text-sm font-medium text-stone-900 dark:text-stone-100">
+                  {employee.holidayBalance}
+                  <span className="text-xs font-normal text-stone-500 ml-1">days left</span>
+                </span>
+              </div>
+            ) : (
+              <div className="text-sm text-stone-500 dark:text-stone-400">
+                Ad-hoc employee
+              </div>
+            )}
+            {employmentType === 'monthly' && currentSalary ? (
               <span className="text-sm font-semibold text-stone-900 dark:text-stone-100">
                 {formatSalary(currentSalary.amount)}
                 <span className="text-xs font-normal text-stone-500">/mo</span>
               </span>
-            )}
+            ) : employmentType === 'adhoc' ? (
+              <span className="text-sm font-medium text-stone-500 dark:text-stone-400">
+                Per job
+              </span>
+            ) : null}
           </div>
         </div>
       </div>

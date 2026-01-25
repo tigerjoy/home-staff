@@ -7,35 +7,43 @@ import {
   Download,
   Filter,
   X,
-  ChevronDown
+  ChevronDown,
+  Link2
 } from 'lucide-react'
-import type { StaffDirectoryProps } from '../../types'
+import type { StaffDirectoryProps, EmploymentType } from '../../types'
 import { SummaryCards } from './SummaryCards'
 import { EmployeeCard } from './EmployeeCard'
 import { EmployeeTable } from './EmployeeTable'
 
 type ViewMode = 'grid' | 'table'
 type StatusFilter = 'all' | 'active' | 'archived'
+type EmploymentTypeFilter = 'all' | EmploymentType
 
 export function StaffDirectory({
   summary,
   employees,
+  existingEmployeesFromOtherHouseholds = [],
   onView,
   onEdit,
   onArchive,
   onRestore,
   onCreate,
+  onLinkExisting,
   onExport,
   onSearch,
   onFilterStatus,
-  onFilterRole
+  onFilterRole,
+  onFilterEmploymentType
 }: StaffDirectoryProps) {
   const [viewMode, setViewMode] = useState<ViewMode>('grid')
   const [searchQuery, setSearchQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all')
   const [roleFilter, setRoleFilter] = useState<string | null>(null)
+  const [employmentTypeFilter, setEmploymentTypeFilter] = useState<EmploymentTypeFilter>('all')
   const [showFilters, setShowFilters] = useState(false)
   const [showExportMenu, setShowExportMenu] = useState(false)
+  const [showAddMenu, setShowAddMenu] = useState(false)
+  const [showLinkModal, setShowLinkModal] = useState(false)
 
   // Get unique roles from employees
   const roles = useMemo(() => {
@@ -72,9 +80,19 @@ export function StaffDirectory({
         if (!currentRole || currentRole.role !== roleFilter) return false
       }
 
+      // Employment type filter - need to get from salary history or check if it's monthly/adhoc
+      if (employmentTypeFilter !== 'all') {
+        // For now, we'll infer from salary: if salary exists, it's monthly, otherwise adhoc
+        // This is a simplification - ideally we'd have employment type in UIEmployee
+        const hasSalary = emp.salaryHistory && emp.salaryHistory.length > 0 && emp.salaryHistory[0].amount > 0
+        const isMonthly = hasSalary
+        if (employmentTypeFilter === 'monthly' && !isMonthly) return false
+        if (employmentTypeFilter === 'adhoc' && isMonthly) return false
+      }
+
       return true
     })
-  }, [employees, searchQuery, statusFilter, roleFilter])
+  }, [employees, searchQuery, statusFilter, roleFilter, employmentTypeFilter])
 
   const handleSearch = (query: string) => {
     setSearchQuery(query)
@@ -91,6 +109,11 @@ export function StaffDirectory({
     onFilterRole?.(role)
   }
 
+  const handleEmploymentTypeFilter = (type: EmploymentTypeFilter) => {
+    setEmploymentTypeFilter(type)
+    onFilterEmploymentType?.(type)
+  }
+
   const handleArchive = (id: string) => {
     const employee = employees.find(e => e.id === id)
     if (employee?.status === 'archived') {
@@ -100,7 +123,10 @@ export function StaffDirectory({
     }
   }
 
-  const activeFiltersCount = (statusFilter !== 'all' ? 1 : 0) + (roleFilter ? 1 : 0)
+  const activeFiltersCount =
+    (statusFilter !== 'all' ? 1 : 0) +
+    (roleFilter ? 1 : 0) +
+    (employmentTypeFilter !== 'all' ? 1 : 0)
 
   return (
     <div className="min-h-screen bg-stone-50 dark:bg-stone-950">
@@ -115,13 +141,48 @@ export function StaffDirectory({
               Manage your household staff profiles and records
             </p>
           </div>
-          <button
-            onClick={onCreate}
-            className="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-amber-500 hover:bg-amber-600 text-white font-medium rounded-xl transition-colors shadow-sm hover:shadow-md"
-          >
-            <Plus className="w-5 h-5" />
-            Add Staff
-          </button>
+          <div className="relative">
+            <button
+              onClick={() => setShowAddMenu(!showAddMenu)}
+              className="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-amber-500 hover:bg-amber-600 text-white font-medium rounded-xl transition-colors shadow-sm hover:shadow-md"
+            >
+              <Plus className="w-5 h-5" />
+              Add Staff
+              <ChevronDown className="w-4 h-4" />
+            </button>
+            {showAddMenu && (
+              <>
+                <div
+                  className="fixed inset-0 z-10"
+                  onClick={() => setShowAddMenu(false)}
+                />
+                <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-stone-800 rounded-xl shadow-xl border border-stone-200 dark:border-stone-700 py-1 z-20">
+                  <button
+                    onClick={() => { setShowAddMenu(false); onCreate?.() }}
+                    className="w-full flex items-center gap-3 px-4 py-3 text-sm text-stone-700 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-700"
+                  >
+                    <Plus className="w-5 h-5 text-amber-500" />
+                    <div className="text-left">
+                      <p className="font-medium">Create New Staff</p>
+                      <p className="text-xs text-stone-500">Add a brand new employee</p>
+                    </div>
+                  </button>
+                  {existingEmployeesFromOtherHouseholds.length > 0 && (
+                    <button
+                      onClick={() => { setShowAddMenu(false); setShowLinkModal(true) }}
+                      className="w-full flex items-center gap-3 px-4 py-3 text-sm text-stone-700 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-700 border-t border-stone-100 dark:border-stone-700"
+                    >
+                      <Link2 className="w-5 h-5 text-blue-500" />
+                      <div className="text-left">
+                        <p className="font-medium">Link Existing Staff</p>
+                        <p className="text-xs text-stone-500">From another household</p>
+                      </div>
+                    </button>
+                  )}
+                </div>
+              </>
+            )}
+          </div>
         </div>
 
         {/* Summary Cards */}
@@ -268,6 +329,30 @@ export function StaffDirectory({
                   </div>
                 </div>
 
+                {/* Employment Type Filter */}
+                <div className="flex-1 min-w-[200px]">
+                  <label className="block text-xs font-medium text-stone-500 dark:text-stone-400 uppercase tracking-wider mb-2">
+                    Employment Type
+                  </label>
+                  <div className="flex gap-2">
+                    {(['all', 'monthly', 'adhoc'] as EmploymentTypeFilter[]).map((type) => (
+                      <button
+                        key={type}
+                        onClick={() => handleEmploymentTypeFilter(type)}
+                        className={`
+                          px-3 py-1.5 rounded-lg text-sm font-medium transition-colors capitalize
+                          ${employmentTypeFilter === type
+                            ? 'bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-300'
+                            : 'bg-stone-100 text-stone-600 hover:bg-stone-200 dark:bg-stone-800 dark:text-stone-400 dark:hover:bg-stone-700'
+                          }
+                        `}
+                      >
+                        {type === 'adhoc' ? 'Ad-hoc' : type}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
                 {/* Role Filter */}
                 <div className="flex-1 min-w-[200px]">
                   <label className="block text-xs font-medium text-stone-500 dark:text-stone-400 uppercase tracking-wider mb-2">
@@ -311,6 +396,7 @@ export function StaffDirectory({
                       onClick={() => {
                         handleStatusFilter('all')
                         handleRoleFilter(null)
+                        handleEmploymentTypeFilter('all')
                       }}
                       className="text-sm text-amber-600 dark:text-amber-400 hover:underline"
                     >
@@ -379,6 +465,64 @@ export function StaffDirectory({
           </div>
         )}
       </div>
+
+      {/* Link Existing Employee Modal */}
+      {showLinkModal && (
+        <>
+          <div
+            className="fixed inset-0 bg-black/50 z-40"
+            onClick={() => setShowLinkModal(false)}
+          />
+          <div className="fixed inset-x-4 top-[10%] max-w-md mx-auto bg-white dark:bg-stone-900 rounded-2xl shadow-2xl z-50 max-h-[80vh] flex flex-col">
+            <div className="p-6 border-b border-stone-200 dark:border-stone-800">
+              <div className="flex items-center justify-between">
+                <h2 className="text-lg font-semibold text-stone-900 dark:text-stone-100">
+                  Link Existing Staff
+                </h2>
+                <button
+                  onClick={() => setShowLinkModal(false)}
+                  className="p-2 hover:bg-stone-100 dark:hover:bg-stone-800 rounded-lg"
+                >
+                  <X className="w-5 h-5 text-stone-500" />
+                </button>
+              </div>
+              <p className="text-sm text-stone-500 dark:text-stone-400 mt-1">
+                Select an employee from another household to add to this one
+              </p>
+            </div>
+            <div className="flex-1 overflow-y-auto p-4">
+              <div className="space-y-3">
+                {existingEmployeesFromOtherHouseholds.map((emp) => (
+                  <button
+                    key={emp.id}
+                    onClick={() => {
+                      setShowLinkModal(false)
+                      onLinkExisting?.(emp.id)
+                    }}
+                    className="w-full flex items-center gap-4 p-4 rounded-xl border border-stone-200 dark:border-stone-800 hover:border-amber-300 dark:hover:border-amber-700 hover:bg-amber-50/50 dark:hover:bg-amber-950/20 transition-colors text-left"
+                  >
+                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center">
+                      <span className="text-sm font-bold text-white">
+                        {emp.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
+                      </span>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-stone-900 dark:text-stone-100">{emp.name}</p>
+                      <p className="text-sm text-stone-500 dark:text-stone-400">{emp.role}</p>
+                      <p className="text-xs text-stone-400 dark:text-stone-500 truncate">
+                        Currently at: {emp.householdName}
+                      </p>
+                    </div>
+                    <div className="text-xs text-stone-400 dark:text-stone-500">
+                      {emp.phoneNumber}
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        </>
+      )}
     </div>
   )
 }

@@ -5,7 +5,7 @@ export async function fetchSummary(householdId: string): Promise<Summary> {
   // Fetch all employments for this household
   const { data: employments, error } = await supabase
     .from('employments')
-    .select('status, role')
+    .select('status, role, employment_type')
     .eq('household_id', householdId)
 
   if (error) {
@@ -17,6 +17,8 @@ export async function fetchSummary(householdId: string): Promise<Summary> {
       totalStaff: 0,
       activeStaff: 0,
       archivedStaff: 0,
+      monthlyStaff: 0,
+      adhocStaff: 0,
       roleBreakdown: {},
     }
   }
@@ -24,6 +26,8 @@ export async function fetchSummary(householdId: string): Promise<Summary> {
   const totalStaff = employments.length
   const activeStaff = employments.filter((e) => e.status === 'active').length
   const archivedStaff = employments.filter((e) => e.status === 'archived').length
+  const monthlyStaff = employments.filter((e) => e.employment_type === 'monthly' && e.status === 'active').length
+  const adhocStaff = employments.filter((e) => e.employment_type === 'adhoc' && e.status === 'active').length
 
   // Calculate role breakdown from active employments
   const roleBreakdown: { [role: string]: number } = {}
@@ -39,6 +43,8 @@ export async function fetchSummary(householdId: string): Promise<Summary> {
     totalStaff,
     activeStaff,
     archivedStaff,
+    monthlyStaff,
+    adhocStaff,
     roleBreakdown,
   }
 }

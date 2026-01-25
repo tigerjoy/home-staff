@@ -5,12 +5,13 @@ import type { UIEmployee, PhoneNumber, Address } from '../../types'
 interface BasicInfoStepProps {
   data: Omit<UIEmployee, 'id' | 'householdId' | 'status' | 'holidayBalance'>
   onChange: (updates: Partial<Omit<UIEmployee, 'id' | 'householdId' | 'status' | 'holidayBalance'>>) => void
+  isLinkingExisting?: boolean
 }
 
 const PHONE_LABELS = ['Mobile', 'Home', 'Work', 'Emergency', 'Other']
 const ADDRESS_LABELS = ['Current', 'Permanent', 'Office', 'Other']
 
-export function BasicInfoStep({ data, onChange }: BasicInfoStepProps) {
+export function BasicInfoStep({ data, onChange, isLinkingExisting = false }: BasicInfoStepProps) {
   const [photoPreview, setPhotoPreview] = useState<string | null>(data.photo)
 
   // Generate initials for avatar preview
@@ -78,7 +79,10 @@ export function BasicInfoStep({ data, onChange }: BasicInfoStepProps) {
           Basic Information
         </h2>
         <p className="mt-1 text-sm text-stone-500 dark:text-stone-400">
-          Enter the staff member's personal details and contact information
+          {isLinkingExisting
+            ? 'This information is shared across all households and cannot be changed here'
+            : "Enter the staff member's personal details and contact information"
+          }
         </p>
       </div>
 
@@ -86,11 +90,12 @@ export function BasicInfoStep({ data, onChange }: BasicInfoStepProps) {
       <div className="flex flex-col sm:flex-row gap-6 items-start">
         {/* Photo Upload */}
         <div className="flex-shrink-0">
-          <label className="block cursor-pointer group">
+          <label className={`block ${isLinkingExisting ? 'cursor-default' : 'cursor-pointer'} group`}>
             <input
               type="file"
               accept="image/*"
               onChange={handlePhotoChange}
+              disabled={isLinkingExisting}
               className="hidden"
             />
             <div className="relative">
@@ -120,13 +125,14 @@ export function BasicInfoStep({ data, onChange }: BasicInfoStepProps) {
           <label className="block text-sm font-medium text-stone-700 dark:text-stone-300 mb-2">
             Full Name <span className="text-red-500">*</span>
           </label>
-          <input
-            type="text"
-            value={data.name}
-            onChange={(e) => onChange({ name: e.target.value })}
-            placeholder="Enter full name"
-            className="w-full px-4 py-3 rounded-xl border border-stone-300 dark:border-stone-600 bg-white dark:bg-stone-800 text-stone-900 dark:text-stone-100 placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-all"
-          />
+            <input
+              type="text"
+              value={data.name}
+              onChange={(e) => onChange({ name: e.target.value })}
+              placeholder="Enter full name"
+              disabled={isLinkingExisting}
+              className="w-full px-4 py-3 rounded-xl border border-stone-300 dark:border-stone-600 bg-white dark:bg-stone-800 text-stone-900 dark:text-stone-100 placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-stone-100 dark:disabled:bg-stone-900"
+            />
         </div>
       </div>
 
@@ -139,14 +145,16 @@ export function BasicInfoStep({ data, onChange }: BasicInfoStepProps) {
               Phone Numbers
             </h3>
           </div>
-          <button
-            type="button"
-            onClick={addPhone}
-            className="flex items-center gap-1 text-sm text-amber-600 dark:text-amber-400 hover:text-amber-700 dark:hover:text-amber-300 transition-colors"
-          >
-            <Plus className="w-4 h-4" />
-            Add Phone
-          </button>
+          {!isLinkingExisting && (
+            <button
+              type="button"
+              onClick={addPhone}
+              className="flex items-center gap-1 text-sm text-amber-600 dark:text-amber-400 hover:text-amber-700 dark:hover:text-amber-300 transition-colors"
+            >
+              <Plus className="w-4 h-4" />
+              Add Phone
+            </button>
+          )}
         </div>
 
         <div className="space-y-3">
@@ -155,7 +163,8 @@ export function BasicInfoStep({ data, onChange }: BasicInfoStepProps) {
               <select
                 value={phone.label}
                 onChange={(e) => updatePhone(index, { label: e.target.value })}
-                className="w-32 px-3 py-3 rounded-xl border border-stone-300 dark:border-stone-600 bg-white dark:bg-stone-800 text-stone-900 dark:text-stone-100 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-all"
+                disabled={isLinkingExisting}
+                className="w-32 px-3 py-3 rounded-xl border border-stone-300 dark:border-stone-600 bg-white dark:bg-stone-800 text-stone-900 dark:text-stone-100 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-stone-100 dark:disabled:bg-stone-900"
               >
                 {PHONE_LABELS.map(label => (
                   <option key={label} value={label}>{label}</option>
@@ -166,9 +175,10 @@ export function BasicInfoStep({ data, onChange }: BasicInfoStepProps) {
                 value={phone.number}
                 onChange={(e) => updatePhone(index, { number: e.target.value })}
                 placeholder="+91 98765 43210"
-                className="flex-1 px-4 py-3 rounded-xl border border-stone-300 dark:border-stone-600 bg-white dark:bg-stone-800 text-stone-900 dark:text-stone-100 placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-all"
+                disabled={isLinkingExisting}
+                className="flex-1 px-4 py-3 rounded-xl border border-stone-300 dark:border-stone-600 bg-white dark:bg-stone-800 text-stone-900 dark:text-stone-100 placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-stone-100 dark:disabled:bg-stone-900"
               />
-              {data.phoneNumbers.length > 1 && (
+              {data.phoneNumbers.length > 1 && !isLinkingExisting && (
                 <button
                   type="button"
                   onClick={() => removePhone(index)}
@@ -191,14 +201,16 @@ export function BasicInfoStep({ data, onChange }: BasicInfoStepProps) {
               Addresses
             </h3>
           </div>
-          <button
-            type="button"
-            onClick={addAddress}
-            className="flex items-center gap-1 text-sm text-amber-600 dark:text-amber-400 hover:text-amber-700 dark:hover:text-amber-300 transition-colors"
-          >
-            <Plus className="w-4 h-4" />
-            Add Address
-          </button>
+          {!isLinkingExisting && (
+            <button
+              type="button"
+              onClick={addAddress}
+              className="flex items-center gap-1 text-sm text-amber-600 dark:text-amber-400 hover:text-amber-700 dark:hover:text-amber-300 transition-colors"
+            >
+              <Plus className="w-4 h-4" />
+              Add Address
+            </button>
+          )}
         </div>
 
         <div className="space-y-3">
@@ -207,7 +219,8 @@ export function BasicInfoStep({ data, onChange }: BasicInfoStepProps) {
               <select
                 value={address.label}
                 onChange={(e) => updateAddress(index, { label: e.target.value })}
-                className="w-32 px-3 py-3 rounded-xl border border-stone-300 dark:border-stone-600 bg-white dark:bg-stone-800 text-stone-900 dark:text-stone-100 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-all"
+                disabled={isLinkingExisting}
+                className="w-32 px-3 py-3 rounded-xl border border-stone-300 dark:border-stone-600 bg-white dark:bg-stone-800 text-stone-900 dark:text-stone-100 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-stone-100 dark:disabled:bg-stone-900"
               >
                 {ADDRESS_LABELS.map(label => (
                   <option key={label} value={label}>{label}</option>
@@ -218,9 +231,10 @@ export function BasicInfoStep({ data, onChange }: BasicInfoStepProps) {
                 value={address.address}
                 onChange={(e) => updateAddress(index, { address: e.target.value })}
                 placeholder="Enter full address"
-                className="flex-1 px-4 py-3 rounded-xl border border-stone-300 dark:border-stone-600 bg-white dark:bg-stone-800 text-stone-900 dark:text-stone-100 placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-all"
+                disabled={isLinkingExisting}
+                className="flex-1 px-4 py-3 rounded-xl border border-stone-300 dark:border-stone-600 bg-white dark:bg-stone-800 text-stone-900 dark:text-stone-100 placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-stone-100 dark:disabled:bg-stone-900"
               />
-              {data.addresses.length > 1 && (
+              {data.addresses.length > 1 && !isLinkingExisting && (
                 <button
                   type="button"
                   onClick={() => removeAddress(index)}

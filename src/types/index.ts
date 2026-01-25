@@ -136,7 +136,20 @@ export interface Summary {
   totalStaff: number
   activeStaff: number
   archivedStaff: number
+  monthlyStaff: number
+  adhocStaff: number
   roleBreakdown: { [role: string]: number }
+}
+
+/**
+ * Existing employee from another household that can be linked
+ */
+export interface ExistingEmployeeFromOtherHousehold {
+  id: string
+  name: string
+  role: string
+  householdName: string
+  phoneNumber: string
 }
 
 /**
@@ -147,6 +160,8 @@ export interface EmployeeFormProps {
   employee?: UIEmployee
   /** Current step in the wizard (0-4) */
   currentStep: number
+  /** Whether we're linking an existing employee (some steps may be skipped) */
+  isLinkingExisting?: boolean
   /** Called when user moves to a different step */
   onStepChange?: (step: number) => void
   /** Called when form is submitted */
@@ -189,6 +204,8 @@ export interface StaffDirectoryProps {
   summary: Summary
   /** The list of employees to display */
   employees: UIEmployee[]
+  /** Employees from other households that can be linked to this one */
+  existingEmployeesFromOtherHouseholds?: ExistingEmployeeFromOtherHousehold[]
   /** Called when user wants to view an employee's full profile */
   onView?: (id: string) => void
   /** Called when user wants to edit an employee */
@@ -199,6 +216,8 @@ export interface StaffDirectoryProps {
   onRestore?: (id: string) => void
   /** Called when user wants to create a new employee */
   onCreate?: () => void
+  /** Called when user wants to link an existing employee from another household */
+  onLinkExisting?: (employeeId: string) => void
   /** Called when user wants to export the staff list */
   onExport?: (format: 'csv' | 'pdf') => void
   /** Called when user searches or filters the list */
@@ -207,6 +226,8 @@ export interface StaffDirectoryProps {
   onFilterStatus?: (status: 'all' | 'active' | 'archived') => void
   /** Called when user filters by role */
   onFilterRole?: (role: string | null) => void
+  /** Called when user filters by employment type */
+  onFilterEmploymentType?: (type: EmploymentType | 'all') => void
 }
 
 export interface Document {

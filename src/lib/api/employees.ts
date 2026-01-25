@@ -10,6 +10,7 @@ import type {
   Address,
   CustomProperty,
   Note,
+  ExistingEmployeeFromOtherHousehold,
 } from '../../types'
 
 interface PaginatedResponse<T> {
@@ -114,21 +115,42 @@ export async function fetchEmployees(
   const from = (page - 1) * pageSize
   const to = from + pageSize - 1
 
-  // Fetch active employments for this household
-  const { data: employments, error: employmentsError, count } = await supabase
+  // Fetch all employments (active and archived) for this household
+  // First, get all employments to count unique employees
+  const { data: allHouseholdEmployments, error: countError } = await supabase
     .from('employments')
-    .select('*', { count: 'exact' })
+    .select('employee_id', { count: 'exact' })
     .eq('household_id', householdId)
-    .eq('status', 'active')
+
+  if (countError) {
+    throw new Error(`Failed to fetch employments count: ${countError.message}`)
+  }
+
+  // Get unique employee IDs for pagination
+  const uniqueEmployeeIds = [...new Set((allHouseholdEmployments || []).map((e) => e.employee_id))]
+  const totalEmployees = uniqueEmployeeIds.length
+
+  // Paginate the unique employee IDs
+  const paginatedEmployeeIds = uniqueEmployeeIds.slice(from, to + 1)
+
+  if (paginatedEmployeeIds.length === 0) {
+    return { data: [], total: totalEmployees, page, pageSize }
+  }
+
+  // Fetch all employments for the paginated employees in this household
+  const { data: employments, error: employmentsError } = await supabase
+    .from('employments')
+    .select('*')
+    .eq('household_id', householdId)
+    .in('employee_id', paginatedEmployeeIds)
     .order('created_at', { ascending: false })
-    .range(from, to)
 
   if (employmentsError) {
     throw new Error(`Failed to fetch employments: ${employmentsError.message}`)
   }
 
   if (!employments || employments.length === 0) {
-    return { data: [], total: count || 0, page, pageSize }
+    return { data: [], total: totalEmployees, page, pageSize }
   }
 
   // Get unique employee IDs
@@ -145,7 +167,7 @@ export async function fetchEmployees(
   }
 
   if (!employees) {
-    return { data: [], total: count || 0, page, pageSize }
+    return { data: [], total: totalEmployees, page, pageSize }
   }
 
   // Fetch all employments for these employees (for history)
@@ -213,9 +235,19 @@ export async function fetchEmployees(
     arr.push(e)
     employmentsByEmployee.set(e.employee_id, arr)
 
-    // Track current employment for this household
-    if (e.household_id === householdId && e.status === 'active' && !e.end_date) {
-      currentEmploymentsByEmployee.set(e.employee_id, e)
+    // Track most recent employment (active or archived) for this household
+    if (e.household_id === householdId) {
+      const existing = currentEmploymentsByEmployee.get(e.employee_id)
+      if (!existing) {
+        currentEmploymentsByEmployee.set(e.employee_id, e)
+      } else {
+        // Keep the most recent employment (by created_at, then by start_date)
+        const existingDate = new Date(existing.created_at || existing.start_date)
+        const currentDate = new Date(e.created_at || e.start_date)
+        if (currentDate > existingDate) {
+          currentEmploymentsByEmployee.set(e.employee_id, e)
+        }
+      }
     }
   })
 
@@ -236,11 +268,11 @@ export async function fetchEmployees(
         notesByEmployee.get(employee.id) || []
       )
     })
-    .filter((emp) => emp.householdId === householdId) // Only return employees with active employment in this household
+    .filter((emp) => emp.householdId === householdId) // Only return employees with employment (active or archived) in this household
 
   return {
     data: transformedEmployees,
-    total: count || 0,
+    total: totalEmployees,
     page,
     pageSize,
   }
@@ -586,4 +618,168 @@ export async function getCurrentEmployment(
     createdAt: employment.created_at,
     updatedAt: employment.updated_at,
   }
+}
+
+/**
+ * Fetch employees from other households that the current user has access to
+ * (excluding the current household)
+ */
+export async function fetchEmployeesFromOtherHouseholds(
+  currentHouseholdId: string
+): Promise<ExistingEmployeeFromOtherHousehold[]> {
+  // Get current user
+  const { data: { user }, error: userError } = await supabase.auth.getUser()
+  if (userError || !user) {
+    throw new Error('User not authenticated')
+  }
+
+  // Get all households where user is a member (excluding current household)
+  const { data: members, error: membersError } = await supabase
+    .from('members')
+    .select('household_id')
+    .eq('user_id', user.id)
+    .neq('household_id', currentHouseholdId)
+
+  if (membersError) {
+    throw new Error(`Failed to fetch user households: ${membersError.message}`)
+  }
+
+  if (!members || members.length === 0) {
+    return []
+  }
+
+  const otherHouseholdIds = members.map((m) => m.household_id)
+
+  // Get active employments from other households
+  const { data: employments, error: employmentsError } = await supabase
+    .from('employments')
+    .select('employee_id, role, household_id, created_at')
+    .in('household_id', otherHouseholdIds)
+    .eq('status', 'active')
+    .is('end_date', null)
+
+  if (employmentsError) {
+    throw new Error(`Failed to fetch employments: ${employmentsError.message}`)
+  }
+
+  if (!employments || employments.length === 0) {
+    return []
+  }
+
+  // Get unique employee IDs
+  const employeeIds = [...new Set(employments.map((e) => e.employee_id))]
+
+  // Fetch households to get names
+  const { data: households } = await supabase
+    .from('households')
+    .select('id, name')
+    .in('id', otherHouseholdIds)
+
+  const householdMap = new Map<string, string>()
+  households?.forEach((h) => {
+    householdMap.set(h.id, h.name)
+  })
+
+  // Fetch employees
+  const { data: employees, error: employeesError } = await supabase
+    .from('employees')
+    .select('id, name')
+    .in('id', employeeIds)
+
+  if (employeesError) {
+    throw new Error(`Failed to fetch employees: ${employeesError.message}`)
+  }
+
+  // Fetch phone numbers
+  const { data: phoneNumbers } = await supabase
+    .from('employee_phone_numbers')
+    .select('employee_id, number')
+    .in('employee_id', employeeIds)
+
+  // Build map of employee to their most recent employment
+  const employeeToEmployment = new Map<string, any>()
+  employments.forEach((e) => {
+    const existing = employeeToEmployment.get(e.employee_id)
+    if (!existing || new Date(e.created_at) > new Date(existing.created_at)) {
+      employeeToEmployment.set(e.employee_id, e)
+    }
+  })
+
+  // Build map of employee to primary phone
+  const employeeToPhone = new Map<string, string>()
+  phoneNumbers?.forEach((p) => {
+    if (!employeeToPhone.has(p.employee_id)) {
+      employeeToPhone.set(p.employee_id, p.number)
+    }
+  })
+
+  // Transform to ExistingEmployeeFromOtherHousehold
+  return (employees || [])
+    .map((emp) => {
+      const employment = employeeToEmployment.get(emp.id)
+      if (!employment) return null
+
+      const householdName = householdMap.get(employment.household_id) || 'Unknown Household'
+      const phoneNumber = employeeToPhone.get(emp.id) || '—'
+
+      return {
+        id: emp.id,
+        name: emp.name,
+        role: employment.role,
+        householdName,
+        phoneNumber,
+      }
+    })
+    .filter((e): e is ExistingEmployeeFromOtherHousehold => e !== null)
+}
+
+/**
+ * Link an existing employee to a new household by creating a new employment record
+ */
+export async function linkExistingEmployee(
+  employeeId: string,
+  householdId: string,
+  employmentData: {
+    employmentType: 'monthly' | 'adhoc'
+    role: string
+    startDate: string
+    holidayBalance?: number
+    currentSalary?: number
+    paymentMethod: 'Cash' | 'Bank Transfer' | 'UPI' | 'Cheque'
+  }
+): Promise<UIEmployee> {
+  // Check if employee already has an active employment in this household
+  const existingEmployment = await getCurrentEmployment(employeeId, householdId)
+  if (existingEmployment) {
+    throw new Error('Employee is already linked to this household')
+  }
+
+  // Create new employment record
+  const { data: employment, error: employmentError } = await supabase
+    .from('employments')
+    .insert({
+      employee_id: employeeId,
+      household_id: householdId,
+      employment_type: employmentData.employmentType,
+      role: employmentData.role,
+      start_date: employmentData.startDate,
+      holiday_balance: employmentData.holidayBalance ?? null,
+      current_salary: employmentData.currentSalary ?? null,
+      payment_method: employmentData.paymentMethod,
+      status: 'active',
+    })
+    .select()
+    .single()
+
+  if (employmentError) {
+    throw new Error(`Failed to link employee: ${employmentError.message}`)
+  }
+
+  // Fetch the linked employee with all their data
+  const linkedEmployee = await fetchEmployee(employeeId, householdId)
+  if (!linkedEmployee) {
+    throw new Error('Failed to fetch linked employee')
+  }
+
+  return linkedEmployee
 }

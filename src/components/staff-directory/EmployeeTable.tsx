@@ -41,6 +41,9 @@ export function EmployeeTable({ employees, onView, onEdit, onArchive }: Employee
                 Role
               </th>
               <th className="text-left text-xs font-semibold text-stone-500 dark:text-stone-400 uppercase tracking-wider px-5 py-3 hidden lg:table-cell">
+                Type
+              </th>
+              <th className="text-left text-xs font-semibold text-stone-500 dark:text-stone-400 uppercase tracking-wider px-5 py-3 hidden lg:table-cell">
                 Phone
               </th>
               <th className="text-left text-xs font-semibold text-stone-500 dark:text-stone-400 uppercase tracking-wider px-5 py-3 hidden lg:table-cell">
@@ -65,6 +68,8 @@ export function EmployeeTable({ employees, onView, onEdit, onArchive }: Employee
               const currentRole = employee.employmentHistory.find(e => e.endDate === null)
               const primaryPhone = employee.phoneNumbers[0]
               const currentSalary = employee.salaryHistory[0]
+              // Infer employment type from salary (if salary exists and > 0, it's monthly, otherwise adhoc)
+              const employmentType = currentSalary && currentSalary.amount > 0 ? 'monthly' : 'adhoc'
               const initials = employee.name
                 .split(' ')
                 .map(n => n[0])
@@ -117,6 +122,21 @@ export function EmployeeTable({ employees, onView, onEdit, onArchive }: Employee
                     </div>
                   </td>
 
+                  {/* Employment Type */}
+                  <td className="px-5 py-4 hidden lg:table-cell">
+                    <span
+                      className={`
+                        inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+                        ${employmentType === 'monthly'
+                          ? 'bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-300'
+                          : 'bg-purple-50 text-purple-700 dark:bg-purple-950 dark:text-purple-300'
+                        }
+                      `}
+                    >
+                      {employmentType === 'monthly' ? 'Monthly' : 'Ad-hoc'}
+                    </span>
+                  </td>
+
                   {/* Phone */}
                   <td className="px-5 py-4 hidden lg:table-cell">
                     <span className="text-sm text-stone-600 dark:text-stone-400">
@@ -133,20 +153,32 @@ export function EmployeeTable({ employees, onView, onEdit, onArchive }: Employee
 
                   {/* Holiday Balance */}
                   <td className="px-5 py-4 hidden sm:table-cell">
-                    <div className="flex items-center gap-1.5">
-                      <Palmtree className="w-4 h-4 text-amber-500" />
-                      <span className="text-sm font-medium text-stone-900 dark:text-stone-100">
-                        {employee.holidayBalance}
-                        <span className="text-xs font-normal text-stone-500 ml-1">days</span>
-                      </span>
-                    </div>
+                    {employmentType === 'monthly' ? (
+                      <div className="flex items-center gap-1.5">
+                        <Palmtree className="w-4 h-4 text-amber-500" />
+                        <span className="text-sm font-medium text-stone-900 dark:text-stone-100">
+                          {employee.holidayBalance}
+                          <span className="text-xs font-normal text-stone-500 ml-1">days</span>
+                        </span>
+                      </div>
+                    ) : (
+                      <span className="text-sm text-stone-500 dark:text-stone-400">—</span>
+                    )}
                   </td>
 
                   {/* Salary */}
                   <td className="px-5 py-4 hidden xl:table-cell">
-                    <span className="text-sm font-medium text-stone-900 dark:text-stone-100">
-                      {currentSalary ? formatSalary(currentSalary.amount) : '—'}
-                    </span>
+                    {employmentType === 'monthly' && currentSalary ? (
+                      <span className="text-sm font-medium text-stone-900 dark:text-stone-100">
+                        {formatSalary(currentSalary.amount)}
+                      </span>
+                    ) : employmentType === 'adhoc' ? (
+                      <span className="text-sm font-medium text-stone-500 dark:text-stone-400">
+                        Per job
+                      </span>
+                    ) : (
+                      <span className="text-sm text-stone-500 dark:text-stone-400">—</span>
+                    )}
                   </td>
 
                   {/* Status */}
