@@ -1,6 +1,6 @@
 import type { VerificationForm } from '../types'
 import { useState, useRef, useEffect } from 'react'
-import { Mail, ArrowLeft, Loader2, RefreshCw } from 'lucide-react'
+import { Mail, ArrowLeft, Loader2, RefreshCw, Clock } from 'lucide-react'
 
 interface VerificationFormComponentProps {
   form: VerificationForm
@@ -23,6 +23,7 @@ export function VerificationFormComponent({
 }: VerificationFormComponentProps) {
   const [code, setCode] = useState<string[]>(new Array(form.codeLength).fill(''))
   const [cooldown, setCooldown] = useState(0)
+  const [expirationTime, setExpirationTime] = useState(600) // 10 minutes in seconds
   const inputRefs = useRef<(HTMLInputElement | null)[]>([])
 
   // Countdown timer for resend cooldown
@@ -32,6 +33,28 @@ export function VerificationFormComponent({
       return () => clearTimeout(timer)
     }
   }, [cooldown])
+
+  // Countdown timer for OTP expiration (10 minutes)
+  useEffect(() => {
+    if (expirationTime > 0) {
+      const timer = setTimeout(() => setExpirationTime(expirationTime - 1), 1000)
+      return () => clearTimeout(timer)
+    }
+  }, [expirationTime])
+
+  // Reset expiration timer when resending code
+  const handleResend = () => {
+    setCooldown(form.resendCooldown)
+    setExpirationTime(600) // Reset to 10 minutes
+    onResend?.()
+  }
+
+  // Format time as MM:SS
+  const formatTime = (seconds: number): string => {
+    const mins = Math.floor(seconds / 60)
+    const secs = seconds % 60
+    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`
+  }
 
   const handleChange = (index: number, value: string) => {
     if (!/^\d*$/.test(value)) return // Only allow digits
@@ -76,10 +99,6 @@ export function VerificationFormComponent({
     }
   }
 
-  const handleResend = () => {
-    setCooldown(form.resendCooldown)
-    onResend?.()
-  }
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -113,6 +132,13 @@ export function VerificationFormComponent({
         <p className="text-amber-600 dark:text-amber-400 font-medium mt-1">
           {email}
         </p>
+        {/* Expiration timer */}
+        <div className="mt-4 inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800">
+          <Clock className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+          <span className="text-sm font-medium text-amber-700 dark:text-amber-300">
+            Code expires in: <span className="font-mono">{formatTime(expirationTime)}</span>
+          </span>
+        </div>
       </div>
 
       {/* Error message */}

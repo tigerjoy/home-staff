@@ -102,33 +102,81 @@ Deno.serve(async (req) => {
       )
     }
 
-    // Send OTP via email
-    // Note: In production, you would use a proper email service
-    // For now, we'll use Supabase's built-in email or you can integrate with SendGrid, Resend, etc.
-    // This is a placeholder - you'll need to configure email sending based on your setup
-    const emailSubject = purpose === 'email_verification' 
-      ? 'Verify your email address'
-      : 'Reset your password'
+    // Send OTP via email using Resend API
+    const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY')
+    const FROM_EMAIL = Deno.env.get('FROM_EMAIL') || 'onboarding@resend.dev'
     
-    const emailBody = `
-      Your verification code is: ${code}
-      
-      This code will expire in 10 minutes.
-      
-      If you didn't request this code, please ignore this email.
+    const emailSubject = purpose === 'email_verification' 
+      ? 'Verify your email address - HomeStaff'
+      : 'Reset your password - HomeStaff'
+    
+    const emailHtml = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h2 style="color: #333;">${purpose === 'email_verification' ? 'Verify Your Email Address' : 'Reset Your Password'}</h2>
+        <p>Your verification code is:</p>
+        <div style="background-color: #f4f4f4; padding: 20px; text-align: center; font-size: 32px; font-weight: bold; letter-spacing: 5px; margin: 20px 0; border-radius: 5px;">
+          ${code}
+        </div>
+        <p>This code will expire in 10 minutes.</p>
+        <p style="color: #666; font-size: 14px;">If you didn't request this code, please ignore this email.</p>
+      </div>
     `
+    
+    const emailText = `
+${purpose === 'email_verification' ? 'Verify Your Email Address' : 'Reset Your Password'}
 
-    // For development/testing, log the OTP
-    // In production, remove this and use actual email sending
-    console.log(`OTP for ${email} (${purpose}): ${code}`)
+Your verification code is: ${code}
 
-    // TODO: Integrate with email service (Supabase email, SendGrid, Resend, etc.)
-    // For now, we'll return success - you can add email sending logic here
-    // Example with Supabase email (if configured):
-    // const { error: emailError } = await supabase.auth.admin.generateLink({
-    //   type: 'magiclink',
-    //   email: email,
-    // })
+This code will expire in 10 minutes.
+
+If you didn't request this code, please ignore this email.
+    `.trim()
+
+    // Send email via Resend API
+    if (RESEND_API_KEY) {
+      try {
+        const resendResponse = await fetch('https://api.resend.com/emails', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${RESEND_API_KEY}`,
+          },
+          body: JSON.stringify({
+            from: FROM_EMAIL,
+            to: [email],
+            subject: emailSubject,
+            html: emailHtml,
+            text: emailText,
+          }),
+        })
+
+        const resendData = await resendResponse.json()
+
+        if (!resendResponse.ok) {
+          console.error('Resend API error:', resendData)
+          // Log OTP for debugging if email fails
+          console.log(`OTP for ${email} (${purpose}): ${code}`)
+          return new Response(
+            JSON.stringify({ error: 'Failed to send email. Please try again.' }),
+            { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          )
+        }
+
+        console.log(`OTP email sent successfully to ${email}`)
+      } catch (emailError) {
+        console.error('Email sending error:', emailError)
+        // Log OTP for debugging if email fails
+        console.log(`OTP for ${email} (${purpose}): ${code}`)
+        return new Response(
+          JSON.stringify({ error: 'Failed to send email. Please try again.' }),
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+      }
+    } else {
+      // Fallback: Log OTP if Resend API key is not configured
+      console.log(`RESEND_API_KEY not configured. OTP for ${email} (${purpose}): ${code}`)
+      console.warn('Email sending is disabled. Configure RESEND_API_KEY to enable email sending.')
+    }
 
     return new Response(
       JSON.stringify({ 

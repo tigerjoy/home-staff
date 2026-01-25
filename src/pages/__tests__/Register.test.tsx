@@ -3,10 +3,30 @@ import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { BrowserRouter } from 'react-router-dom'
 import { Register } from '../Register'
-import { useAuth } from '../../hooks/useAuth'
+import { SessionProvider } from '../../context/SessionContext'
+import * as authApi from '../../lib/api/auth'
+import { needsOnboarding } from '../../lib/api/auth'
 
-// Mock useAuth hook
-vi.mock('../../hooks/useAuth')
+// Mock auth API
+vi.mock('../../lib/api/auth', async () => {
+  const actual = await vi.importActual('../../lib/api/auth')
+  return {
+    ...actual,
+    needsOnboarding: vi.fn(),
+  }
+})
+
+// Mock SessionContext
+const mockSession = null
+const mockUseSession = vi.fn(() => ({ session: mockSession }))
+
+vi.mock('../../context/SessionContext', async () => {
+  const actual = await vi.importActual('../../context/SessionContext')
+  return {
+    ...actual,
+    useSession: () => mockUseSession(),
+  }
+})
 
 const mockNavigate = vi.fn()
 vi.mock('react-router-dom', async () => {
@@ -18,27 +38,18 @@ vi.mock('react-router-dom', async () => {
 })
 
 describe('Register', () => {
-  const mockSignUp = vi.fn()
-  const mockSendVerificationOTP = vi.fn()
-  const mockVerifyOTP = vi.fn()
-
   beforeEach(() => {
     vi.clearAllMocks()
-    ;(useAuth as any).mockReturnValue({
-      user: null,
-      loading: false,
-      error: null,
-      signUp: mockSignUp,
-      sendVerificationOTP: mockSendVerificationOTP,
-      verifyOTP: mockVerifyOTP,
-      signInWithOAuth: vi.fn(),
-    })
+    mockUseSession.mockReturnValue({ session: null })
+    ;(needsOnboarding as any).mockResolvedValue(false)
   })
 
   it('should render registration form', () => {
     render(
       <BrowserRouter>
-        <Register />
+        <SessionProvider>
+          <Register />
+        </SessionProvider>
       </BrowserRouter>
     )
 
@@ -52,12 +63,24 @@ describe('Register', () => {
 
   it('should handle successful registration', async () => {
     const user = userEvent.setup()
-    mockSignUp.mockResolvedValue({ success: true })
-    mockSendVerificationOTP.mockResolvedValue({ success: true })
+    const mockUser = {
+      id: 'user-123',
+      email: 'test@example.com',
+      name: 'Test User',
+      avatarUrl: null,
+      isEmailVerified: false,
+      onboardingCompleted: false,
+      authProvider: 'email' as const,
+    }
+    
+    vi.spyOn(authApi, 'signUp').mockResolvedValue({ user: mockUser, error: null })
+    vi.spyOn(authApi, 'sendOTP').mockResolvedValue({ error: null })
 
     render(
       <BrowserRouter>
-        <Register />
+        <SessionProvider>
+          <Register />
+        </SessionProvider>
       </BrowserRouter>
     )
 
@@ -74,7 +97,7 @@ describe('Register', () => {
     await user.click(submitButton)
 
     await waitFor(() => {
-      expect(mockSignUp).toHaveBeenCalledWith({
+      expect(authApi.signUp).toHaveBeenCalledWith({
         name: 'Test User',
         email: 'test@example.com',
         password: 'Password123!',
@@ -87,7 +110,9 @@ describe('Register', () => {
 
     render(
       <BrowserRouter>
-        <Register />
+        <SessionProvider>
+          <Register />
+        </SessionProvider>
       </BrowserRouter>
     )
 
@@ -100,7 +125,7 @@ describe('Register', () => {
     await user.click(submitButton)
 
     await waitFor(() => {
-      expect(mockSignUp).not.toHaveBeenCalled()
+      expect(authApi.signUp).not.toHaveBeenCalled()
     })
   })
 
@@ -109,7 +134,9 @@ describe('Register', () => {
 
     render(
       <BrowserRouter>
-        <Register />
+        <SessionProvider>
+          <Register />
+        </SessionProvider>
       </BrowserRouter>
     )
 
@@ -120,19 +147,31 @@ describe('Register', () => {
     await user.click(submitButton)
 
     await waitFor(() => {
-      expect(mockSignUp).not.toHaveBeenCalled()
+      expect(authApi.signUp).not.toHaveBeenCalled()
     })
   })
 
   it('should handle email verification flow', async () => {
     const user = userEvent.setup()
-    mockSignUp.mockResolvedValue({ success: true })
-    mockSendVerificationOTP.mockResolvedValue({ success: true })
-    mockVerifyOTP.mockResolvedValue({ success: true })
+    const mockUser = {
+      id: 'user-123',
+      email: 'test@example.com',
+      name: 'Test User',
+      avatarUrl: null,
+      isEmailVerified: false,
+      onboardingCompleted: false,
+      authProvider: 'email' as const,
+    }
+    
+    vi.spyOn(authApi, 'signUp').mockResolvedValue({ user: mockUser, error: null })
+    vi.spyOn(authApi, 'sendOTP').mockResolvedValue({ error: null })
+    vi.spyOn(authApi, 'verifyOTP').mockResolvedValue({ verified: true, error: null })
 
     render(
       <BrowserRouter>
-        <Register />
+        <SessionProvider>
+          <Register />
+        </SessionProvider>
       </BrowserRouter>
     )
 
@@ -150,7 +189,7 @@ describe('Register', () => {
     await user.click(submitButton)
 
     await waitFor(() => {
-      expect(mockSignUp).toHaveBeenCalled()
+      expect(authApi.signUp).toHaveBeenCalled()
     })
 
     // After registration, verification screen should appear
@@ -159,14 +198,16 @@ describe('Register', () => {
 
   it('should display error message on registration failure', async () => {
     const user = userEvent.setup()
-    mockSignUp.mockResolvedValue({
-      success: false,
-      error: 'Email already registered',
+    vi.spyOn(authApi, 'signUp').mockResolvedValue({
+      user: null,
+      error: { message: 'Email already registered' },
     })
 
     render(
       <BrowserRouter>
-        <Register />
+        <SessionProvider>
+          <Register />
+        </SessionProvider>
       </BrowserRouter>
     )
 
@@ -183,7 +224,7 @@ describe('Register', () => {
     await user.click(submitButton)
 
     await waitFor(() => {
-      expect(mockSignUp).toHaveBeenCalled()
+      expect(authApi.signUp).toHaveBeenCalled()
     })
   })
 })

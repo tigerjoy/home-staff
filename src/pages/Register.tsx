@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { UserAuthentication } from '../../product-plan/sections/user-authentication/components/UserAuthentication'
 import type { UserAuthenticationProps } from '../../product-plan/sections/user-authentication/types'
@@ -13,6 +13,7 @@ export function Register() {
   const [verificationEmail, setVerificationEmail] = useState<string | undefined>()
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const isVerifying = useRef(false)
 
   const authConfig: UserAuthenticationProps['authConfig'] = {
     logo: 'HomeStaff',
@@ -150,18 +151,30 @@ export function Register() {
     tooManyAttempts: 'Too many attempts. Please try again in a few minutes',
   }
 
-  // Redirect if already authenticated
+  // Redirect if already authenticated (but not during verification flow)
   useEffect(() => {
+    // Don't redirect if we're in the verification flow - wait for OTP verification
+    // Check both state and ref to handle race conditions
+    if (currentView === 'verification' || isVerifying.current) {
+      return
+    }
+
     if (session) {
-      needsOnboarding().then((needs) => {
-        if (needs) {
-          navigate('/onboarding', { replace: true })
-        } else {
-          navigate('/staff', { replace: true })
+      // Check if email is verified before redirecting
+      authApi.getCurrentUser().then((user) => {
+        // Only redirect if email is verified and we're not verifying
+        if (user?.isEmailVerified && !isVerifying.current) {
+          needsOnboarding().then((needs) => {
+            if (needs && !isVerifying.current) {
+              navigate('/onboarding', { replace: true })
+            } else if (!isVerifying.current) {
+              navigate('/staff', { replace: true })
+            }
+          })
         }
       })
     }
-  }, [session, navigate])
+  }, [session, navigate, currentView])
 
   const handleLogin = async (email: string, password: string) => {
     navigate('/login')
@@ -170,13 +183,17 @@ export function Register() {
   const handleRegister = async (name: string, email: string, password: string) => {
     setIsLoading(true)
     setError(null)
+    // Set verification flag immediately to prevent premature redirects
+    isVerifying.current = true
     try {
       const { user, error: authError } = await authApi.signUp({ name, email, password })
       if (authError) {
         setError(authError.message)
         setIsLoading(false)
+        isVerifying.current = false
         return
       }
+      
       if (user) {
         setVerificationEmail(email)
         setCurrentView('verification')
@@ -184,9 +201,11 @@ export function Register() {
         // Send verification OTP
         await authApi.sendOTP({ email, purpose: 'email_verification' })
       }
+      
     } catch (err: any) {
       setError(err.message || 'Failed to sign up')
       setIsLoading(false)
+      isVerifying.current = false
     }
   }
 
@@ -223,12 +242,18 @@ export function Register() {
         return
       }
       if (verified) {
-        const needs = await needsOnboarding()
-        if (needs) {
-          navigate('/onboarding', { replace: true })
-        } else {
-          navigate('/staff', { replace: true })
-        }
+        // Clear verification flag before navigation to allow redirect
+        isVerifying.current = false
+        // Wait a moment for the session to update after email confirmation
+        // Then check onboarding status and redirect
+        setTimeout(async () => {
+          const needs = await needsOnboarding()
+          if (needs) {
+            navigate('/onboarding', { replace: true })
+          } else {
+            navigate('/staff', { replace: true })
+          }
+        }, 500)
       } else {
         setError('Verification failed')
         setIsLoading(false)
@@ -296,6 +321,7 @@ export function Register() {
         if (currentView === 'verification') {
           setCurrentView('register')
           setVerificationEmail(undefined)
+          isVerifying.current = false
         }
       }}
     />

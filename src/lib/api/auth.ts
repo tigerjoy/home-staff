@@ -278,12 +278,21 @@ export async function verifyOTP(params: VerifyOTPParams): Promise<{ verified: bo
       },
     })
 
-    if (error) {
-      return { verified: false, error: mapAuthError(error) }
-    }
-
+    // Check for error in response data first (even if HTTP status is non-2xx, data may contain error message)
+    // This handles cases where the edge function returns { error: "message" } in the response body
     if (data?.error) {
       return { verified: false, error: { message: data.error } }
+    }
+
+    // If there's an HTTP error, the response body might still be in data
+    // Supabase may set error for non-2xx statuses, but data can still contain the JSON response
+    if (error) {
+      // If data exists and has an error field, use it (this handles non-2xx responses with JSON bodies)
+      if (data && typeof data === 'object' && 'error' in data) {
+        return { verified: false, error: { message: data.error as string } }
+      }
+      // Otherwise, try to extract from error object or use mapped error
+      return { verified: false, error: mapAuthError(error) }
     }
 
     if (data?.verified) {
@@ -292,6 +301,10 @@ export async function verifyOTP(params: VerifyOTPParams): Promise<{ verified: bo
 
     return { verified: false, error: { message: 'Verification failed' } }
   } catch (error: any) {
+    // For caught errors, try to extract error message from response if available
+    if (error?.data?.error) {
+      return { verified: false, error: { message: error.data.error } }
+    }
     return { verified: false, error: mapAuthError(error) }
   }
 }

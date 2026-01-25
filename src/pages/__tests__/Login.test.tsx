@@ -3,10 +3,30 @@ import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { BrowserRouter } from 'react-router-dom'
 import { Login } from '../Login'
-import { useAuth } from '../../hooks/useAuth'
+import { SessionProvider } from '../../context/SessionContext'
+import * as authApi from '../../lib/api/auth'
+import { needsOnboarding } from '../../lib/api/auth'
 
-// Mock useAuth hook
-vi.mock('../../hooks/useAuth')
+// Mock auth API
+vi.mock('../../lib/api/auth', async () => {
+  const actual = await vi.importActual('../../lib/api/auth')
+  return {
+    ...actual,
+    needsOnboarding: vi.fn(),
+  }
+})
+
+// Mock SessionContext
+const mockSession = null
+const mockUseSession = vi.fn(() => ({ session: mockSession }))
+
+vi.mock('../../context/SessionContext', async () => {
+  const actual = await vi.importActual('../../context/SessionContext')
+  return {
+    ...actual,
+    useSession: () => mockUseSession(),
+  }
+})
 
 const mockNavigate = vi.fn()
 vi.mock('react-router-dom', async () => {
@@ -14,32 +34,23 @@ vi.mock('react-router-dom', async () => {
   return {
     ...actual,
     useNavigate: () => mockNavigate,
+    useLocation: () => ({ state: null }),
   }
 })
 
 describe('Login', () => {
-  const mockSignIn = vi.fn()
-  const mockSignInWithOAuth = vi.fn()
-  const mockResetPassword = vi.fn()
-  const mockVerifyOTP = vi.fn()
-
   beforeEach(() => {
     vi.clearAllMocks()
-    ;(useAuth as any).mockReturnValue({
-      user: null,
-      loading: false,
-      error: null,
-      signIn: mockSignIn,
-      signInWithOAuth: mockSignInWithOAuth,
-      resetPassword: mockResetPassword,
-      verifyOTP: mockVerifyOTP,
-    })
+    mockUseSession.mockReturnValue({ session: null })
+    ;(needsOnboarding as any).mockResolvedValue(false)
   })
 
   it('should render login form', () => {
     render(
       <BrowserRouter>
-        <Login />
+        <SessionProvider>
+          <Login />
+        </SessionProvider>
       </BrowserRouter>
     )
 
@@ -51,11 +62,24 @@ describe('Login', () => {
 
   it('should handle successful login', async () => {
     const user = userEvent.setup()
-    mockSignIn.mockResolvedValue({ success: true })
+    const mockUser = {
+      id: 'user-123',
+      email: 'test@example.com',
+      name: 'Test User',
+      avatarUrl: null,
+      isEmailVerified: true,
+      onboardingCompleted: false,
+      authProvider: 'email' as const,
+    }
+    
+    vi.spyOn(authApi, 'signIn').mockResolvedValue({ user: mockUser, error: null })
+    ;(needsOnboarding as any).mockResolvedValue(false)
 
     render(
       <BrowserRouter>
-        <Login />
+        <SessionProvider>
+          <Login />
+        </SessionProvider>
       </BrowserRouter>
     )
 
@@ -68,7 +92,7 @@ describe('Login', () => {
     await user.click(submitButton)
 
     await waitFor(() => {
-      expect(mockSignIn).toHaveBeenCalledWith({
+      expect(authApi.signIn).toHaveBeenCalledWith({
         email: 'test@example.com',
         password: 'password123',
       })
@@ -77,14 +101,16 @@ describe('Login', () => {
 
   it('should display error message on login failure', async () => {
     const user = userEvent.setup()
-    mockSignIn.mockResolvedValue({
-      success: false,
-      error: 'Invalid email or password',
+    vi.spyOn(authApi, 'signIn').mockResolvedValue({
+      user: null,
+      error: { message: 'Invalid email or password' },
     })
 
     render(
       <BrowserRouter>
-        <Login />
+        <SessionProvider>
+          <Login />
+        </SessionProvider>
       </BrowserRouter>
     )
 
@@ -97,17 +123,19 @@ describe('Login', () => {
     await user.click(submitButton)
 
     await waitFor(() => {
-      expect(mockSignIn).toHaveBeenCalled()
+      expect(authApi.signIn).toHaveBeenCalled()
     })
   })
 
   it('should handle social auth login', async () => {
     const user = userEvent.setup()
-    mockSignInWithOAuth.mockResolvedValue({})
+    vi.spyOn(authApi, 'signInWithOAuth').mockResolvedValue({ error: null })
 
     render(
       <BrowserRouter>
-        <Login />
+        <SessionProvider>
+          <Login />
+        </SessionProvider>
       </BrowserRouter>
     )
 
@@ -115,35 +143,40 @@ describe('Login', () => {
     await user.click(googleButton)
 
     await waitFor(() => {
-      expect(mockSignInWithOAuth).toHaveBeenCalledWith('google')
+      expect(authApi.signInWithOAuth).toHaveBeenCalledWith('google')
     })
   })
 
   it('should show loading state during login', async () => {
     const user = userEvent.setup()
     let resolveSignIn: (value: any) => void
-    const signInPromise = new Promise((resolve) => {
+    const signInPromise = new Promise<{ user: any; error: any }>((resolve) => {
       resolveSignIn = resolve
     })
-    mockSignIn.mockReturnValue(signInPromise)
-
-    ;(useAuth as any).mockReturnValue({
-      user: null,
-      loading: true,
-      error: null,
-      signIn: mockSignIn,
-      signInWithOAuth: mockSignInWithOAuth,
-      resetPassword: mockResetPassword,
-      verifyOTP: mockVerifyOTP,
-    })
+    vi.spyOn(authApi, 'signIn').mockReturnValue(signInPromise)
 
     render(
       <BrowserRouter>
-        <Login />
+        <SessionProvider>
+          <Login />
+        </SessionProvider>
       </BrowserRouter>
     )
 
+    const emailInput = screen.getByLabelText(/email address/i)
+    const passwordInput = screen.getByLabelText(/password/i)
     const submitButton = screen.getByRole('button', { name: /sign in/i })
-    expect(submitButton).toBeDisabled()
+
+    await user.type(emailInput, 'test@example.com')
+    await user.type(passwordInput, 'password123')
+    await user.click(submitButton)
+
+    // Button should be disabled during loading
+    await waitFor(() => {
+      expect(submitButton).toBeDisabled()
+    })
+
+    // Resolve the promise
+    resolveSignIn!({ user: null, error: null })
   })
 })

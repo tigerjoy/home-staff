@@ -4,9 +4,9 @@
 
 Before using this prompt, replace these variables:
 
-- **SECTION_NAME** = [Human-readable name, e.g., "Staff Directory" or "Payroll & Finance"]
-- **SECTION_ID** = [Folder name in sections/, e.g., "staff-directory" or "payroll-and-finance"]
-- **NN** = [Milestone number, e.g., "04" or "06" — sections start at 02 since 01 is Foundation]
+- **SECTION_NAME** = "Onboarding And Setup"
+- **SECTION_ID** = "onboarding-and-setup"
+- **NN** = "08"
 
 ---
 

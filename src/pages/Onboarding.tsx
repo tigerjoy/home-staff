@@ -130,28 +130,28 @@ export function Onboarding() {
         case 'step-employee': {
           if (householdId && data.name && data.role) {
             // Create employee with minimal fields
-            const employee: Omit<Employee, 'id'> = {
-              householdId,
+            const employeeData: Omit<Employee, 'id' | 'createdAt' | 'updatedAt'> = {
               name: data.name,
               photo: null,
-              status: 'active',
-              holidayBalance: 0,
               phoneNumbers: [],
               addresses: [],
-              employmentHistory: [
-                {
-                  role: data.role,
-                  department: 'Household',
-                  startDate: new Date().toISOString().split('T')[0],
-                  endDate: null,
-                },
-              ],
-              salaryHistory: [],
               documents: [],
               customProperties: [],
               notes: [],
             }
-            await employeesApi.createEmployee(employee)
+            
+            const employmentType = data.employmentType || 'monthly'
+            const startDate = new Date().toISOString().split('T')[0]
+            
+            const employmentData = {
+              householdId,
+              employmentType: employmentType as 'monthly' | 'adhoc',
+              role: data.role,
+              startDate,
+              paymentMethod: 'Cash' as const, // Default payment method for onboarding
+            }
+            
+            await employeesApi.createEmployee(employeeData, employmentData)
             await onboardingApi.saveOnboardingProgress(3, data)
           }
           break

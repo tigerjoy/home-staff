@@ -180,11 +180,19 @@ function EmployeeStep({
   setEmployeeName,
   employeeRole,
   setEmployeeRole,
+  customRole,
+  setCustomRole,
+  employmentType,
+  setEmploymentType,
 }: {
   employeeName: string
   setEmployeeName: (name: string) => void
   employeeRole: string
   setEmployeeRole: (role: string) => void
+  customRole: string
+  setCustomRole: (role: string) => void
+  employmentType: 'monthly' | 'adhoc'
+  setEmploymentType: (type: 'monthly' | 'adhoc') => void
 }) {
   const roles = ['Housekeeper', 'Cook', 'Driver', 'Gardener', 'Nanny', 'Security', 'Other']
 
@@ -203,6 +211,40 @@ function EmployeeStep({
       </div>
 
       <div className="max-w-md mx-auto space-y-5">
+        <div>
+          <label className="block text-sm font-medium text-stone-700 dark:text-stone-300 mb-2">
+            Employment Type
+          </label>
+          <div className="grid grid-cols-2 gap-3">
+            <button
+              onClick={() => setEmploymentType('monthly')}
+              className={`
+                px-4 py-3 rounded-xl border-2 text-sm font-medium transition-all text-center
+                ${
+                  employmentType === 'monthly'
+                    ? 'border-amber-500 bg-amber-50 dark:bg-amber-950/30 text-amber-700 dark:text-amber-300'
+                    : 'border-stone-200 dark:border-stone-700 text-stone-700 dark:text-stone-300 hover:border-amber-300 dark:hover:border-amber-600'
+                }
+              `}
+            >
+              Monthly Staff
+            </button>
+            <button
+              onClick={() => setEmploymentType('adhoc')}
+              className={`
+                px-4 py-3 rounded-xl border-2 text-sm font-medium transition-all text-center
+                ${
+                  employmentType === 'adhoc'
+                    ? 'border-amber-500 bg-amber-50 dark:bg-amber-950/30 text-amber-700 dark:text-amber-300'
+                    : 'border-stone-200 dark:border-stone-700 text-stone-700 dark:text-stone-300 hover:border-amber-300 dark:hover:border-amber-600'
+                }
+              `}
+            >
+              Ad-hoc Worker
+            </button>
+          </div>
+        </div>
+
         <div>
           <label className="block text-sm font-medium text-stone-700 dark:text-stone-300 mb-2">
             Employee Name
@@ -224,9 +266,15 @@ function EmployeeStep({
             {roles.map((role) => (
               <button
                 key={role}
-                onClick={() => setEmployeeRole(role)}
+                onClick={() => {
+                  setEmployeeRole(role)
+                  if (role !== 'Other') {
+                    setCustomRole('')
+                  }
+                }}
                 className={`
                   px-4 py-3 rounded-xl border-2 text-sm font-medium transition-all
+                  ${role === 'Other' ? 'col-span-2' : ''}
                   ${
                     employeeRole === role
                       ? 'border-amber-500 bg-amber-50 dark:bg-amber-950/30 text-amber-700 dark:text-amber-300'
@@ -238,6 +286,18 @@ function EmployeeStep({
               </button>
             ))}
           </div>
+          {employeeRole === 'Other' && (
+            <div className="mt-3">
+              <input
+                type="text"
+                value={customRole}
+                onChange={(e) => setCustomRole(e.target.value)}
+                placeholder="Enter custom role"
+                className="w-full px-5 py-4 rounded-2xl border-2 border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-800 text-stone-900 dark:text-stone-100 text-lg placeholder-stone-400 focus:outline-none focus:border-amber-500 dark:focus:border-amber-400 transition-colors"
+                autoFocus
+              />
+            </div>
+          )}
         </div>
       </div>
     </div>
@@ -365,6 +425,8 @@ export function OnboardingWizard({
   const [selectedAttendance, setSelectedAttendance] = useState('a1')
   const [employeeName, setEmployeeName] = useState('')
   const [employeeRole, setEmployeeRole] = useState('')
+  const [customRole, setCustomRole] = useState('')
+  const [employmentType, setEmploymentType] = useState<'monthly' | 'adhoc'>('monthly')
 
   const currentStep = steps[currentIndex]
   const isFirstStep = currentIndex === 0
@@ -400,7 +462,11 @@ export function OnboardingWizard({
       case 'step-defaults':
         return { holidayRule: selectedHolidayRule, attendance: selectedAttendance }
       case 'step-employee':
-        return { name: employeeName, role: employeeRole }
+        return {
+          name: employeeName,
+          role: employeeRole === 'Other' ? customRole : employeeRole,
+          employmentType,
+        }
       default:
         return {}
     }
@@ -413,7 +479,16 @@ export function OnboardingWizard({
       case 'step-defaults':
         return true
       case 'step-employee':
-        return !currentStep.isRequired || (employeeName.trim().length > 0 && employeeRole)
+        if (!currentStep.isRequired) {
+          return true
+        }
+        if (!employeeName.trim().length || !employeeRole) {
+          return false
+        }
+        if (employeeRole === 'Other') {
+          return customRole.trim().length > 0
+        }
+        return true
       case 'step-welcome':
         return true
       default:
@@ -447,6 +522,10 @@ export function OnboardingWizard({
             setEmployeeName={setEmployeeName}
             employeeRole={employeeRole}
             setEmployeeRole={setEmployeeRole}
+            customRole={customRole}
+            setCustomRole={setCustomRole}
+            employmentType={employmentType}
+            setEmploymentType={setEmploymentType}
           />
         )
       case 'step-welcome':
