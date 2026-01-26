@@ -28,6 +28,8 @@ export interface Member {
   role: 'Admin' | 'Member'
   joinedAt: string
   isPrimary?: boolean
+  status?: 'active' | 'pending'
+  permissions?: string[]
 }
 
 export interface MemberWithProfile extends Member {

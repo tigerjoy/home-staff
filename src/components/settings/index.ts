@@ -1,4 +1,6 @@
 export { SettingsDashboard } from './SettingsDashboard'
 export { InvitationCodeCard } from './InvitationCodeCard'
 export { JoinHouseholdModal } from './JoinHouseholdModal'
+export { SwitchHouseholdDialog } from './SwitchHouseholdDialog'
+export { SwitchHouseholdModal } from './SwitchHouseholdModal'
 export type * from './types'

@@ -1,4 +1,6 @@
 import { supabase } from '../../supabase'
+import { requirePermission, requireActiveMembership } from '../permissions/accessControl'
+import { PERMISSIONS } from '../permissions/constants'
 
 export interface InvitationCode {
   id: string
@@ -38,22 +40,9 @@ export async function createInvitationCode(
   householdId: string,
   options?: InvitationCodeOptions
 ): Promise<InvitationCode> {
-  const { data: { user }, error: userError } = await supabase.auth.getUser()
-  if (userError || !user) {
-    throw new Error('User not authenticated')
-  }
-
-  // Check if user is admin of the household
-  const { data: member, error: memberError } = await supabase
-    .from('members')
-    .select('role')
-    .eq('household_id', householdId)
-    .eq('user_id', user.id)
-    .single()
-
-  if (memberError || !member || member.role !== 'admin') {
-    throw new Error('Only admins can create invitation codes')
-  }
+  // Check access and permission
+  await requireActiveMembership(householdId)
+  await requirePermission(householdId, PERMISSIONS.INVITE_MEMBERS)
 
   // Check if there's already an active invitation code
   const { data: existing } = await supabase
@@ -160,22 +149,9 @@ export async function getInvitationCode(householdId: string): Promise<Invitation
  * Regenerate invitation code (revoke old and create new)
  */
 export async function regenerateInvitationCode(householdId: string): Promise<InvitationCode> {
-  const { data: { user }, error: userError } = await supabase.auth.getUser()
-  if (userError || !user) {
-    throw new Error('User not authenticated')
-  }
-
-  // Check if user is admin
-  const { data: member, error: memberError } = await supabase
-    .from('members')
-    .select('role')
-    .eq('household_id', householdId)
-    .eq('user_id', user.id)
-    .single()
-
-  if (memberError || !member || member.role !== 'admin') {
-    throw new Error('Only admins can regenerate invitation codes')
-  }
+  // Check access and permission
+  await requireActiveMembership(householdId)
+  await requirePermission(householdId, PERMISSIONS.INVITE_MEMBERS)
 
   // Revoke existing active invitation
   const { error: revokeError } = await supabase
@@ -194,6 +170,7 @@ export async function regenerateInvitationCode(householdId: string): Promise<Inv
 
 /**
  * Validate an invitation code and return household info
+ * Uses a SECURITY DEFINER database function to bypass RLS restrictions
  */
 export async function validateInvitationCode(code: string): Promise<{
   valid: boolean
@@ -201,136 +178,68 @@ export async function validateInvitationCode(code: string): Promise<{
   householdName?: string
   error?: string
 }> {
-  const { data: invitation, error } = await supabase
-    .from('invitations')
-    .select('*, households(name)')
-    .eq('code', code)
-    .eq('status', 'active')
-    .single()
+  const { data, error } = await supabase.rpc('validate_invitation_code', {
+    p_code: code,
+  })
 
-  if (error || !invitation) {
+  if (error) {
     return { valid: false, error: 'Invalid invitation code' }
   }
 
-  // Check expiration
-  if (invitation.expires_at) {
-    const expiresAt = new Date(invitation.expires_at)
-    if (expiresAt < new Date()) {
-      // Mark as expired
-      await supabase
-        .from('invitations')
-        .update({ status: 'expired' })
-        .eq('id', invitation.id)
-      return { valid: false, error: 'Invitation code has expired' }
-    }
+  if (!data) {
+    return { valid: false, error: 'Invalid invitation code' }
   }
 
-  // Check max uses
-  if (invitation.max_uses !== null && invitation.current_uses >= invitation.max_uses) {
-    return { valid: false, error: 'Invitation code has reached maximum uses' }
+  // Parse the JSONB response from the database function
+  const result = data as {
+    valid: boolean
+    householdId?: string
+    householdName?: string
+    error?: string
   }
-
-  const household = invitation.households as { name: string } | null
 
   return {
-    valid: true,
-    householdId: invitation.household_id,
-    householdName: household?.name || 'Unknown Household',
+    valid: result.valid,
+    householdId: result.householdId,
+    householdName: result.householdName,
+    error: result.error,
   }
 }
 
 /**
  * Accept an invitation code and add current user to household
+ * Uses a SECURITY DEFINER database function to handle the entire acceptance flow
+ * in a transaction, bypassing RLS restrictions
  */
 export async function acceptInvitationCode(code: string): Promise<{
   success: boolean
   householdId?: string
   error?: string
 }> {
-  const { data: { user }, error: userError } = await supabase.auth.getUser()
-  if (userError || !user) {
-    return { success: false, error: 'User not authenticated' }
+  const { data, error } = await supabase.rpc('accept_invitation_code', {
+    p_code: code,
+  })
+
+  if (error) {
+    return { success: false, error: 'Failed to join household' }
   }
 
-  // Validate code
-  const validation = await validateInvitationCode(code)
-  if (!validation.valid || !validation.householdId) {
-    return { success: false, error: validation.error || 'Invalid invitation code' }
+  if (!data) {
+    return { success: false, error: 'Failed to join household' }
   }
 
-  const householdId = validation.householdId
-
-  // Check if user is already a member
-  const { data: existingMember } = await supabase
-    .from('members')
-    .select('id')
-    .eq('household_id', householdId)
-    .eq('user_id', user.id)
-    .single()
-
-  if (existingMember) {
-    return { success: false, error: 'You are already a member of this household' }
+  // Parse the JSONB response from the database function
+  const result = data as {
+    success: boolean
+    householdId?: string
+    error?: string
   }
 
-  // Get invitation to determine role
-  const { data: invitation, error: invitationError } = await supabase
-    .from('invitations')
-    .select('*')
-    .eq('code', code)
-    .eq('status', 'active')
-    .single()
-
-  if (invitationError || !invitation) {
-    return { success: false, error: 'Invalid invitation code' }
+  return {
+    success: result.success,
+    householdId: result.householdId,
+    error: result.error,
   }
-
-  // Check if this is user's first household (to set as primary)
-  const { data: existingHouseholds } = await supabase
-    .from('members')
-    .select('id')
-    .eq('user_id', user.id)
-    .limit(1)
-
-  const isFirstHousehold = !existingHouseholds || existingHouseholds.length === 0
-
-  // Add user as member (default to 'member' role, admins can change later)
-  // Note: The invitation doesn't store role, so we default to 'member'
-  // If needed, we could add role to invitations table later
-  const { error: memberError } = await supabase
-    .from('members')
-    .insert({
-      user_id: user.id,
-      household_id: householdId,
-      role: 'member',
-      is_primary: isFirstHousehold, // Set as primary if first household
-    })
-
-  if (memberError) {
-    return { success: false, error: `Failed to join household: ${memberError.message}` }
-  }
-
-  // Increment usage count
-  const { error: updateError } = await supabase
-    .from('invitations')
-    .update({
-      current_uses: invitation.current_uses + 1,
-    })
-    .eq('id', invitation.id)
-
-  if (updateError) {
-    // Log error but don't fail - member was added successfully
-    console.error('Failed to update invitation usage:', updateError)
-  }
-
-  // Check if max uses reached
-  if (invitation.max_uses !== null && invitation.current_uses + 1 >= invitation.max_uses) {
-    await supabase
-      .from('invitations')
-      .update({ status: 'revoked' })
-      .eq('id', invitation.id)
-  }
-
-  return { success: true, householdId }
 }
 
 /**
@@ -365,22 +274,9 @@ export async function getHouseholdInvitations(householdId: string): Promise<Invi
  * Revoke an invitation code
  */
 export async function revokeInvitationCode(householdId: string): Promise<void> {
-  const { data: { user }, error: userError } = await supabase.auth.getUser()
-  if (userError || !user) {
-    throw new Error('User not authenticated')
-  }
-
-  // Check if user is admin
-  const { data: member, error: memberError } = await supabase
-    .from('members')
-    .select('role')
-    .eq('household_id', householdId)
-    .eq('user_id', user.id)
-    .single()
-
-  if (memberError || !member || member.role !== 'admin') {
-    throw new Error('Only admins can revoke invitation codes')
-  }
+  // Check access and permission
+  await requireActiveMembership(householdId)
+  await requirePermission(householdId, PERMISSIONS.INVITE_MEMBERS)
 
   const { error } = await supabase
     .from('invitations')

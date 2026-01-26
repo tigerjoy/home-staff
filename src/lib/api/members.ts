@@ -1,4 +1,6 @@
 import { supabase } from '../../supabase'
+import { requirePermission, requireActiveMembership } from '../permissions/accessControl'
+import { PERMISSIONS } from '../permissions/constants'
 import type { Member } from '../../types'
 
 export interface MemberWithProfile extends Member {
@@ -14,7 +16,7 @@ export async function getHouseholdMembers(householdId: string): Promise<MemberWi
   // First get members
   const { data: members, error } = await supabase
     .from('members')
-    .select('id, user_id, household_id, role, joined_at, is_primary')
+    .select('id, user_id, household_id, role, joined_at, is_primary, status')
     .eq('household_id', householdId)
     .order('joined_at', { ascending: true })
 
@@ -39,17 +41,37 @@ export async function getHouseholdMembers(householdId: string): Promise<MemberWi
     throw new Error(`Failed to fetch profiles: ${profilesError.message}`)
   }
 
+  // Get member IDs for permission lookup
+  const memberIds = members.map((m) => m.id)
+
+  // Fetch permissions for all members
+  const { data: permissions, error: permissionsError } = await supabase
+    .from('member_permissions')
+    .select('member_id, permission')
+    .in('member_id', memberIds)
+
+  if (permissionsError) {
+    throw new Error(`Failed to fetch permissions: ${permissionsError.message}`)
+  }
+
+  // Create a map of member_id to permissions array
+  const permissionsMap = new Map<string, string[]>()
+  if (permissions) {
+    permissions.forEach((p) => {
+      const existing = permissionsMap.get(p.member_id) || []
+      permissionsMap.set(p.member_id, [...existing, p.permission])
+    })
+  }
+
   // Create a map of user_id to profile
   const profileMap = new Map(
     (profiles || []).map((p) => [p.id, p])
   )
 
-  if (error) {
-    throw new Error(`Failed to fetch members: ${error.message}`)
-  }
-
   return members.map((member) => {
     const profile = profileMap.get(member.user_id)
+    const memberPermissions = permissionsMap.get(member.id)
+    
     return {
       id: member.id,
       userId: member.user_id,
@@ -59,6 +81,8 @@ export async function getHouseholdMembers(householdId: string): Promise<MemberWi
       name: profile?.name || 'Unknown User',
       email: profile?.email || '',
       avatarUrl: profile?.avatar_url || null,
+      status: member.status === 'pending' ? 'pending' : 'active',
+      permissions: memberPermissions && memberPermissions.length > 0 ? memberPermissions : undefined,
     }
   })
 }
@@ -72,21 +96,13 @@ export async function updateMemberRole(
   householdId: string,
   newRole: 'Admin' | 'Member'
 ): Promise<void> {
+  // Check access and permission
+  await requireActiveMembership(householdId)
+  await requirePermission(householdId, PERMISSIONS.MANAGE_MEMBERS)
+
   const { data: { user }, error: userError } = await supabase.auth.getUser()
   if (userError || !user) {
     throw new Error('User not authenticated')
-  }
-
-  // Check if current user is admin
-  const { data: currentMember, error: currentMemberError } = await supabase
-    .from('members')
-    .select('role')
-    .eq('household_id', householdId)
-    .eq('user_id', user.id)
-    .single()
-
-  if (currentMemberError || !currentMember || currentMember.role !== 'admin') {
-    throw new Error('Only admins can change member roles')
   }
 
   // Check if this is the last admin
@@ -124,21 +140,13 @@ export async function updateMemberRole(
  * Remove a member from a household
  */
 export async function removeMember(memberId: string, householdId: string): Promise<void> {
+  // Check access and permission
+  await requireActiveMembership(householdId)
+  await requirePermission(householdId, PERMISSIONS.MANAGE_MEMBERS)
+
   const { data: { user }, error: userError } = await supabase.auth.getUser()
   if (userError || !user) {
     throw new Error('User not authenticated')
-  }
-
-  // Check if current user is admin
-  const { data: currentMember, error: currentMemberError } = await supabase
-    .from('members')
-    .select('role')
-    .eq('household_id', householdId)
-    .eq('user_id', user.id)
-    .single()
-
-  if (currentMemberError || !currentMember || currentMember.role !== 'admin') {
-    throw new Error('Only admins can remove members')
   }
 
   // Check if trying to remove the last admin
@@ -203,4 +211,126 @@ export async function getCurrentUserRole(householdId: string): Promise<'Admin' |
   }
 
   return member.role === 'admin' ? 'Admin' : 'Member'
+}
+
+/**
+ * Approve a pending member (admin only)
+ */
+export async function approveMember(memberId: string, householdId: string): Promise<void> {
+  const { data: { user }, error: userError } = await supabase.auth.getUser()
+  if (userError || !user) {
+    throw new Error('User not authenticated')
+  }
+
+  // Check if current user is admin
+  const { data: currentMember, error: currentMemberError } = await supabase
+    .from('members')
+    .select('role')
+    .eq('household_id', householdId)
+    .eq('user_id', user.id)
+    .single()
+
+  if (currentMemberError || !currentMember || currentMember.role !== 'admin') {
+    throw new Error('Only admins can approve members')
+  }
+
+  // Update member status to active
+  const { error } = await supabase
+    .from('members')
+    .update({ status: 'active' })
+    .eq('id', memberId)
+    .eq('household_id', householdId)
+
+  if (error) {
+    throw new Error(`Failed to approve member: ${error.message}`)
+  }
+}
+
+/**
+ * Reject a pending member (admin only)
+ */
+export async function rejectMember(memberId: string, householdId: string): Promise<void> {
+  const { data: { user }, error: userError } = await supabase.auth.getUser()
+  if (userError || !user) {
+    throw new Error('User not authenticated')
+  }
+
+  // Check if current user is admin
+  const { data: currentMember, error: currentMemberError } = await supabase
+    .from('members')
+    .select('role')
+    .eq('household_id', householdId)
+    .eq('user_id', user.id)
+    .single()
+
+  if (currentMemberError || !currentMember || currentMember.role !== 'admin') {
+    throw new Error('Only admins can reject members')
+  }
+
+  // Remove the member
+  const { error } = await supabase
+    .from('members')
+    .delete()
+    .eq('id', memberId)
+    .eq('household_id', householdId)
+
+  if (error) {
+    throw new Error(`Failed to reject member: ${error.message}`)
+  }
+}
+
+/**
+ * Update a member's permissions
+ */
+export async function updateMemberPermissions(
+  memberId: string,
+  householdId: string,
+  permissions: string[]
+): Promise<void> {
+  // Check access and permission
+  await requireActiveMembership(householdId)
+  await requirePermission(householdId, PERMISSIONS.MANAGE_MEMBERS)
+
+  const { data: { user }, error: userError } = await supabase.auth.getUser()
+  if (userError || !user) {
+    throw new Error('User not authenticated')
+  }
+
+  // Verify the member belongs to the household
+  const { data: member, error: memberError } = await supabase
+    .from('members')
+    .select('id')
+    .eq('id', memberId)
+    .eq('household_id', householdId)
+    .single()
+
+  if (memberError || !member) {
+    throw new Error('Member not found in this household')
+  }
+
+  // Delete existing permissions for this member
+  const { error: deleteError } = await supabase
+    .from('member_permissions')
+    .delete()
+    .eq('member_id', memberId)
+
+  if (deleteError) {
+    throw new Error(`Failed to delete existing permissions: ${deleteError.message}`)
+  }
+
+  // Insert new permissions if any
+  if (permissions.length > 0) {
+    const permissionRows = permissions.map((permission) => ({
+      member_id: memberId,
+      permission,
+    }))
+
+    const { error: insertError } = await supabase
+      .from('member_permissions')
+      .insert(permissionRows)
+
+    if (insertError) {
+      throw new Error(`Failed to update member permissions: ${insertError.message}`)
+    }
+  }
 }

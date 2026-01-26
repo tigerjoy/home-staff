@@ -1,6 +1,7 @@
 import { useNavigate, useLocation, Outlet } from 'react-router-dom'
 import { Users, Calendar, Wallet, Settings } from 'lucide-react'
 import { AppShell, type NavigationItem } from './shell'
+import { SwitchHouseholdModal, SwitchHouseholdDialog } from './settings'
 import { useSession } from '../context/SessionContext'
 import { signOut as signOutApi, getCurrentUser } from '../lib/api/auth'
 import { useHousehold } from '../hooks/useHousehold'
@@ -10,8 +11,10 @@ export function AppLayout() {
   const navigate = useNavigate()
   const location = useLocation()
   const { session } = useSession()
-  const { activeHousehold, switchHousehold: switchHouseholdFn } = useHousehold()
+  const { activeHousehold, activeHouseholdId, households, switchHousehold } = useHousehold()
   const [user, setUser] = useState<{ name: string; avatarUrl?: string }>({ name: 'User' })
+  const [showSwitchHouseholdModal, setShowSwitchHouseholdModal] = useState(false)
+  const [pendingSwitch, setPendingSwitch] = useState<{ id: string; name: string } | null>(null)
 
   useEffect(() => {
     if (session?.user) {
@@ -45,9 +48,22 @@ export function AppLayout() {
   }
 
   const handleSwitchHousehold = () => {
-    // TODO: Implement household switching UI when that feature is ready
-    // For now, just log - the switchHousehold function is available via useHousehold
-    console.log('Switch household clicked')
+    setShowSwitchHouseholdModal(true)
+  }
+
+  const handleSwitchHouseholdSelect = (id: string, name: string) => {
+    setShowSwitchHouseholdModal(false)
+    setPendingSwitch({ id, name })
+  }
+
+  const handleSwitchHouseholdConfirm = async () => {
+    if (!pendingSwitch) return
+    try {
+      await switchHousehold(pendingSwitch.id)
+      setPendingSwitch(null)
+    } catch {
+      setPendingSwitch(null)
+    }
   }
 
   const handleAccountSettings = () => {
@@ -59,16 +75,33 @@ export function AppLayout() {
   const household = activeHousehold ? { name: activeHousehold.name } : undefined
 
   return (
-    <AppShell
-      navigationItems={navigationItems}
-      user={user}
-      household={household}
-      onNavigate={handleNavigate}
-      onLogout={handleLogout}
-      onSwitchHousehold={handleSwitchHousehold}
-      onAccountSettings={handleAccountSettings}
-    >
-      <Outlet />
-    </AppShell>
+    <>
+      <AppShell
+        navigationItems={navigationItems}
+        user={user}
+        household={household}
+        onNavigate={handleNavigate}
+        onLogout={handleLogout}
+        onSwitchHousehold={handleSwitchHousehold}
+        onAccountSettings={handleAccountSettings}
+      >
+        <Outlet />
+      </AppShell>
+      {showSwitchHouseholdModal && (
+        <SwitchHouseholdModal
+          households={households}
+          activeHouseholdId={activeHouseholdId}
+          onSelect={handleSwitchHouseholdSelect}
+          onClose={() => setShowSwitchHouseholdModal(false)}
+        />
+      )}
+      {pendingSwitch && (
+        <SwitchHouseholdDialog
+          householdName={pendingSwitch.name}
+          onConfirm={handleSwitchHouseholdConfirm}
+          onCancel={() => setPendingSwitch(null)}
+        />
+      )}
+    </>
   )
 }

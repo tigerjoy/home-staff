@@ -1,4 +1,6 @@
 import { supabase } from '../../supabase'
+import { requirePermission, requireActiveMembership } from '../permissions/accessControl'
+import { PERMISSIONS } from '../permissions/constants'
 import type { Household, Member } from '../../types'
 
 // Transform database row to Household interface
@@ -65,7 +67,7 @@ export async function createHousehold(name: string): Promise<Household> {
 
   const isFirstHousehold = !existingMembers || existingMembers.length === 0
 
-  // Add current user as admin member
+  // Add current user as admin member with active status
   const { error: memberError } = await supabase
     .from('members')
     .insert({
@@ -73,6 +75,7 @@ export async function createHousehold(name: string): Promise<Household> {
       household_id: household.id,
       role: 'admin',
       is_primary: isFirstHousehold, // Set as primary if first household
+      status: 'active', // Creator is automatically active
     })
 
   if (memberError) {
@@ -282,6 +285,7 @@ export async function getUserHouseholdsWithRoles(): Promise<HouseholdWithRole[]>
       household_id,
       role,
       is_primary,
+      status,
       households (*)
     `)
     .eq('user_id', user.id)
@@ -301,6 +305,7 @@ export async function getUserHouseholdsWithRoles(): Promise<HouseholdWithRole[]>
       ...transformToHousehold(household),
       role: member.role === 'admin' ? 'Admin' : 'Member',
       isPrimary: member.is_primary || false,
+      memberStatus: member.status === 'pending' ? 'pending' : 'active',
     }
   })
 }
@@ -409,22 +414,9 @@ export async function renameHousehold(id: string, newName: string): Promise<Hous
     throw new Error('Household name must be at least 2 characters')
   }
 
-  const { data: { user }, error: userError } = await supabase.auth.getUser()
-  if (userError || !user) {
-    throw new Error('User not authenticated')
-  }
-
-  // Check if user is admin
-  const { data: member, error: memberError } = await supabase
-    .from('members')
-    .select('role')
-    .eq('household_id', id)
-    .eq('user_id', user.id)
-    .single()
-
-  if (memberError || !member || member.role !== 'admin') {
-    throw new Error('Only admins can rename households')
-  }
+  // Check access and permission
+  await requireActiveMembership(id)
+  await requirePermission(id, PERMISSIONS.EDIT_HOUSEHOLD_SETTINGS)
 
   return updateHousehold(id, { name: newName })
 }
@@ -433,22 +425,9 @@ export async function renameHousehold(id: string, newName: string): Promise<Hous
  * Archive a household (admin only, soft delete)
  */
 export async function archiveHousehold(id: string): Promise<Household> {
-  const { data: { user }, error: userError } = await supabase.auth.getUser()
-  if (userError || !user) {
-    throw new Error('User not authenticated')
-  }
-
-  // Check if user is admin
-  const { data: member, error: memberError } = await supabase
-    .from('members')
-    .select('role')
-    .eq('household_id', id)
-    .eq('user_id', user.id)
-    .single()
-
-  if (memberError || !member || member.role !== 'admin') {
-    throw new Error('Only admins can archive households')
-  }
+  // Check access and permission
+  await requireActiveMembership(id)
+  await requirePermission(id, PERMISSIONS.ARCHIVE_HOUSEHOLD)
 
   return updateHousehold(id, { status: 'archived' })
 }

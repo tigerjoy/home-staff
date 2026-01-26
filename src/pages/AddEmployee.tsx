@@ -133,7 +133,7 @@ export function AddEmployee() {
         if (pendingPhotoFile.current) {
           try {
             const photoUrl = await uploadPhoto(createdEmployee.id, pendingPhotoFile.current)
-            await updateEmployee(createdEmployee.id, { photo: photoUrl })
+            await updateEmployee(createdEmployee.id, activeHouseholdId, { photo: photoUrl })
           } catch (error) {
             console.error('Error uploading photo:', error)
             // Continue even if photo upload fails
@@ -164,7 +164,7 @@ export function AddEmployee() {
             // Update employee with uploaded document URLs
             if (uploadedDocuments.length > 0) {
               const existingDocs = createdEmployee.documents.filter(d => !d.url.startsWith('blob:'))
-              await updateEmployee(createdEmployee.id, {
+              await updateEmployee(createdEmployee.id, activeHouseholdId, {
                 documents: [...existingDocs, ...uploadedDocuments],
               })
             }

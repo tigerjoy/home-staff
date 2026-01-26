@@ -1,4 +1,6 @@
 import { supabase } from '../../supabase'
+import { requirePermission, requireActiveMembership } from '../permissions/accessControl'
+import { PERMISSIONS } from '../permissions/constants'
 import type {
   Employee,
   UIEmployee,
@@ -348,6 +350,9 @@ export async function createEmployee(
     paymentMethod: 'Cash' | 'Bank Transfer' | 'UPI' | 'Cheque'
   }
 ): Promise<UIEmployee> {
+  // Check access and permission
+  await requireActiveMembership(employmentData.householdId)
+  await requirePermission(employmentData.householdId, PERMISSIONS.MANAGE_STAFF_DIRECTORY)
   const payload = {
     p_employee: {
       name: employeeData.name,
@@ -399,8 +404,12 @@ export async function createEmployee(
  */
 export async function updateEmployee(
   id: string,
+  householdId: string,
   updates: Partial<Omit<Employee, 'id' | 'createdAt' | 'updatedAt'>>
 ): Promise<Employee> {
+  // Check access and permission
+  await requireActiveMembership(householdId)
+  await requirePermission(householdId, PERMISSIONS.MANAGE_STAFF_DIRECTORY)
   // Update employee main record
   if (updates.name || updates.photo !== undefined) {
     const updateData: any = {}
@@ -527,8 +536,12 @@ export async function updateEmployee(
  */
 export async function updateEmployment(
   id: string,
+  householdId: string,
   updates: Partial<Omit<Employment, 'id' | 'createdAt' | 'updatedAt'>>
 ): Promise<Employment> {
+  // Check access and permission
+  await requireActiveMembership(householdId)
+  await requirePermission(householdId, PERMISSIONS.MANAGE_STAFF_DIRECTORY)
   const updateData: any = {}
   if (updates.role !== undefined) updateData.role = updates.role
   if (updates.startDate !== undefined) updateData.start_date = updates.startDate
@@ -571,6 +584,9 @@ export async function updateEmployment(
  * Archive an employee (archives all their employments)
  */
 export async function archiveEmployee(id: string, householdId: string): Promise<void> {
+  // Check access and permission
+  await requireActiveMembership(householdId)
+  await requirePermission(householdId, PERMISSIONS.MANAGE_STAFF_DIRECTORY)
   // Archive all employments for this employee in this household
   const { error } = await supabase
     .from('employments')
@@ -587,6 +603,9 @@ export async function archiveEmployee(id: string, householdId: string): Promise<
  * Restore an archived employee
  */
 export async function restoreEmployee(id: string, householdId: string): Promise<void> {
+  // Check access and permission
+  await requireActiveMembership(householdId)
+  await requirePermission(householdId, PERMISSIONS.MANAGE_STAFF_DIRECTORY)
   const { error } = await supabase
     .from('employments')
     .update({ status: 'active' })
@@ -782,6 +801,9 @@ export async function linkExistingEmployee(
     paymentMethod: 'Cash' | 'Bank Transfer' | 'UPI' | 'Cheque'
   }
 ): Promise<UIEmployee> {
+  // Check access and permission
+  await requireActiveMembership(householdId)
+  await requirePermission(householdId, PERMISSIONS.MANAGE_STAFF_DIRECTORY)
   // Check if employee already has an active employment in this household
   const existingEmployment = await getCurrentEmployment(employeeId, householdId)
   if (existingEmployment) {

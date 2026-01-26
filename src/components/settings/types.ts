@@ -16,6 +16,7 @@ export interface Household {
   role: 'Admin' | 'Member'
   status: 'active' | 'archived'
   isPrimary: boolean
+  memberStatus?: 'active' | 'pending'
 }
 
 export interface Member {
@@ -25,6 +26,8 @@ export interface Member {
   role: 'Admin' | 'Member'
   joinedDate: string
   avatarUrl: string | null
+  status?: 'active' | 'pending'
+  permissions?: string[]
 }
 
 export interface InvitationCode {
@@ -78,4 +81,12 @@ export interface SettingsAndAccessProps {
   onRemoveMember?: (id: string) => void
   /** Called when user sets a household as primary */
   onSetPrimaryHousehold?: (id: string) => void
+  /** Called when an admin approves a pending member */
+  onApproveMember?: (id: string) => void
+  /** Called when an admin rejects a pending member */
+  onRejectMember?: (id: string) => void
+  /** Called when an admin updates a member's permissions */
+  onUpdateMemberPermissions?: (id: string, permissions: string[]) => void
+  /** The currently active household ID */
+  activeHouseholdId?: string | null
 }

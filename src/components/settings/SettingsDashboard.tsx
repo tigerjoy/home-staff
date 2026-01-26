@@ -15,19 +15,27 @@ import {
   Star,
   Copy,
   RefreshCw,
+  Clock,
 } from 'lucide-react'
 import { InvitationCodeCard } from './InvitationCodeCard'
 import { JoinHouseholdModal } from './JoinHouseholdModal'
+import { SwitchHouseholdDialog } from './SwitchHouseholdDialog'
+import { ProfileEditModal } from './ProfileEditModal'
+import { PermissionsManagement } from './PermissionsManagement'
+import { useHouseholdAccess } from '../../hooks/useAccessControl'
+import { AccessDenied } from '../common/AccessDenied'
 
 // Sub-components
 function HouseholdCard({
   household,
+  isActive,
   onSwitch,
   onRename,
   onArchive,
   onSetPrimary,
 }: {
   household: Household
+  isActive: boolean
   onSwitch?: () => void
   onRename?: () => void
   onArchive?: () => void
@@ -35,17 +43,32 @@ function HouseholdCard({
 }) {
   const [showMenu, setShowMenu] = useState(false)
   const isArchived = household.status === 'archived'
+  const isPending = household.memberStatus === 'pending'
+  const canSwitch = !isArchived && !isPending && !isActive
+
+  const handleCardClick = () => {
+    if (canSwitch && onSwitch) {
+      onSwitch()
+    }
+  }
 
   return (
     <div
+      onClick={handleCardClick}
       className={`
         group relative p-4 rounded-xl border transition-all duration-200
         ${
-          household.isPrimary
+          isActive
             ? 'border-amber-300 bg-amber-50/50 dark:border-amber-700 dark:bg-amber-950/30'
-            : isArchived
-              ? 'border-stone-200 bg-stone-100/50 dark:border-stone-700 dark:bg-stone-800/30 opacity-60'
-              : 'border-stone-200 bg-white dark:border-stone-700 dark:bg-stone-800/50 hover:border-amber-300 dark:hover:border-amber-600'
+            : household.isPrimary
+              ? 'border-amber-200 bg-amber-50/30 dark:border-amber-800 dark:bg-amber-950/20'
+              : isArchived
+                ? 'border-stone-200 bg-stone-100/50 dark:border-stone-700 dark:bg-stone-800/30 opacity-60'
+                : isPending
+                  ? 'border-stone-200 bg-stone-100/30 dark:border-stone-700 dark:bg-stone-800/20 opacity-70'
+                  : canSwitch
+                    ? 'border-stone-200 bg-white dark:border-stone-700 dark:bg-stone-800/50 hover:border-amber-300 dark:hover:border-amber-600 cursor-pointer'
+                    : 'border-stone-200 bg-white dark:border-stone-700 dark:bg-stone-800/50'
         }
       `}
     >
@@ -70,7 +93,13 @@ function HouseholdCard({
               <h3 className="font-semibold text-stone-900 dark:text-stone-100 truncate">
                 {household.name}
               </h3>
-              {household.isPrimary && (
+              {isActive && (
+                <span className="flex items-center gap-1 text-xs px-2 py-0.5 rounded-full font-medium bg-amber-500 text-white dark:bg-amber-600">
+                  <CheckCircle className="w-3 h-3" />
+                  Active
+                </span>
+              )}
+              {household.isPrimary && !isActive && (
                 <Star className="w-4 h-4 text-amber-500 flex-shrink-0" />
               )}
             </div>
@@ -87,6 +116,11 @@ function HouseholdCard({
               >
                 {household.role}
               </span>
+              {isPending && (
+                <span className="text-xs px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300">
+                  Pending
+                </span>
+              )}
               {isArchived && (
                 <span className="text-xs px-2 py-0.5 rounded-full bg-stone-200 text-stone-500 dark:bg-stone-600 dark:text-stone-400">
                   Archived
@@ -153,15 +187,12 @@ function HouseholdCard({
         )}
       </div>
 
-      {/* Switch Button */}
-      {!household.isPrimary && !isArchived && (
-        <button
-          onClick={onSwitch}
-          className="mt-3 w-full flex items-center justify-center gap-2 py-2 text-sm font-medium text-amber-600 dark:text-amber-400 hover:text-amber-700 dark:hover:text-amber-300 transition-colors"
-        >
-          Switch to this household
+      {/* Switch Button - Only show for non-active, non-archived, non-pending households */}
+      {canSwitch && (
+        <div className="mt-3 flex items-center justify-center gap-2 py-2 text-sm font-medium text-amber-600 dark:text-amber-400">
+          Click to switch
           <ChevronRight className="w-4 h-4" />
-        </button>
+        </div>
       )}
     </div>
   )
@@ -170,15 +201,22 @@ function HouseholdCard({
 function MemberRow({
   member,
   isCurrentUser,
+  isAdmin,
   onChangeRole,
   onRemove,
+  onApprove,
+  onReject,
 }: {
   member: Member
   isCurrentUser: boolean
+  isAdmin: boolean
   onChangeRole?: () => void
   onRemove?: () => void
+  onApprove?: () => void
+  onReject?: () => void
 }) {
   const [showMenu, setShowMenu] = useState(false)
+  const isPending = member.status === 'pending'
   const initials = member.name
     .split(' ')
     .map((n) => n[0])
@@ -221,7 +259,7 @@ function MemberRow({
       {/* Role Badge */}
       <span
         className={`
-          hidden sm:inline-flex px-2.5 py-1 rounded-lg text-xs font-medium
+          hidden sm:inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-medium
           ${
             member.role === 'Admin'
               ? 'bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-300'
@@ -230,51 +268,80 @@ function MemberRow({
         `}
       >
         {member.role}
+        <span className={member.role === 'Admin' ? 'opacity-100' : 'opacity-0'}>:</span>
       </span>
 
       {/* Status */}
-      <div className="hidden md:flex items-center gap-1.5 text-sm text-green-600 dark:text-green-400">
-        <CheckCircle className="w-4 h-4" />
-        <span>Active</span>
-      </div>
+      {isPending ? (
+        <div className="hidden md:flex items-center gap-1.5 text-sm text-amber-600 dark:text-amber-400">
+          <Clock className="w-4 h-4" />
+          <span>Pending</span>
+        </div>
+      ) : (
+        <div className="hidden md:flex items-center gap-1.5 text-sm text-green-600 dark:text-green-400">
+          <CheckCircle className="w-4 h-4" />
+          <span>Active</span>
+        </div>
+      )}
 
       {/* Actions */}
       {!isCurrentUser && (
         <div className="relative">
-          <button
-            onClick={() => setShowMenu(!showMenu)}
-            className="p-2 rounded-lg text-stone-400 hover:text-stone-600 hover:bg-stone-100 dark:hover:text-stone-300 dark:hover:bg-stone-700 transition-colors"
-          >
-            <MoreVertical className="w-4 h-4" />
-          </button>
-          {showMenu && (
+          {isPending && isAdmin ? (
+            // Show approve/reject buttons for pending members (admin only)
+            <div className="flex items-center gap-2">
+              <button
+                onClick={onApprove}
+                className="px-3 py-1.5 rounded-lg text-sm font-medium bg-green-500 hover:bg-green-600 text-white transition-colors"
+              >
+                Approve
+              </button>
+              <button
+                onClick={onReject}
+                className="px-3 py-1.5 rounded-lg text-sm font-medium bg-red-500 hover:bg-red-600 text-white transition-colors"
+              >
+                Reject
+              </button>
+            </div>
+          ) : (
+            // Show menu for active members
             <>
-              <div
-                className="fixed inset-0 z-10"
-                onClick={() => setShowMenu(false)}
-              />
-              <div className="absolute right-0 top-10 z-20 w-44 bg-white dark:bg-stone-800 rounded-lg shadow-lg border border-stone-200 dark:border-stone-700 py-1 animate-in fade-in slide-in-from-top-2 duration-150">
-                <button
-                  onClick={() => {
-                    onChangeRole?.()
-                    setShowMenu(false)
-                  }}
-                  className="w-full flex items-center gap-2 px-3 py-2 text-sm text-stone-700 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-700"
-                >
-                  <Shield className="w-4 h-4" />
-                  Change Role
-                </button>
-                <button
-                  onClick={() => {
-                    onRemove?.()
-                    setShowMenu(false)
-                  }}
-                  className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20"
-                >
-                  <Trash2 className="w-4 h-4" />
-                  Remove Member
-                </button>
-              </div>
+              <button
+                onClick={() => setShowMenu(!showMenu)}
+                className="p-2 rounded-lg text-stone-400 hover:text-stone-600 hover:bg-stone-100 dark:hover:text-stone-300 dark:hover:bg-stone-700 transition-colors"
+              >
+                <MoreVertical className="w-4 h-4" />
+              </button>
+              {showMenu && (
+                <>
+                  <div
+                    className="fixed inset-0 z-10"
+                    onClick={() => setShowMenu(false)}
+                  />
+                  <div className="absolute right-0 top-10 z-20 w-44 bg-white dark:bg-stone-800 rounded-lg shadow-lg border border-stone-200 dark:border-stone-700 py-1 animate-in fade-in slide-in-from-top-2 duration-150">
+                    <button
+                      onClick={() => {
+                        onChangeRole?.()
+                        setShowMenu(false)
+                      }}
+                      className="w-full flex items-center gap-2 px-3 py-2 text-sm text-stone-700 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-700"
+                    >
+                      <Shield className="w-4 h-4" />
+                      Change Role
+                    </button>
+                    <button
+                      onClick={() => {
+                        onRemove?.()
+                        setShowMenu(false)
+                      }}
+                      className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                      Remove Member
+                    </button>
+                  </div>
+                </>
+              )}
             </>
           )}
         </div>
@@ -283,61 +350,6 @@ function MemberRow({
   )
 }
 
-function PermissionsCard({
-  permissions,
-}: {
-  permissions: { Admin: string[]; Member: string[] }
-}) {
-  return (
-    <div className="p-6 rounded-2xl border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-800/50">
-      <h3 className="text-lg font-semibold text-stone-900 dark:text-stone-100 mb-4 flex items-center gap-2">
-        <Shield className="w-5 h-5 text-amber-500" />
-        Role Permissions
-      </h3>
-      <div className="grid sm:grid-cols-2 gap-6">
-        {/* Admin */}
-        <div>
-          <div className="flex items-center gap-2 mb-3">
-            <span className="px-2.5 py-1 rounded-lg text-xs font-medium bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-300">
-              Admin
-            </span>
-          </div>
-          <ul className="space-y-2">
-            {permissions.Admin.map((perm, i) => (
-              <li
-                key={i}
-                className="flex items-center gap-2 text-sm text-stone-600 dark:text-stone-400"
-              >
-                <CheckCircle className="w-4 h-4 text-green-500" />
-                {perm}
-              </li>
-            ))}
-          </ul>
-        </div>
-
-        {/* Member */}
-        <div>
-          <div className="flex items-center gap-2 mb-3">
-            <span className="px-2.5 py-1 rounded-lg text-xs font-medium bg-stone-100 text-stone-600 dark:bg-stone-700 dark:text-stone-400">
-              Member
-            </span>
-          </div>
-          <ul className="space-y-2">
-            {permissions.Member.map((perm, i) => (
-              <li
-                key={i}
-                className="flex items-center gap-2 text-sm text-stone-600 dark:text-stone-400"
-              >
-                <CheckCircle className="w-4 h-4 text-green-500" />
-                {perm}
-              </li>
-            ))}
-          </ul>
-        </div>
-      </div>
-    </div>
-  )
-}
 
 // Main Component
 export function SettingsDashboard({
@@ -356,6 +368,10 @@ export function SettingsDashboard({
   onChangeMemberRole,
   onRemoveMember,
   onSetPrimaryHousehold,
+  onApproveMember,
+  onRejectMember,
+  onUpdateMemberPermissions,
+  activeHouseholdId,
 }: SettingsAndAccessProps) {
   const [showJoinModal, setShowJoinModal] = useState(false)
   const [showCreateModal, setShowCreateModal] = useState(false)
@@ -364,14 +380,37 @@ export function SettingsDashboard({
     id: string
     name: string
   } | null>(null)
+  const [switchingHousehold, setSwitchingHousehold] = useState<{
+    id: string
+    name: string
+  } | null>(null)
+  const [showProfileModal, setShowProfileModal] = useState(false)
   const [activeTab, setActiveTab] = useState<'households' | 'members' | 'permissions'>(
     'households'
   )
+
+  // Check access for active household
+  const {
+    hasAccess,
+    isPending: isPendingMember,
+    loading: accessLoading,
+  } = useHouseholdAccess(activeHouseholdId)
 
   const activeHouseholds = households.filter((h) => h.status === 'active')
   const archivedHouseholds = households.filter((h) => h.status === 'archived')
   const currentUserMember = members.find((m) => m.email === userProfile.email)
   const isAdmin = currentUserMember?.role === 'Admin' || false
+
+  // Show access denied if user is pending and trying to access household-specific tabs
+  if (activeHouseholdId && !accessLoading && !hasAccess && (activeTab === 'members' || activeTab === 'permissions')) {
+    return (
+      <div className="min-h-screen bg-stone-50 dark:bg-stone-950">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8">
+          <AccessDenied isPending={isPendingMember} showSettingsLink={false} />
+        </div>
+      </div>
+    )
+  }
 
   const handleCreateHousehold = () => {
     if (newHouseholdName.trim()) {
@@ -422,7 +461,7 @@ export function SettingsDashboard({
               <p className="text-stone-500 dark:text-stone-400">{userProfile.email}</p>
             </div>
             <button
-              onClick={() => onUpdateProfile?.({})}
+              onClick={() => setShowProfileModal(true)}
               className="px-4 py-2 rounded-xl text-sm font-medium text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/30 transition-colors"
             >
               Edit Profile
@@ -480,12 +519,16 @@ export function SettingsDashboard({
                   </button>
                 </div>
               </div>
+              
               <div className="grid gap-4">
                 {activeHouseholds.map((household) => (
                   <HouseholdCard
                     key={household.id}
                     household={household}
-                    onSwitch={() => onSwitchHousehold?.(household.id)}
+                    isActive={household.id === activeHouseholdId}
+                    onSwitch={() =>
+                      setSwitchingHousehold({ id: household.id, name: household.name })
+                    }
                     onRename={() =>
                       setRenamingHousehold({ id: household.id, name: household.name })
                     }
@@ -539,6 +582,7 @@ export function SettingsDashboard({
                       key={member.id}
                       member={member}
                       isCurrentUser={member.email === userProfile.email}
+                      isAdmin={isAdmin}
                       onChangeRole={() =>
                         onChangeMemberRole?.(
                           member.id,
@@ -546,6 +590,8 @@ export function SettingsDashboard({
                         )
                       }
                       onRemove={() => onRemoveMember?.(member.id)}
+                      onApprove={() => onApproveMember?.(member.id)}
+                      onReject={() => onRejectMember?.(member.id)}
                     />
                   ))
                 )}
@@ -556,7 +602,13 @@ export function SettingsDashboard({
 
         {activeTab === 'permissions' && (
           <div className="animate-in fade-in duration-200">
-            <PermissionsCard permissions={permissions} />
+            <PermissionsManagement
+              key={activeHouseholdId ?? 'none'}
+              members={members}
+              permissions={permissions}
+              isAdmin={isAdmin}
+              onUpdatePermissions={onUpdateMemberPermissions}
+            />
           </div>
         )}
       </div>
@@ -628,6 +680,30 @@ export function SettingsDashboard({
             </div>
           </div>
         </div>
+      )}
+
+      {/* Profile Edit Modal */}
+      {showProfileModal && onUpdateProfile && (
+        <ProfileEditModal
+          userProfile={userProfile}
+          onClose={() => setShowProfileModal(false)}
+          onSave={async (updates) => {
+            await onUpdateProfile(updates)
+            setShowProfileModal(false)
+          }}
+        />
+      )}
+
+      {/* Switch Household Confirmation Dialog */}
+      {switchingHousehold && (
+        <SwitchHouseholdDialog
+          householdName={switchingHousehold.name}
+          onConfirm={() => {
+            onSwitchHousehold?.(switchingHousehold.id)
+            setSwitchingHousehold(null)
+          }}
+          onCancel={() => setSwitchingHousehold(null)}
+        />
       )}
 
       {/* Rename Household Modal */}

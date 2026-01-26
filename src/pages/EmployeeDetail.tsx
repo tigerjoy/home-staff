@@ -76,7 +76,7 @@ export function EmployeeDetail() {
         uploadedAt: new Date().toISOString(),
       }
 
-      await updateEmployee(id, {
+      await updateEmployee(id, activeHouseholdId, {
         documents: [...employee.documents, newDocument],
       })
 
@@ -94,7 +94,7 @@ export function EmployeeDetail() {
       const document = employee.documents.find((d) => d.name === documentName)
       if (document) {
         await deleteDocumentFile(document.url)
-        await updateEmployee(id, {
+        await updateEmployee(id, activeHouseholdId, {
           documents: employee.documents.filter((d) => d.name !== documentName),
         })
         await loadEmployee()
@@ -121,7 +121,7 @@ export function EmployeeDetail() {
     if (!id || !employee) return
 
     try {
-      await updateEmployee(id, {
+      await updateEmployee(id, activeHouseholdId, {
         customProperties: [...employee.customProperties, property],
       })
       await loadEmployee()
@@ -135,7 +135,7 @@ export function EmployeeDetail() {
     if (!id || !employee) return
 
     try {
-      await updateEmployee(id, {
+      await updateEmployee(id, activeHouseholdId, {
         customProperties: employee.customProperties.filter((p) => p.name !== propertyName),
       })
       await loadEmployee()
@@ -153,7 +153,7 @@ export function EmployeeDetail() {
         content,
         createdAt: new Date().toISOString(),
       }
-      await updateEmployee(id, {
+      await updateEmployee(id, activeHouseholdId, {
         notes: [newNote, ...employee.notes],
       })
       await loadEmployee()
@@ -167,7 +167,7 @@ export function EmployeeDetail() {
     if (!id || !employee) return
 
     try {
-      await updateEmployee(id, {
+      await updateEmployee(id, activeHouseholdId, {
         notes: employee.notes.filter((n) => n.createdAt !== createdAt),
       })
       await loadEmployee()

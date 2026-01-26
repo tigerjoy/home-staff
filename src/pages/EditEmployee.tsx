@@ -46,7 +46,7 @@ export function EditEmployee() {
       setError(null)
 
       // Update employee core data
-      await updateEmployee(id, {
+      await updateEmployee(id, activeHouseholdId, {
         name: employeeData.name,
         photo: employeeData.photo,
         phoneNumbers: employeeData.phoneNumbers,
@@ -63,7 +63,7 @@ export function EditEmployee() {
         const currentSalary = employeeData.salaryHistory[0]
 
         if (currentRole && currentSalary) {
-          await updateEmployment(currentEmployment.id, {
+          await updateEmployment(currentEmployment.id, activeHouseholdId, {
             role: currentRole.role,
             startDate: currentRole.startDate,
             endDate: currentRole.endDate || undefined,
@@ -100,7 +100,7 @@ export function EditEmployee() {
       setError(null)
 
       // Update employee core data
-      await updateEmployee(id, {
+      await updateEmployee(id, activeHouseholdId, {
         name: employeeData.name,
         photo: employeeData.photo,
         phoneNumbers: employeeData.phoneNumbers,
@@ -117,7 +117,7 @@ export function EditEmployee() {
         const currentSalary = employeeData.salaryHistory[0]
 
         if (currentRole && currentSalary) {
-          await updateEmployment(currentEmployment.id, {
+          await updateEmployment(currentEmployment.id, activeHouseholdId, {
             role: currentRole.role,
             startDate: currentRole.startDate,
             endDate: currentRole.endDate || undefined,
@@ -143,7 +143,7 @@ export function EditEmployee() {
 
     try {
       // Update employee with new photo
-      await updateEmployee(id, {
+      await updateEmployee(id, activeHouseholdId, {
         photo: photoUrl,
       })
       // Reload employee to get updated data
@@ -163,7 +163,7 @@ export function EditEmployee() {
         d => !documents.some(nd => nd.url === d.url)
       )
       // Update employee with new documents
-      await updateEmployee(id, {
+      await updateEmployee(id, activeHouseholdId, {
         documents: [...currentDocs, ...documents],
       })
       // Reload employee to get updated data
@@ -194,7 +194,7 @@ export function EditEmployee() {
       // Get current custom properties from employee state
       const updatedProperties = [...employee.customProperties, property]
       // Update employee with new custom property
-      await updateEmployee(id, {
+      await updateEmployee(id, activeHouseholdId, {
         customProperties: updatedProperties,
       })
       // Reload employee to get updated data
@@ -212,7 +212,7 @@ export function EditEmployee() {
       // Get current notes from employee state and prepend new note (newest first)
       const updatedNotes = [note, ...employee.notes]
       // Update employee with new note
-      await updateEmployee(id, {
+      await updateEmployee(id, activeHouseholdId, {
         notes: updatedNotes,
       })
       // Reload employee to get updated data

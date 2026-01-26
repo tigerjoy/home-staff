@@ -5,11 +5,20 @@ import { fetchEmployees, archiveEmployee, restoreEmployee, fetchEmployeesFromOth
 import { fetchSummary } from '../lib/api/summary'
 import { exportToCSV, exportToPDF } from '../lib/utils/export'
 import { useHousehold } from '../hooks/useHousehold'
+import { useHouseholdAccess } from '../hooks/useAccessControl'
+import { AccessDenied } from '../components/common/AccessDenied'
+import { PERMISSIONS } from '../lib/permissions/constants'
 import type { UIEmployee, Summary, ExistingEmployeeFromOtherHousehold } from '../types'
 
 export function StaffDirectory() {
   const navigate = useNavigate()
   const { activeHouseholdId, loading: householdLoading } = useHousehold()
+  const {
+    hasAccess,
+    isPending,
+    loading: accessLoading,
+    checkPermission,
+  } = useHouseholdAccess(activeHouseholdId)
   const [employees, setEmployees] = useState<UIEmployee[]>([])
   const [summary, setSummary] = useState<Summary>({
     totalStaff: 0,
@@ -26,13 +35,21 @@ export function StaffDirectory() {
   const [pageSize] = useState(20)
 
   useEffect(() => {
-    if (activeHouseholdId) {
+    if (activeHouseholdId && hasAccess) {
       loadData()
     }
-  }, [activeHouseholdId, page])
+  }, [activeHouseholdId, page, hasAccess])
 
   const loadData = async () => {
-    if (!activeHouseholdId) return
+    if (!activeHouseholdId || !hasAccess) return
+
+    // Check if user has permission to view staff directory
+    const canView = await checkPermission(PERMISSIONS.VIEW_STAFF_DIRECTORY)
+    if (!canView) {
+      setError('You do not have permission to view the staff directory')
+      setLoading(false)
+      return
+    }
 
     try {
       setLoading(true)
@@ -111,7 +128,25 @@ export function StaffDirectory() {
     console.log('Filter role:', role)
   }
 
-  if (householdLoading || (loading && employees.length === 0)) {
+  // Show loading while checking access or loading household
+  if (householdLoading || accessLoading) {
+    return (
+      <div className="min-h-screen bg-stone-50 dark:bg-stone-950 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-amber-500 mx-auto mb-4"></div>
+          <p className="text-stone-600 dark:text-stone-400">Loading staff directory...</p>
+        </div>
+      </div>
+    )
+  }
+
+  // Show access denied if user doesn't have access
+  if (!hasAccess) {
+    return <AccessDenied isPending={isPending} showSettingsLink={true} />
+  }
+
+  // Show loading while fetching data
+  if (loading && employees.length === 0) {
     return (
       <div className="min-h-screen bg-stone-50 dark:bg-stone-950 flex items-center justify-center">
         <div className="text-center">

@@ -14,16 +14,21 @@ import * as invitationsApi from '../lib/api/invitations'
 import { useHousehold } from '../hooks/useHousehold'
 import { supabase } from '../supabase'
 
+/** Feature-aligned permissions (product-overview). Admin always has all; Member default subset. */
 const PERMISSIONS: PermissionsMap = {
   Admin: [
+    'View Staff Directory',
     'Manage Staff Directory',
     'Track Attendance',
+    'Manage Attendance',
+    'View Payroll & Finance',
     'Manage Payroll & Finance',
     'Invite & Remove Members',
+    'Manage Members',
     'Edit Household Settings',
     'Archive Household',
   ],
-  Member: ['View Staff Directory', 'Track Attendance', 'View Reports'],
+  Member: ['View Staff Directory', 'Track Attendance', 'View Payroll & Finance'],
 }
 
 export function Settings() {
@@ -62,6 +67,7 @@ export function Settings() {
             role: h.role,
             status: h.status,
             isPrimary: h.isPrimary,
+            memberStatus: h.memberStatus,
           }))
         )
 
@@ -94,6 +100,8 @@ export function Settings() {
               role: m.role,
               joinedDate: m.joinedAt,
               avatarUrl: m.avatarUrl,
+              status: m.status,
+              permissions: m.permissions,
             }))
           )
 
@@ -150,15 +158,16 @@ export function Settings() {
       await refreshHouseholds()
       // Refresh households list
       const userHouseholds = await householdsApi.getUserHouseholdsWithRoles()
-      setHouseholds(
-        userHouseholds.map((h) => ({
-          id: h.id,
-          name: h.name,
-          role: h.role,
-          status: h.status,
-          isPrimary: h.isPrimary,
-        }))
-      )
+        setHouseholds(
+          userHouseholds.map((h) => ({
+            id: h.id,
+            name: h.name,
+            role: h.role,
+            status: h.status,
+            isPrimary: h.isPrimary,
+            memberStatus: h.memberStatus,
+          }))
+        )
     } catch (err) {
       console.error('Failed to create household:', err)
       throw err
@@ -182,6 +191,8 @@ export function Settings() {
           role: m.role,
           joinedDate: m.joinedAt,
           avatarUrl: m.avatarUrl,
+          status: m.status,
+          permissions: m.permissions,
         }))
       )
 
@@ -209,15 +220,16 @@ export function Settings() {
       await householdsApi.renameHousehold(id, newName)
       // Refresh households
       const userHouseholds = await householdsApi.getUserHouseholdsWithRoles()
-      setHouseholds(
-        userHouseholds.map((h) => ({
-          id: h.id,
-          name: h.name,
-          role: h.role,
-          status: h.status,
-          isPrimary: h.isPrimary,
-        }))
-      )
+        setHouseholds(
+          userHouseholds.map((h) => ({
+            id: h.id,
+            name: h.name,
+            role: h.role,
+            status: h.status,
+            isPrimary: h.isPrimary,
+            memberStatus: h.memberStatus,
+          }))
+        )
     } catch (err) {
       console.error('Failed to rename household:', err)
       throw err
@@ -229,15 +241,16 @@ export function Settings() {
       await householdsApi.archiveHousehold(id)
       // Refresh households
       const userHouseholds = await householdsApi.getUserHouseholdsWithRoles()
-      setHouseholds(
-        userHouseholds.map((h) => ({
-          id: h.id,
-          name: h.name,
-          role: h.role,
-          status: h.status,
-          isPrimary: h.isPrimary,
-        }))
-      )
+        setHouseholds(
+          userHouseholds.map((h) => ({
+            id: h.id,
+            name: h.name,
+            role: h.role,
+            status: h.status,
+            isPrimary: h.isPrimary,
+            memberStatus: h.memberStatus,
+          }))
+        )
     } catch (err) {
       console.error('Failed to archive household:', err)
       throw err
@@ -296,6 +309,7 @@ export function Settings() {
             role: h.role,
             status: h.status,
             isPrimary: h.isPrimary,
+            memberStatus: h.memberStatus,
           }))
         )
       } else {
@@ -322,6 +336,8 @@ export function Settings() {
           role: m.role,
           joinedDate: m.joinedAt,
           avatarUrl: m.avatarUrl,
+          status: m.status,
+          permissions: m.permissions,
         }))
       )
     } catch (err) {
@@ -345,6 +361,8 @@ export function Settings() {
           role: m.role,
           joinedDate: m.joinedAt,
           avatarUrl: m.avatarUrl,
+          status: m.status,
+          permissions: m.permissions,
         }))
       )
     } catch (err) {
@@ -365,10 +383,110 @@ export function Settings() {
           role: h.role,
           status: h.status,
           isPrimary: h.isPrimary,
+          memberStatus: h.memberStatus,
         }))
       )
     } catch (err) {
       console.error('Failed to set primary household:', err)
+      throw err
+    }
+  }
+
+  const handleApproveMember = async (id: string) => {
+    if (!activeHouseholdId) return
+
+    try {
+      await membersApi.approveMember(id, activeHouseholdId)
+      // Refresh members
+      const householdMembers = await membersApi.getHouseholdMembers(activeHouseholdId)
+      setMembers(
+        householdMembers.map((m) => ({
+          id: m.id,
+          name: m.name,
+          email: m.email,
+          role: m.role,
+          joinedDate: m.joinedAt,
+          avatarUrl: m.avatarUrl,
+          status: m.status,
+          permissions: m.permissions,
+        }))
+      )
+      // Refresh households to update memberStatus
+      const userHouseholds = await householdsApi.getUserHouseholdsWithRoles()
+      setHouseholds(
+        userHouseholds.map((h) => ({
+          id: h.id,
+          name: h.name,
+          role: h.role,
+          status: h.status,
+          isPrimary: h.isPrimary,
+          memberStatus: h.memberStatus,
+        }))
+      )
+    } catch (err) {
+      console.error('Failed to approve member:', err)
+      throw err
+    }
+  }
+
+  const handleRejectMember = async (id: string) => {
+    if (!activeHouseholdId) return
+
+    try {
+      await membersApi.rejectMember(id, activeHouseholdId)
+      // Refresh members
+      const householdMembers = await membersApi.getHouseholdMembers(activeHouseholdId)
+      setMembers(
+        householdMembers.map((m) => ({
+          id: m.id,
+          name: m.name,
+          email: m.email,
+          role: m.role,
+          joinedDate: m.joinedAt,
+          avatarUrl: m.avatarUrl,
+          status: m.status,
+          permissions: m.permissions,
+        }))
+      )
+      // Refresh households to update memberStatus
+      const userHouseholds = await householdsApi.getUserHouseholdsWithRoles()
+      setHouseholds(
+        userHouseholds.map((h) => ({
+          id: h.id,
+          name: h.name,
+          role: h.role,
+          status: h.status,
+          isPrimary: h.isPrimary,
+          memberStatus: h.memberStatus,
+        }))
+      )
+    } catch (err) {
+      console.error('Failed to reject member:', err)
+      throw err
+    }
+  }
+
+  const handleUpdateMemberPermissions = async (id: string, permissions: string[]) => {
+    if (!activeHouseholdId) return
+
+    try {
+      await membersApi.updateMemberPermissions(id, activeHouseholdId, permissions)
+      // Refresh members
+      const householdMembers = await membersApi.getHouseholdMembers(activeHouseholdId)
+      setMembers(
+        householdMembers.map((m) => ({
+          id: m.id,
+          name: m.name,
+          email: m.email,
+          role: m.role,
+          joinedDate: m.joinedAt,
+          avatarUrl: m.avatarUrl,
+          status: m.status,
+          permissions: m.permissions,
+        }))
+      )
+    } catch (err) {
+      console.error('Failed to update member permissions:', err)
       throw err
     }
   }
@@ -410,6 +528,10 @@ export function Settings() {
       onChangeMemberRole={handleChangeMemberRole}
       onRemoveMember={handleRemoveMember}
       onSetPrimaryHousehold={handleSetPrimaryHousehold}
+      onApproveMember={handleApproveMember}
+      onRejectMember={handleRejectMember}
+      onUpdateMemberPermissions={handleUpdateMemberPermissions}
+      activeHouseholdId={activeHouseholdId}
     />
   )
 }
